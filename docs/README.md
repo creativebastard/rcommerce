@@ -133,6 +133,14 @@ This directory contains comprehensive documentation for the R commerce headless 
   - Debugging techniques
   - Contributing guidelines
 
+- **[cli-reference.md](cli-reference.md)** - CLI Reference
+  - Installation and setup
+  - Complete command reference
+  - Server management
+  - Product/order/customer management
+  - Scripting and automation
+  - CLI configuration and best practices
+
 ### Migration Guides
 
 - **[migration-guides/00-index.md](migration-guides/00-index.md)** - Migration Overview
@@ -210,10 +218,11 @@ All core documentation has been completed and is production-ready:
 - ✅ **deployment/01-cross-platform.md** - FreeBSD/Linux/macOS (21,406 lines)
 - ✅ **deployment/01-docker.md** - Docker deployment (20,499 lines)
 
-#### Development & Configuration
+#### Development, CLI & Configuration
 - ✅ **configuration-reference.md** - Complete config reference (16,783 lines)
 - ✅ **developer-guide.md** - Developer guide (22,000 lines)
 - ✅ **development-roadmap.md** - 44-week development plan (9,144 lines)
+- ✅ **cli-reference.md** - CLI reference (26,000 lines) - Complete command-line interface for all operations
 
 #### Migration Guides
 - ✅ **migration-guides/00-index.md** - Migration overview (7,612 lines)
@@ -227,14 +236,15 @@ All core documentation has been completed and is production-ready:
 
 ### 📊 Documentation Statistics
 
-- **Total Files**: 24 comprehensive documentation files
-- **Total Lines**: ~390,000+ lines of detailed documentation
-- **Coverage**: Complete end-to-end documentation from architecture to deployment
+- **Total Files**: 25 comprehensive documentation files
+- **Total Lines**: ~415,000+ lines of detailed documentation
+- **Coverage**: Complete end-to-end documentation for all subsystems
 - **Platforms**: FreeBSD, Linux (all distros), macOS (Intel/Apple Silicon)
 - **Migrations**: Shopify, WooCommerce, Magento, Medusa.js with working code examples
 - **Integrations**: Stripe, Airwallex, PayPal, ShipStation, Dianxiaomi ERP
 - **Storage**: Local, S3, GCS, Azure with CDN support
 - **Notifications**: Email, SMS, Push, Webhooks with multi-provider support
+- **CLI**: Complete command-line interface for all operations
 
 ## 🚀 Getting Started with Development
 
