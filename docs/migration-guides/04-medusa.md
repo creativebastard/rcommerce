@@ -649,7 +649,7 @@ maintain_medusa_compatibility = false
     ```javascript
     // Reconfigure Medusa admin to point to R commerce hooks
     const { data } = await medusa.admin.store.update({
-      webhook_url: "https://api.rcommerce.com/webhooks/medusa"
+      webhook_url: "https://api.rcommerce.app/webhooks/medusa"
     });
     ```
 

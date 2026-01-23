@@ -8,7 +8,7 @@ authors = ["R Commerce Team"]
 edition = "2021"
 license = "MIT"
 repository = "https://gitee.com/captainjez/gocart"
-homepage = "https://rcommerce.com"
+homepage = "https://rcommerce.app"
 rust-version = "1.70.0"
 
 [workspace.dependencies]

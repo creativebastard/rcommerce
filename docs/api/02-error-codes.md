@@ -15,7 +15,7 @@ All errors follow a consistent JSON format:
       "additional": "context",
       "request_id": "req_abc123xyz"
     },
-    "documentation": "https://docs.rcommerce.com/errors/error_code_string"
+    "documentation": "https://docs.rcommerce.app/errors/error_code_string"
   },
   "meta": {
     "request_id": "req_abc123xyz",
@@ -690,7 +690,7 @@ impl IntoResponse for ApiError {
                 "code": error_code,
                 "message": self.to_string(),
                 "details": details,
-                "documentation": format!("https://docs.rcommerce.com/errors/{}", error_code)
+                "documentation": format!("https://docs.rcommerce.app/errors/{}", error_code)
             },
             "meta": {
                 "request_id": request_id,

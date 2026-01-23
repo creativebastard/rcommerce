@@ -41,7 +41,7 @@ brew tap rcommerce/tap
 brew install rcommerce
 
 # Using apt (Debian/Ubuntu) - future
-sudo apt-add-repository 'deb https://apt.rcommerce.com stable main'
+sudo apt-add-repository 'deb https://apt.rcommerce.app stable main'
 sudo apt install rcommerce
 ```
 

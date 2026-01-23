@@ -782,7 +782,7 @@ end
 - **Shopify API Rate Limits**: https://shopify.dev/docs/api/usage/rate-limits
 - **R commerce API Docs**: See docs/api/01-api-design.md
 - **R commerce Discord**: https://discord.gg/rcommerce
-- **Professional Help**: migration@rcommerce.com
+- **Professional Help**: migration@rcommerce.app
 
 ## Example: Complete Migration with Monitoring
 

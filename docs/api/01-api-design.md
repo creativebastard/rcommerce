@@ -131,7 +131,7 @@ permissions = ["orders:read", "customers:read"]
       "order_id": "ord_999",
       "request_id": "req_xyz789"
     },
-    "documentation": "https://docs.rcommerce.com/errors/order_not_found"
+    "documentation": "https://docs.rcommerce.app/errors/order_not_found"
   },
   "meta": {
     "request_id": "req_xyz789",
@@ -464,11 +464,11 @@ const order = await client.orders.create({
 ## OpenAPI Specification
 
 Full OpenAPI 3.0 specification available at:
-- JSON: `https://api.rcommerce.com/v1/openapi.json`
-- YAML: `https://api.rcommerce.com/v1/openapi.yaml`
+- JSON: `https://api.rcommerce.app/v1/openapi.json`
+- YAML: `https://api.rcommerce.app/v1/openapi.yaml`
 
 Interactive documentation (Swagger UI) available at:
-- `https://api.rcommerce.com/docs`
+- `https://api.rcommerce.app/docs`
 
 ## Pagination
 

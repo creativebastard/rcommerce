@@ -215,7 +215,7 @@ MIT License - see [LICENSE](LICENSE) file
 
 - GitHub Issues: [Issue Tracker](https://gitee.com/captainjez/gocart/issues)
 - Documentation: [Wiki](https://gitee.com/captainjez/gocart/wiki)
-- Email: support@rcommerce.com
+- Email: support@rcommerce.app
 
 ---
 

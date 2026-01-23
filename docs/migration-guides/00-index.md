@@ -273,8 +273,8 @@ run_fraud_check = false
 
 - [R commerce Documentation](https://gitee.com/captainjez/gocart)
 - [Migration Tool Repository](https://gitee.com/captainjez/rcommerce-migrate)
-- [Community Forum](https://forum.rcommerce.com)
-- [Migration Webinars](https://rcommerce.com/webinars)
+- [Community Forum](https://forum.rcommerce.app)
+- [Migration Webinars](https://rcommerce.app/webinars)
 
 ## Professional Migration Services
 
@@ -284,4 +284,4 @@ For complex migrations, consider:
 2. **Platform Partners**: Shopify, WooCommerce, Magento agencies
 3. **Data Migration Tools**: LitExtension, Cart2Cart
 
-Contact sales@rcommerce.com for professional migration assistance.
+Contact sales@rcommerce.app for professional migration assistance.
