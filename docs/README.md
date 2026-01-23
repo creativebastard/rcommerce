@@ -65,6 +65,21 @@ This directory contains comprehensive documentation for the R commerce headless 
    - Shopify API compatibility
    - Migration tools and utilities
 
+9. **[09-media-storage.md](architecture/09-media-storage.md)** - Media & File Storage
+   - Multiple storage backends (local, S3, GCS, Azure)
+   - Image optimization and transformations
+   - CDN integration
+   - Digital product handling
+   - File organization and cleanup
+
+10. **[10-notifications.md](architecture/10-notifications.md)** - Notifications System
+    - Email providers (SMTP, SendGrid, SES)
+    - SMS providers (Twilio, SNS, Vonage)
+    - Push notifications (FCM, APNs)
+    - Webhooks and in-app notifications
+    - Template system with queue-based delivery
+    - Analytics and bounce handling
+
 ### API Documentation
 
 - **[01-api-design.md](api/01-api-design.md)** - Complete API Specification
@@ -184,6 +199,8 @@ All core documentation has been completed and is production-ready:
 - ✅ **06-shipping-integration.md** - Shipping providers (36,741 lines)
 - ✅ **07-order-management.md** - Order system (48,597 lines)
 - ✅ **08-compatibility-layer.md** - Platform compatibility (34,700 lines)
+- ✅ **09-media-storage.md** - Media & file storage (36,119 lines)
+- ✅ **10-notifications.md** - Notifications system (43,153 lines)
 
 #### API Documentation
 - ✅ **api/01-api-design.md** - Complete API reference (515 lines)
@@ -210,12 +227,14 @@ All core documentation has been completed and is production-ready:
 
 ### 📊 Documentation Statistics
 
-- **Total Files**: 22+ comprehensive documentation files
-- **Total Lines**: ~350,000+ lines of detailed documentation
+- **Total Files**: 24 comprehensive documentation files
+- **Total Lines**: ~390,000+ lines of detailed documentation
 - **Coverage**: Complete end-to-end documentation from architecture to deployment
 - **Platforms**: FreeBSD, Linux (all distros), macOS (Intel/Apple Silicon)
 - **Migrations**: Shopify, WooCommerce, Magento, Medusa.js with working code examples
 - **Integrations**: Stripe, Airwallex, PayPal, ShipStation, Dianxiaomi ERP
+- **Storage**: Local, S3, GCS, Azure with CDN support
+- **Notifications**: Email, SMS, Push, Webhooks with multi-provider support
 
 ## 🚀 Getting Started with Development
 
