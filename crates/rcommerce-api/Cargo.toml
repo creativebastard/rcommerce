@@ -1,0 +1,72 @@
+[package]
+name = "rcommerce-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "rcommerce_api"
+path = "src/lib.rs"
+
+[dependencies]
+# Core library
+rcommerce-core = { path = "../rcommerce-core" }
+
+# Async runtime
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+# HTTP server
+axum = { workspace = true, features = ["macros"] }
+hyper = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Configuration
+toml = { workspace = true }
+
+# Logging & Tracing
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Date/Time
+chrono = { workspace = true }
+
+# Decimal numbers
+rust_decimal = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Pagination
+ulid = { workspace = true }
+
+# Testing
+tokio-test = { workspace = true }
+mockall = { workspace = true }
+
+# Crypto
+sha2 = { workspace = true }
+base64 = { workspace = true }
+rand = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true }

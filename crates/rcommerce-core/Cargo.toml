@@ -1,0 +1,51 @@
+[package]
+name = "rcommerce-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Core types
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Numbers
+rust_decimal = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+
+# Database types
+sqlx = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Pagination
+ulid = { workspace = true }
+
+# Async trait
+async-trait = { workspace = true }
+
+# Logging
+log = { workspace = true }
+
+# HTTP client (for external services)
+reqwest = { workspace = true }
+
+# Regex for validation
+regex = { workspace = true }
+lazy_static = { workspace = true }
+
+# Configuration
+toml = { workspace = true }

@@ -1,0 +1,152 @@
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use validator::Validate;
+
+pub mod customer;
+pub mod order;
+pub mod product;
+
+// Re-export common models
+pub use customer::*;
+pub use order::*;
+pub use product::*;
+
+/// Common trait for all entities
+pub trait Entity: Send + Sync {
+    fn id(&self) -> Uuid;
+    fn created_at(&self) -> DateTime<Utc>;
+    fn updated_at(&self) -> DateTime<Utc>;
+}
+
+/// Pagination parameters
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct Pagination {
+    #[validate(range(min = 1, max = 100))]
+    pub page: i64,
+    
+    #[validate(range(min = 1, max = 500))]
+    pub per_page: i64,
+}
+
+impl Default for Pagination {
+    fn default() -> Self {
+        Self {
+            page: 1,
+            per_page: 20,
+        }
+    }
+}
+
+impl Pagination {
+    pub fn offset(&self) -> i64 {
+        (self.page - 1) * self.per_page
+    }
+}
+
+/// Sort direction
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum SortDirection {
+    Asc,
+    Desc,
+}
+
+/// Sort parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SortParams {
+    pub field: String,
+    pub direction: SortDirection,
+}
+
+/// Currency representation
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "currency", rename_all = "UPPERCASE")]
+pub enum Currency {
+    USD,
+    EUR,
+    GBP,
+    JPY,
+    AUD,
+    CAD,
+    CNY,
+    HKD,
+    SGD,
+}
+
+impl Default for Currency {
+    fn default() -> Self {
+        Currency::USD
+    }
+}
+
+/// Weight units
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "weight_unit", rename_all = "snake_case")]
+pub enum WeightUnit {
+    G,
+    Kg,
+    Oz,
+    Lb,
+}
+
+/// Length units
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "length_unit", rename_all = "snake_case")]
+pub enum LengthUnit {
+    Cm,
+    M,
+    In,
+    Ft,
+}
+
+/// Inventory policy
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "inventory_policy", rename_all = "snake_case")]
+pub enum InventoryPolicy {
+    Deny,
+    Continue,
+}
+
+impl Default for InventoryPolicy {
+    fn default() -> Self {
+        InventoryPolicy::Deny
+    }
+}
+
+/// Product image representation
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ProductImage {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub variant_id: Option<Uuid>,
+    pub position: i32,
+    pub src: String,
+    pub alt_text: Option<String>,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Product category
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ProductCategory {
+    pub id: Uuid,
+    pub name: String,
+    pub slug: String,
+    pub description: Option<String>,
+    pub parent_id: Option<Uuid>,
+    pub sort_order: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Product tag
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ProductTag {
+    pub id: Uuid,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
