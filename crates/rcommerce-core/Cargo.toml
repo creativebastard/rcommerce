@@ -49,3 +49,8 @@ lazy_static = { workspace = true }
 
 # Configuration
 toml = { workspace = true }
+
+# Crypto
+sha2 = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }

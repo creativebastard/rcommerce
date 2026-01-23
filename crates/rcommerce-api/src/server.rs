@@ -11,13 +11,21 @@ pub async fn run(config: Config) -> Result<()> {
         config.server.port
     ));
     
-    // Build router
+    // Build router with simplified Phase 1 routes
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/", get(root));
+        .route("/", get(root))
+        .nest("/api/v1", routes::product::router())
+        .nest("/api/v1", routes::customer::router());
     
     info!("R Commerce API server listening on {}", addr);
-    info!("Configuration: {:?}", config.server);
+    info!("Available routes:");
+    info!("  GET  /health                      - Health check");
+    info!("  GET  /                            - API info");
+    info!("  GET  /api/v1/products            - List products");
+    info!("  GET  /api/v1/products/:id        - Get product");
+    info!("  GET  /api/v1/customers           - List customers");
+    info!("  GET  /api/v1/customers/:id       - Get customer");
     
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)
@@ -36,7 +44,7 @@ async fn health_check() -> &'static str {
 }
 
 async fn root() -> &'static str {
-    "R Commerce API"
+    "R Commerce API v0.1.0 - Phase 1 MVP"
 }
 
 #[cfg(test)]

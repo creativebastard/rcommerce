@@ -1,5 +1,5 @@
-// API routes will be defined here
 pub mod product;
-pub mod order;
 pub mod customer;
-pub mod auth;
+
+pub use product::router as product_router;
+pub use customer::router as customer_router;
