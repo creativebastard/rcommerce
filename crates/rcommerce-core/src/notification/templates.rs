@@ -2,15 +2,38 @@ use std::collections::HashMap;
 
 use crate::{Result, Error};
 
-/// Notification template with placeholders
+/// Represents a notification template with placeholders for dynamic content substitution.
+/// 
+/// Templates define the structure and content of notifications, supporting both plain text
+/// and HTML formats. They include variable placeholders (e.g., `{{ variable_name }}`) that
+/// are replaced with actual data when rendering.
+///
+/// # Examples
+///
+/// ```ignore
+/// let template = NotificationTemplate::load("order_confirmation_html")?;
+/// let mut variables = TemplateVariables::new();
+/// variables.add("order_number".to_string(), "ORD-12345".to_string());
+/// variables.add("customer_name".to_string(), "John Doe".to_string());
+///
+/// let plain_text = template.render(&variables)?;
+/// let html_content = template.render_html(&variables)?;
+/// ```
 #[derive(Debug, Clone)]
 pub struct NotificationTemplate {
+    /// Unique identifier for the template (e.g., "order_confirmation_html")
     pub id: String,
+    /// Human-readable name for the template
     pub name: String,
+    /// Subject line template with placeholders
     pub subject: String,
+    /// Plain text body template with placeholders
     pub body: String,
+    /// Optional HTML body template with placeholders
     pub html_body: Option<String>,
+    /// Target notification channel
     pub channel: crate::notification::NotificationChannel,
+    /// List of required variable names for this template
     pub variables: Vec<String>,
 }
 

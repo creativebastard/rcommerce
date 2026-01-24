@@ -2,6 +2,9 @@ pub mod channels;
 pub mod templates;
 pub mod service;
 
+#[cfg(test)]
+mod tests;
+
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -38,18 +41,55 @@ impl Default for NotificationPriority {
     }
 }
 
-/// Main notification struct
+/// Represents a notification to be sent to a recipient through a specific channel.
+///
+/// Notifications can be queued, sent immediately, or scheduled for future delivery.
+/// They support both plain text and HTML content (primarily for emails).
+///
+/// # Examples
+///
+/// ```ignore
+/// use rcommerce_core::notification::*;
+/// use uuid::Uuid;
+/// use chrono::Utc;
+///
+/// let notification = Notification {
+///     id: Uuid::new_v4(),
+///     channel: NotificationChannel::Email,
+///     recipient: Recipient::email(
+///         "customer@example.com".to_string(),
+///         Some("John Doe".to_string())
+///     ),
+///     subject: "Order Confirmed".to_string(),
+///     body: "Your order has been confirmed.".to_string(),
+///     html_body: Some("<h1>Order Confirmed</h1>".to_string()),
+///     priority: NotificationPriority::High,
+///     metadata: serde_json::json!({"order_id": "ORD-123"}),
+///     scheduled_at: None,
+///     created_at: Utc::now(),
+/// };
+/// ```
 #[derive(Debug, Clone)]
 pub struct Notification {
+    /// Unique identifier for this notification
     pub id: Uuid,
+    /// Channel through which to send the notification
     pub channel: NotificationChannel,
+    /// Recipient information (email, phone, webhook URL, etc.)
     pub recipient: Recipient,
+    /// Subject line or notification title
     pub subject: String,
+    /// Plain text body content
     pub body: String,
+    /// Optional HTML body content (primarily for emails)
     pub html_body: Option<String>,
+    /// Priority level for delivery and display
     pub priority: NotificationPriority,
+    /// Additional metadata (order ID, tracking info, etc.)
     pub metadata: serde_json::Value,
+    /// Optional scheduled sending time (for delayed notifications)
     pub scheduled_at: Option<DateTime<Utc>>,
+    /// When the notification was created
     pub created_at: DateTime<Utc>,
 }
 
