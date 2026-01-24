@@ -4,6 +4,10 @@ use uuid::Uuid;
 use crate::{Result, Error};
 use crate::notification::{NotificationService, Notification, NotificationChannel, Recipient, DeliveryStatus, DeliveryAttempt, NotificationPriority};
 use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel};
+use crate::notification::templates::{NotificationTemplate, TemplateVariables};
+use crate::models::customer::Customer;
+use crate::models::address::Address;
+use crate::order::{Order, OrderItem};
 
 /// Main notification service
 pub struct NotificationService {
@@ -237,7 +241,7 @@ impl DeliveryStats {
 pub struct NotificationFactory;
 
 impl NotificationFactory {
-    /// Order confirmation notification
+    /// Order confirmation notification (plain text)
     pub fn order_confirmation(order: &Order, recipient: Recipient) -> Notification {
         Notification {
             id: Uuid::new_v4(),
@@ -249,6 +253,7 @@ impl NotificationFactory {
                 order.order_number,
                 order.total
             ),
+            html_body: None,
             priority: NotificationPriority::High,
             metadata: serde_json::json!({
                 "order_id": order.id,
@@ -257,6 +262,53 @@ impl NotificationFactory {
             scheduled_at: None,
             created_at: Utc::now(),
         }
+    }
+    
+    /// Order confirmation notification with HTML invoice template
+    pub fn order_confirmation_html(
+        order: &Order,
+        recipient: Recipient,
+        customer: &Customer,
+        shipping_address: &Address,
+        billing_address: &Address,
+        order_items: &[OrderItem],
+    ) -> Result<Notification> {
+        // Load the HTML template
+        let template = NotificationTemplate::load("order_confirmation_html")
+            .map_err(|e| Error::notification_error(format!("Failed to load template: {}", e)))?;
+        
+        // Prepare template variables
+        let mut variables = TemplateVariables::new();
+        variables.add_order(order);
+        variables.add_customer(customer);
+        variables.add_addresses(shipping_address, billing_address);
+        variables.add_order_items(order_items);
+        variables.add_totals(order);
+        variables.add_company_info("PDG Global Limited", "support@rcommerce.com");
+        
+        // Render templates
+        let body = template.render(&variables)
+            .map_err(|e| Error::notification_error(format!("Failed to render template: {}", e)))?;
+        
+        let html_body = template.render_html(&variables)
+            .map_err(|e| Error::notification_error(format!("Failed to render HTML template: {}", e)))?;
+        
+        Ok(Notification {
+            id: Uuid::new_v4(),
+            channel: recipient.channel,
+            recipient,
+            subject: template.subject.clone(),
+            body,
+            html_body,
+            priority: NotificationPriority::High,
+            metadata: serde_json::json!({
+                "order_id": order.id,
+                "type": "order_confirmation_html",
+                "template_id": template.id,
+            }),
+            scheduled_at: None,
+            created_at: Utc::now(),
+        })
     }
     
     /// Order shipped notification
@@ -273,6 +325,7 @@ impl NotificationFactory {
             recipient,
             subject: format!("Order Shipped: {}", order.order_number),
             body,
+            html_body: None,
             priority: NotificationPriority::High,
             metadata: serde_json::json!({
                 "order_id": order.id,
@@ -298,6 +351,7 @@ impl NotificationFactory {
             recipient,
             subject: format!("Low Stock Alert: {}", alert.product_name),
             body: alert.notification_message(),
+            html_body: None,
             priority,
             metadata: serde_json::json!({
                 "product_id": alert.product_id,

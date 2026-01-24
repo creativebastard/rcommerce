@@ -46,6 +46,7 @@ pub struct Notification {
     pub recipient: Recipient,
     pub subject: String,
     pub body: String,
+    pub html_body: Option<String>,
     pub priority: NotificationPriority,
     pub metadata: serde_json::Value,
     pub scheduled_at: Option<DateTime<Utc>>,
