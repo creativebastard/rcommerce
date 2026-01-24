@@ -3,6 +3,9 @@ pub mod reservation;
 pub mod tracking;
 pub mod notification;
 
+#[cfg(test)]
+mod tests;
+
 use uuid::Uuid;
 use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};

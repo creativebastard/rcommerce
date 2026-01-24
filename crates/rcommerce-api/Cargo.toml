@@ -70,3 +70,15 @@ rand = { workspace = true }
 
 # HTTP client
 reqwest = { workspace = true }
+
+# TLS/SSL
+rustls = "0.21"
+rustls-pemfile = "1.0"
+tokio-rustls = "0.24"
+
+# Let's Encrypt
+acme-lib = "0.8"
+
+# Certificate management
+x509-parser = "0.15"
+rcgen = "0.11"
