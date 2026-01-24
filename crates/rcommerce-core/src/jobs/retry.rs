@@ -1,0 +1,273 @@
+//! Job retry logic with exponential backoff
+
+use crate::jobs::{JobError, JobProcessingResult};
+use std::time::Duration;
+
+/// Retry policy for failed jobs
+#[derive(Debug, Clone)]
+pub enum RetryPolicy {
+    /// No retries
+    None,
+    
+    /// Fixed delay between retries
+    Fixed {
+        /// Delay between retries
+        delay: Duration,
+        
+        /// Max retry attempts
+        max_attempts: u32,
+    },
+    
+    /// Exponential backoff
+    Exponential(ExponentialBackoff),
+    
+    /// Custom retry logic
+    Custom(Box<dyn Fn(u32, &JobError) -> JobProcessingResult<Option<Duration>> + Send + Sync>),
+}
+
+impl RetryPolicy {
+    /// Calculate retry delay for given attempt and error
+    pub fn calculate_delay(&self, attempt: u32, error: &JobError) -> JobProcessingResult<Option<Duration>> {
+        match self {
+            RetryPolicy::None => Ok(None),
+            
+            RetryPolicy::Fixed { delay, max_attempts } => {
+                if attempt >= *max_attempts {
+                    Ok(None)
+                } else {
+                    Ok(Some(*delay))
+                }
+            }
+            
+            RetryPolicy::Exponential(backoff) => Ok(backoff.calculate_delay(attempt)),
+            
+            RetryPolicy::Custom(func) => func(attempt, error),
+        }
+    }
+    
+    /// Check if should retry based on error
+    pub fn should_retry(&self, error: &JobError) -> bool {
+        match error {
+            JobError::Cancelled => false,
+            JobError::Timeout(_) => !matches!(self, RetryPolicy::None),
+            _ => !matches!(self, RetryPolicy::None),
+        }
+    }
+}
+
+impl Default for RetryPolicy {
+    fn default() -> Self {
+        RetryPolicy::Exponential(ExponentialBackoff::default())
+    }
+}
+
+/// Exponential backoff configuration
+#[derive(Debug, Clone)]
+pub struct ExponentialBackoff {
+    /// Initial delay
+    pub initial_delay: Duration,
+    
+    /// Maximum delay
+    pub max_delay: Duration,
+    
+    /// Multiplier (usually 2.0)
+    pub multiplier: f64,
+    
+    /// Jitter factor (0.0 - 1.0) to randomize delays
+    pub jitter: f64,
+}
+
+impl ExponentialBackoff {
+    /// Create new exponential backoff
+    pub fn new(initial_delay: Duration, max_delay: Duration, multiplier: f64) -> Self {
+        Self {
+            initial_delay,
+            max_delay,
+            multiplier,
+            jitter: 0.1, // 10% jitter by default
+        }
+    }
+    
+    /// With jitter factor
+    pub fn with_jitter(mut self, jitter: f64) -> Self {
+        self.jitter = jitter.min(1.0).max(0.0);
+        self
+    }
+    
+    /// Calculate delay for attempt
+    pub fn calculate_delay(&self, attempt: u32) -> Option<Duration> {
+        if attempt == 0 {
+            return Some(self.initial_delay);
+        }
+        
+        // Calculate exponential delay
+        let exponent = attempt.saturating_sub(1) as f64;
+        let delay_secs = self.initial_delay.as_secs_f64() * self.multiplier.powf(exponent);
+        
+        // Cap at max delay
+        let delay_secs = delay_secs.min(self.max_delay.as_secs_f64());
+        
+        // Apply jitter
+        let jitter_range = delay_secs * self.jitter;
+        let jitter = if self.jitter > 0.0 {
+            use rand::Rng;
+            let mut rng = rand::thread_rng();
+            rng.gen_range(-jitter_range..=jitter_range)
+        } else {
+            0.0
+        };
+        
+        let final_delay = (delay_secs + jitter).max(0.0);
+        
+        Some(Duration::from_secs_f64(final_delay))
+    }
+}
+
+impl Default for ExponentialBackoff {
+    fn default() -> Self {
+        Self {
+            initial_delay: Duration::from_secs(1),
+            max_delay: Duration::from_secs(3600), // 1 hour
+            multiplier: 2.0,
+            jitter: 0.1,
+        }
+    }
+}
+
+/// Retry attempt information
+#[derive(Debug, Clone)]
+pub struct RetryAttempt {
+    /// Attempt number (1-indexed)
+    pub attempt: u32,
+    
+    /// Previous error
+    pub error: JobError,
+    
+    /// Delay before this attempt
+    pub delay: Duration,
+    
+    /// Timestamp of attempt
+    pub attempted_at: i64,
+}
+
+impl RetryAttempt {
+    /// Create new retry attempt
+    pub fn new(attempt: u32, error: JobError, delay: Duration) -> Self {
+        Self {
+            attempt,
+            error,
+            delay,
+            attempted_at: chrono::Utc::now().timestamp(),
+        }
+    }
+}
+
+/// Retry history for a job
+#[derive(Debug, Default, Clone)]
+pub struct RetryHistory {
+    /// All retry attempts
+    pub attempts: Vec<RetryAttempt>,
+}
+
+impl RetryHistory {
+    /// Create empty history
+    pub fn new() -> Self {
+        Self { attempts: Vec::new() }
+    }
+    
+    /// Add attempt to history
+    pub fn add_attempt(&mut self, attempt: RetryAttempt) {
+        self.attempts.push(attempt);
+    }
+    
+    /// Get attempt count
+    pub fn attempt_count(&self) -> u32 {
+        self.attempts.len() as u32
+    }
+    
+    /// Get total delay time
+    pub fn total_delay(&self) -> Duration {
+        self.attempts.iter()
+            .map(|a| a.delay)
+            .sum()
+    }
+    
+    /// Get last error
+    pub fn last_error(&self) -> Option<&JobError> {
+        self.attempts.last().map(|a| &a.error)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::jobs::JobError;
+    
+    #[test]
+    fn test_exponential_backoff() {
+        let backoff = ExponentialBackoff::default();
+        
+        let delay1 = backoff.calculate_delay(0).unwrap();
+        assert_eq!(delay1, Duration::from_secs(1));
+        
+        let delay2 = backoff.calculate_delay(1).unwrap();
+        assert!(delay2 >= Duration::from_secs(2));
+        assert!(delay2 <= Duration::from_secs(3)); // With jitter
+        
+        let delay3 = backoff.calculate_delay(2).unwrap();
+        assert!(delay3 >= Duration::from_secs(4));
+    }
+    
+    #[test]
+    fn test_fixed_retry_policy() {
+        let policy = RetryPolicy::Fixed {
+            delay: Duration::from_secs(10),
+            max_attempts: 3,
+        };
+        
+        let error = JobError::Execution("test".to_string());
+        
+        // First attempt
+        let delay1 = policy.calculate_delay(0, &error).unwrap();
+        assert_eq!(delay1, Some(Duration::from_secs(10)));
+        
+        // Last attempt
+        let delay3 = policy.calculate_delay(2, &error).unwrap();
+        assert_eq!(delay3, Some(Duration::from_secs(10)));
+        
+        // After max attempts
+        let delay4 = policy.calculate_delay(3, &error).unwrap();
+        assert_eq!(delay4, None);
+    }
+    
+    #[test]
+    fn test_no_retry_policy() {
+        let policy = RetryPolicy::None;
+        let error = JobError::Execution("test".to_string());
+        
+        let delay = policy.calculate_delay(0, &error).unwrap();
+        assert_eq!(delay, None);
+    }
+    
+    #[test]
+    fn test_should_retry() {
+        let policy = RetryPolicy::default();
+        
+        assert!(policy.should_retry(&JobError::Timeout(Duration::from_secs(30))));
+        assert!(policy.should_retry(&JobError::Execution("error".to_string())));
+        assert!(!policy.should_retry(&JobError::Cancelled));
+    }
+    
+    #[test]
+    fn test_retry_history() {
+        let mut history = RetryHistory::new();
+        assert_eq!(history.attempt_count(), 0);
+        
+        let error = JobError::Execution("test".to_string());
+        let attempt = RetryAttempt::new(1, error, Duration::from_secs(1));
+        history.add_attempt(attempt);
+        
+        assert_eq!(history.attempt_count(), 1);
+        assert!(history.last_error().is_some());
+    }
+}
