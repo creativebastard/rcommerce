@@ -8,7 +8,12 @@ pub mod services;
 pub mod payment;
 pub mod inventory;
 pub mod order;
+pub mod notification;
 pub mod middleware;
+pub mod websocket;
+pub mod cache;
+pub mod jobs;
+pub mod performance;
 
 // Re-export commonly used types
 pub use error::{Error, Result};
