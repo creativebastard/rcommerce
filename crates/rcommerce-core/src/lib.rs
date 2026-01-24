@@ -8,6 +8,7 @@ pub mod services;
 pub mod payment;
 pub mod inventory;
 pub mod order;
+pub mod middleware;
 
 // Re-export commonly used types
 pub use error::{Error, Result};

@@ -37,6 +37,12 @@ pub enum Error {
     /// Notification errors
     Notification(String),
     
+    /// Rate limiting errors
+    RateLimit(crate::middleware::rate_limit::RateLimitError),
+    
+    /// HTTP errors (status code + message)
+    HttpError(http::StatusCode, String),
+    
     /// Serialization/serialization errors
     Serialization(serde_json::Error),
     

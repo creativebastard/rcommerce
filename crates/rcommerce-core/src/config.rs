@@ -26,6 +26,9 @@ pub struct Config {
     pub notifications: NotificationConfig,
     
     #[serde(default)]
+    pub rate_limiting: RateLimitConfig,
+    
+    #[serde(default)]
     pub features: FeatureFlags,
 }
 
@@ -39,6 +42,7 @@ impl Default for Config {
             security: SecurityConfig::default(),
             media: MediaConfig::default(),
             notifications: NotificationConfig::default(),
+            rate_limiting: RateLimitConfig::default(),
             features: FeatureFlags::default(),
         }
     }
@@ -620,6 +624,91 @@ impl Default for SmsConfig {
         }
     }
 }
+
+/// Rate limiting configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RateLimitConfig {
+    /// Enable rate limiting
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    
+    /// Maximum requests per minute from a single IP
+    #[serde(default = "default_rate_limit_minute")]
+    pub requests_per_minute: u32,
+    
+    /// Maximum requests per hour from a single IP
+    #[serde(default = "default_rate_limit_hour")]
+    pub requests_per_hour: u32,
+    
+    /// Maximum requests per day from a single IP
+    #[serde(default = "default_rate_limit_day")]
+    pub requests_per_day: u32,
+    
+    /// Maximum concurrent connections per IP
+    #[serde(default = "default_max_concurrent")]
+    pub max_concurrent_per_ip: u32,
+    
+    /// Enable API key rate limiting (more permissive)
+    #[serde(default = "default_true")]
+    pub api_key_limiting: bool,
+    
+    /// Maximum requests per minute with valid API key
+    #[serde(default = "default_rate_limit_api_key")]
+    pub api_key_requests_per_minute: u32,
+    
+    /// Blocklist of IP addresses
+    #[serde(default)]
+    pub blocklist: Vec<String>,
+    
+    /// Allowlist of trusted IP addresses
+    #[serde(default)]
+    pub allowlist: Vec<String>,
+    
+    /// Enable DDoS protection mode (stricter limits under attack)
+    #[serde(default = "default_true")]
+    pub ddos_protection: bool,
+    
+    /// Response headers to include rate limit info
+    #[serde(default = "default_true")]
+    pub expose_headers: bool,
+    
+    /// Store rate limit data in Redis (true) or memory (false)
+    #[serde(default = "default_false")]
+    pub use_redis: bool,
+    
+    /// Redis connection string
+    #[serde(default)]
+    pub redis_url: Option<String>,
+}
+
+impl Default for RateLimitConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            requests_per_minute: 60,
+            requests_per_hour: 1000,
+            requests_per_day: 10000,
+            max_concurrent_per_ip: 10,
+            api_key_limiting: true,
+            api_key_requests_per_minute: 1000,
+            blocklist: vec![],
+            allowlist: vec![],
+            ddos_protection: true,
+            expose_headers: true,
+            use_redis: false,
+            redis_url: None,
+        }
+    }
+}
+
+// Default value helper functions
+fn default_true() -> bool { true }
+fn default_false() -> bool { false }
+fn default_rate_limit_minute() -> u32 { 60 }
+fn default_rate_limit_hour() -> u32 { 1000 }
+fn default_rate_limit_day() -> u32 { 10000 }
+fn default_max_concurrent() -> u32 { 10 }
+fn default_rate_limit_api_key() -> u32 { 1000 }
 
 /// Feature flags
 #[derive(Debug, Clone, Serialize, Deserialize)]
