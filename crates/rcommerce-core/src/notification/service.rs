@@ -1,0 +1,330 @@
+use async_trait::async_trait;
+use uuid::Uuid;
+
+use crate::{Result, Error};
+use crate::notification::{NotificationService, Notification, NotificationChannel, Recipient, DeliveryStatus, DeliveryAttempt, NotificationPriority};
+use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel};
+
+/// Main notification service
+pub struct NotificationService {
+    email_channel: EmailChannel,
+    sms_channel: SmsChannel,
+    webhook_channel: WebhookChannel,
+}
+
+impl NotificationService {
+    pub fn new(
+        email_channel: EmailChannel,
+        sms_channel: SmsChannel,
+        webhook_channel: WebhookChannel,
+    ) -> Self {
+        Self {
+            email_channel,
+            sms_channel,
+            webhook_channel,
+        }
+    }
+    
+    /// Send a notification
+    pub async fn send(&self, notification: &Notification) -> Result<DeliveryAttempt> {
+        // Create delivery attempt
+        let mut attempt = DeliveryAttempt::new(notification.id, self.get_provider(&notification.channel));
+        
+        // Send based on channel
+        match notification.channel {
+            NotificationChannel::Email => {
+                self.email_channel.send(notification).await?;
+                attempt.mark_sent();
+                attempt.mark_delivered(); // Simplified - email is "delivered" when sent
+            }
+            NotificationChannel::Sms => {
+                self.sms_channel.send(notification).await?;
+                attempt.mark_sent();
+                attempt.mark_delivered();
+            }
+            NotificationChannel::Webhook => {
+                self.webhook_channel.send(notification).await?;
+                attempt.mark_sent();
+                attempt.mark_delivered();
+            }
+            _ => return Err(Error::not_implemented("Notification channel not supported"))
+        }
+        
+        Ok(attempt)
+    }
+    
+    /// Send notification with retry logic
+    pub async fn send_with_retry(&self, notification: &Notification, max_retries: u32) -> Result<DeliveryAttempt> {
+        let mut attempt = self.send(notification).await?;
+        
+        let mut retry_count = 0;
+        while attempt.status == DeliveryStatus::Failed && retry_count < max_retries {
+            retry_count += 1;
+            
+            log::warn!("Notification {} failed, retry attempt {}/{}", notification.id, retry_count, max_retries);
+            
+            // Wait before retry (exponential backoff)
+            let backoff_duration = std::time::Duration::from_secs(2_u64.pow(retry_count));
+            tokio::time::sleep(backoff_duration).await;
+            
+            // Retry
+            attempt = self.send(notification).await?;
+        }
+        
+        if attempt.status == DeliveryStatus::Failed {
+            log::error!("Notification {} failed after {} attempts", notification.id, max_retries);
+        }
+        
+        Ok(attempt)
+    }
+    
+    /// Send notification to multiple recipients
+    pub async fn send_bulk(&self, notification: &Notification, recipients: Vec<Recipient>) -> Result<Vec<DeliveryAttempt>> {
+        let mut attempts = Vec::new();
+        
+        for recipient in recipients {
+            let mut notification = notification.clone();
+            notification.recipient = recipient;
+            
+            match self.send(&notification).await {
+                Ok(attempt) => attempts.push(attempt),
+                Err(e) => {
+                    log::error!("Failed to send notification to {:?}: {}", notification.recipient, e);
+                    continue;
+                }
+            }
+        }
+        
+        Ok(attempts)
+    }
+    
+    /// Queue notification for delayed sending
+    pub async fn queue(&self, notification: &Notification, send_at: DateTime<Utc>) -> Result<Uuid> {
+        let queue_id = Uuid::new_v4();
+        
+        // Store in database queue
+        sqlx::query(
+            r#"
+            INSERT INTO notification_queue (id, notification_id, scheduled_at, status)
+            VALUES ($1, $2, $3, 'queued')
+            "#
+        )
+        .bind(queue_id)
+        .bind(notification.id)
+        .bind(send_at)
+        .execute(self.db())
+        .await?;
+        
+        log::info!("Notification {} queued for sending at {}", notification.id, send_at);
+        
+        Ok(queue_id)
+    }
+    
+    /// Cancel a queued notification
+    pub async fn cancel_queued(&self, queue_id: Uuid) -> Result<bool> {
+        let result = sqlx::query(
+            "DELETE FROM notification_queue WHERE id = $1"
+        )
+        .bind(queue_id)
+        .execute(self.db())
+        .await?;
+        
+        Ok(result.rows_affected() > 0)
+    }
+    
+    /// Get notification history for a recipient
+    pub async fn get_history(&self, recipient_address: &str, limit: i64) -> Result<Vec<Notification>> {
+        let notifications = sqlx::query_as::<_, Notification>(
+            r#"
+            SELECT n.* FROM notifications n
+            JOIN delivery_attempts da ON n.id = da.notification_id
+            WHERE n.recipient_address = $1
+            ORDER BY n.created_at DESC
+            LIMIT $2
+            "#
+        )
+        .bind(recipient_address)
+        .bind(limit)
+        .fetch_all(self.db())
+        .await?;
+        
+        Ok(notifications)
+    }
+    
+    /// Get delivery statistics
+    pub async fn get_delivery_stats(&self, channel: Option<NotificationChannel>, since: Option<DateTime<Utc>>) -> Result<DeliveryStats> {
+        let mut query = String::from("SELECT status, COUNT(*) FROM delivery_attempts WHERE 1=1");
+        
+        if let Some(ch) = channel {
+            query.push_str(&format!(" AND channel = '{}'", format!("{:?}", ch).to_lowercase()));
+        }
+        
+        if let Some(date) = since {
+            query.push_str(&format!(" AND created_at >= '{}'", date));
+        }
+        
+        query.push_str(" GROUP BY status");
+        
+        let rows = sqlx::query(&query)
+            .fetch_all(self.db())
+            .await?;
+        
+        let mut stats = DeliveryStats::default();
+        
+        for row in rows {
+            let status: String = row.get(0);
+            let count: i64 = row.get(1);
+            
+            match status.as_str() {
+                "sent" => stats.sent = count as u32,
+                "delivered" => stats.delivered = count as u32,
+                "failed" => stats.failed = count as u32,
+                "bounced" => stats.bounced = count as u32,
+                _ => {}
+            }
+        }
+        
+        Ok(stats)
+    }
+    
+    /// Helper: Get provider name for channel
+    fn get_provider(&self, channel: &NotificationChannel) -> String {
+        match channel {
+            NotificationChannel::Email => "smtp",
+            NotificationChannel::Sms => "twilio",
+            NotificationChannel::Webhook => "webhook",
+            _ => "unknown",
+        }.to_string()
+    }
+    
+    /// Helper: Get database connection (PLACEHOLDER - implement properly)
+    fn db(&self) -> &sqlx::PgPool {
+        // This is a placeholder - in production, inject the pool
+        unimplemented!("Database connection needed")
+    }
+}
+
+/// Delivery statistics
+#[derive(Debug, Clone, Default)]
+pub struct DeliveryStats {
+    pub sent: u32,
+    pub delivered: u32,
+    pub failed: u32,
+    pub bounced: u32,
+    pub opened: u32,
+    pub clicked: u32,
+}
+
+impl DeliveryStats {
+    pub fn delivery_rate(&self) -> f32 {
+        if self.sent == 0 {
+            0.0
+        } else {
+            self.delivered as f32 / self.sent as f32
+        }
+    }
+    
+    pub fn failure_rate(&self) -> f32 {
+        if self.sent == 0 {
+            0.0
+        } else {
+            self.failed as f32 / self.sent as f32
+        }
+    }
+}
+
+/// Notification factory for common use cases
+pub struct NotificationFactory;
+
+impl NotificationFactory {
+    /// Order confirmation notification
+    pub fn order_confirmation(order: &Order, recipient: Recipient) -> Notification {
+        Notification {
+            id: Uuid::new_v4(),
+            channel: recipient.channel,
+            recipient,
+            subject: format!("Order Confirmed: {}", order.order_number),
+            body: format!(
+                "Your order {} has been confirmed. Total: ${}",
+                order.order_number,
+                order.total
+            ),
+            priority: NotificationPriority::High,
+            metadata: serde_json::json!({
+                "order_id": order.id,
+                "type": "order_confirmation",
+            }),
+            scheduled_at: None,
+            created_at: Utc::now(),
+        }
+    }
+    
+    /// Order shipped notification
+    pub fn order_shipped(order: &Order, fulfillment: &Fulfillment, recipient: Recipient) -> Notification {
+        let mut body = format!("Your order {} has been shipped!", order.order_number);
+        
+        if let Some(tracking) = &fulfillment.tracking_number {
+            body.push_str(&format!("\n\nTracking: {}", tracking));
+        }
+        
+        Notification {
+            id: Uuid::new_v4(),
+            channel: recipient.channel,
+            recipient,
+            subject: format!("Order Shipped: {}", order.order_number),
+            body,
+            priority: NotificationPriority::High,
+            metadata: serde_json::json!({
+                "order_id": order.id,
+                "fulfillment_id": fulfillment.id,
+                "type": "order_shipped",
+            }),
+            scheduled_at: None,
+            created_at: Utc::now(),
+        }
+    }
+    
+    /// Low stock email
+    pub fn low_stock_alert(alert: &crate::inventory::LowStockAlert, recipient: Recipient) -> Notification {
+        let priority = if alert.is_critical() {
+            NotificationPriority::Urgent
+        } else {
+            NotificationPriority::High
+        };
+        
+        Notification {
+            id: Uuid::new_v4(),
+            channel: recipient.channel,
+            recipient,
+            subject: format!("Low Stock Alert: {}", alert.product_name),
+            body: alert.notification_message(),
+            priority,
+            metadata: serde_json::json!({
+                "product_id": alert.product_id,
+                "type": "low_stock_alert",
+                "alert_level": format!("{:?}", alert.alert_level),
+            }),
+            scheduled_at: None,
+            created_at: Utc::now(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[tokio::test]
+    async fn test_delivery_stats() {
+        let stats = DeliveryStats {
+            sent: 1000,
+            delivered: 950,
+            failed: 45,
+            bounced: 5,
+            ..Default::default()
+        };
+        
+        assert_eq!(stats.delivery_rate(), 0.95);
+        assert_eq!(stats.failure_rate(), 0.045);
+    }
+}

@@ -5,6 +5,9 @@ pub mod traits;
 pub mod common;
 pub mod repository;
 pub mod services;
+pub mod payment;
+pub mod inventory;
+pub mod order;
 
 // Re-export commonly used types
 pub use error::{Error, Result};
@@ -13,6 +16,9 @@ pub use models::*;
 pub use traits::*;
 pub use repository::{Database, create_pool};
 pub use services::*;
+pub use payment::*;
+pub use inventory::*;
+pub use order::*;
 
 /// Current version of rcommerce
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
