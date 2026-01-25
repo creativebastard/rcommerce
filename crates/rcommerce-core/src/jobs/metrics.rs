@@ -1,7 +1,7 @@
 //! Job processing metrics and monitoring
 
 use crate::cache::{RedisPool, CacheResult};
-use crate::jobs::{JobId, JobStatus, JobPriority};
+use crate::jobs::{JobId, JobStatus};
 use std::collections::HashMap;
 use tracing::info;
 
@@ -19,7 +19,7 @@ impl JobMetrics {
     
     /// Record job completion
     pub async fn record_completion(&self, job_id: JobId, status: JobStatus, duration_ms: u64) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Increment counter
         let key = format!("metrics:jobs:{}", status.to_string().to_lowercase());
@@ -36,7 +36,7 @@ impl JobMetrics {
     
     /// Get metrics summary
     pub async fn get_summary(&self) -> CacheResult<MetricsSummary> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Get status counts
         let mut counts = HashMap::new();

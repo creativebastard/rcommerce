@@ -244,7 +244,6 @@ pub struct StagedMetadata {
 
 /// Validation helpers
 pub mod validation {
-    use super::*;
     
     /// Validate email format
     pub fn validate_email(email: &str) -> bool {

@@ -7,7 +7,7 @@ use uuid::Uuid;
 use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 
-use crate::Result;
+
 
 pub use service::OrderService;
 pub use lifecycle::{OrderStatus, OrderEvent, OrderTransition};

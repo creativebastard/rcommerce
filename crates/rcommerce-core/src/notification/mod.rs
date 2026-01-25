@@ -6,11 +6,7 @@ pub mod types;
 #[cfg(test)]
 mod tests;
 
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-use crate::{Result, Error};
 
 pub use service::NotificationService;
 pub use templates::{NotificationTemplate, TemplateVariables};

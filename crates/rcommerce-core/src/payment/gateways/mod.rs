@@ -5,13 +5,13 @@ pub mod stripe;
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Result, Error};
+use crate::Result;
 use crate::payment::{
     PaymentGateway, CreatePaymentRequest, PaymentSession, Payment, PaymentStatus, 
     PaymentSessionStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType
 };
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
+
 
 /// Legacy payment response structure (kept for backward compatibility)
 #[derive(Debug, Clone, Serialize, Deserialize)]

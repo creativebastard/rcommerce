@@ -1,10 +1,9 @@
-use async_trait::async_trait;
 use uuid::Uuid;
 use rust_decimal::Decimal;
-use chrono::{DateTime, Utc};
+
 
 use crate::{Result, Error};
-use crate::order::{Order, OrderItem, CreateOrderRequest, CreateOrderItem, OrderStatus, PaymentStatus, FulfillmentStatus};
+use crate::order::{Order, OrderItem, CreateOrderRequest, CreateOrderItem, OrderStatus, PaymentStatus};
 use crate::order::lifecycle::OrderEventDispatcher;
 use crate::repository::Database;
 use crate::payment::PaymentGateway;
@@ -439,8 +438,7 @@ impl OrderService {
             // Can cancel from most states
             (_, Canceled) => true,
             // Can refund from paid states
-            (Paid, Refunded) => true,
-            (Completed, Refunded) => true,
+            (_, Refunded) => true,
             // Otherwise invalid
             _ => false,
         }

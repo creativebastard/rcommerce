@@ -2,7 +2,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
-use crate::{Result, Error};
+use crate::Result;
 use super::Order;
 use serde::{Serialize, Deserialize};
 

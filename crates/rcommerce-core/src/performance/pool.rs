@@ -1,14 +1,15 @@
 //! Connection pooling optimization and monitoring
 
 use crate::cache::{RedisPool, CacheResult};
-use std::time::{Duration, Instant};
 
 /// Database connection pool optimizer
 pub struct PoolOptimizer {
     /// Redis pool (for monitoring, if needed)
+    #[allow(dead_code)]
     redis_pool: Option<RedisPool>,
     
     /// Optimization statistics
+    #[allow(dead_code)]
     stats: PoolOptimizationStats,
 }
 

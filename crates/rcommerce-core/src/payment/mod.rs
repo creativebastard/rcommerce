@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 use rust_decimal::Decimal;
 
-use crate::{Result, Error};
+use crate::Result;
 use crate::models::Address;
 use serde::{Serialize, Deserialize};
 

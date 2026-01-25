@@ -1,20 +1,20 @@
 //! Worker implementation for job processing
 
-use crate::cache::RedisPool;
+
 use crate::jobs::{
     Job, JobId, JobError, JobProcessingResult, JobStatus, JobContext, JobHandler, JobQueue,
-    QueueStats, JobConfig, RetryHistory, RetryAttempt,
+    JobConfig, RetryHistory, RetryAttempt,
 };
 use std::{
     collections::HashMap,
     sync::Arc,
 };
 use tokio::{
-    sync::{mpsc, Mutex, RwLock},
+    sync::{Mutex, RwLock},
     task::JoinHandle,
     time::{sleep, Duration},
 };
-use tracing::{info, warn, error, debug};
+use tracing::{info, warn, error};
 use uuid::Uuid;
 
 /// Unique worker identifier
@@ -177,7 +177,7 @@ impl Worker {
         *self.current_job.lock().await = Some(job.id);
         
         // Create job context
-        let context = JobContext::new(
+        let _context = JobContext::new(
             job.id,
             self.queue.name().to_string(),
             job.max_attempts,
@@ -191,7 +191,7 @@ impl Worker {
         ).await;
         
         match result {
-            Ok(Ok(job_result)) => {
+            Ok(Ok(_job_result)) => {
                 // Job succeeded
                 job.mark_completed();
                 self.queue.save_job(&job).await?;

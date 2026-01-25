@@ -1,11 +1,7 @@
 //! Performance benchmarking utilities
 
-use crate::performance::{PerformanceResult, PerformanceMetrics};
-use std::{
-    collections::HashMap,
-    time::{Duration, Instant},
-};
-use tokio::time::sleep;
+use crate::performance::PerformanceResult;
+use std::time::Instant;
 
 /// Benchmark runner
 pub struct Benchmark {
@@ -251,6 +247,8 @@ impl BenchmarkResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
+    use tokio::time::sleep;
     
     #[tokio::test]
     async fn test_benchmark_creation() {

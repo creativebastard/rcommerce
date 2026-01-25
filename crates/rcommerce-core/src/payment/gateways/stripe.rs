@@ -10,6 +10,7 @@ use crate::payment::{PaymentGateway, CreatePaymentRequest, PaymentSession, Payme
 pub struct StripeGateway {
     api_key: String,
     client: reqwest::Client,
+    #[allow(dead_code)]
     webhook_secret: String,
 }
 
@@ -154,7 +155,7 @@ impl PaymentGateway for StripeGateway {
             return Err(Error::payment_error(format!("Stripe error: {}", error_text)));
         }
         
-        let stripe_payment: StripePaymentIntent = response.json().await
+        let _stripe_payment: StripePaymentIntent = response.json().await
             .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         let mut payment = self.get_payment(payment_id).await?;
@@ -232,7 +233,7 @@ impl PaymentGateway for StripeGateway {
     
     async fn handle_webhook(&self, payload: &[u8], signature: &str) -> Result<WebhookEvent> {
         // Verify webhook signature
-        let signature_header = format!("t={},v1={}", chrono::Utc::now().timestamp(), signature);
+        let _signature_header = format!("t={},v1={}", chrono::Utc::now().timestamp(), signature);
         
         let event: StripeEvent = serde_json::from_slice(payload)
             .map_err(|e| Error::validation(format!("Invalid webhook payload: {}", e)))?;

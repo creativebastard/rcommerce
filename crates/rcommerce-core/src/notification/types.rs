@@ -214,7 +214,7 @@ pub struct Recipient {
 
 impl Recipient {
     /// Create a new email recipient
-    pub fn email(email: String, name: Option<String>) -> Self {
+    pub fn email(email: String, _name: Option<String>) -> Self {
         Self {
             id: Uuid::new_v4(),
             email: Some(email),

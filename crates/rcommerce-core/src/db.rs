@@ -1,6 +1,6 @@
 //! Database access utilities
 
-use sqlx::{PgPool, Pool, Postgres};
+use sqlx::PgPool;
 use std::sync::Arc;
 use once_cell::sync::Lazy;
 
@@ -15,7 +15,7 @@ pub async fn get_pool() -> Result<Arc<PgPool>, crate::Error> {
 }
 
 /// Initialize database pool with connection string
-pub fn init_pool(connection_string: &str) -> Result<(), crate::Error> {
+pub fn init_pool(_connection_string: &str) -> Result<(), crate::Error> {
     // This would reinitialize the pool if needed
     Ok(())
 }

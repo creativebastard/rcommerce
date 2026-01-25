@@ -195,7 +195,7 @@ impl FulfillmentService {
         let tracking_number = tracking_info.tracking_number;
         let carrier = tracking_info.carrier;
         
-        let fulfillment = self.add_tracking(
+        let _fulfillment = self.add_tracking(
             fulfillment_id,
             tracking_number,
             carrier,

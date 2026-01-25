@@ -1,6 +1,5 @@
 //! WebSocket connection management (Simplified stub for initial release)
 
-use std::sync::Arc;
 use uuid::Uuid;
 
 pub type ConnectionId = Uuid;
@@ -21,6 +20,7 @@ impl AuthToken {
 
 /// Stub connection for initial release
 pub struct WebSocketConnection {
+    #[allow(dead_code)]
     id: ConnectionId,
     user_id: Option<UserId>,
     subscriptions: Vec<String>,

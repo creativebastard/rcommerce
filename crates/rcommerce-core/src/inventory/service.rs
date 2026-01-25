@@ -1,9 +1,8 @@
-use async_trait::async_trait;
 use uuid::Uuid;
 use rust_decimal::Decimal;
 
 use crate::{Result, Error};
-use crate::inventory::{InventoryConfig, InventoryLocation, ProductInventory, LocationInventory, StockReservation, ReservationStatus, InventoryLevel, StockMovement};
+use crate::inventory::{InventoryConfig, InventoryLocation, ProductInventory, LocationInventory, StockReservation, InventoryLevel, StockMovement};
 use crate::repository::Database;
 
 pub struct InventoryService {
@@ -149,7 +148,7 @@ impl InventoryService {
     /// Update inventory levels (receiving new stock)
     pub async fn receive_stock(&self, product_id: uuid::Uuid, location_id: uuid::Uuid, quantity: i32, cost_per_unit: Option<Decimal>) -> Result<StockMovement> {
         // Update inventory levels
-        let level = sqlx::query_as::<_, InventoryLevel>(
+        let _level = sqlx::query_as::<_, InventoryLevel>(
             r#"
             INSERT INTO inventory_levels (product_id, location_id, available_quantity, incoming_quantity)
             VALUES ($1, $2, $3, 0)

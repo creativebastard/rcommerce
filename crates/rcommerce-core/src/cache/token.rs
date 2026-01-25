@@ -3,10 +3,9 @@
 //! This module provides Redis-based token blacklisting for logout,
 /// token refresh, and security revocation.
 
-use crate::cache::{CacheResult, RedisConnection, RedisPool};
-use redis::Commands;
+use crate::cache::{CacheResult, RedisPool};
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::info;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 
@@ -78,6 +77,7 @@ pub struct TokenBlacklist {
     pool: RedisPool,
     
     /// Default TTL for blacklisted tokens
+    #[allow(dead_code)]
     default_ttl: Duration,
 }
 
@@ -93,8 +93,8 @@ impl TokenBlacklist {
     }
     
     /// Blacklist a token
-    pub async fn blacklist(&self, token: BlacklistedToken) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        pub async fn blacklist(&self, token: BlacklistedToken) -> CacheResult<()> {
+        let conn = self.pool.get().await?;
         
         // Generate blacklist key
         let key = format!("blacklist:token:{}", token.token_id);
@@ -129,8 +129,8 @@ impl TokenBlacklist {
     }
     
     /// Check if token is blacklisted
-    pub async fn is_blacklisted(&self, token_id: &Uuid) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        pub async fn is_blacklisted(&self, token_id: &Uuid) -> CacheResult<bool> {
+        let conn = self.pool.get().await?;
         
         let key = format!("blacklist:token:{}", token_id);
         
@@ -142,8 +142,8 @@ impl TokenBlacklist {
     }
     
     /// Get blacklisted token info
-    pub async fn get_blacklisted_token(&self, token_id: &Uuid) -> CacheResult<Option<BlacklistedToken>> {
-        let mut conn = self.pool.get().await?;
+        pub async fn get_blacklisted_token(&self, token_id: &Uuid) -> CacheResult<Option<BlacklistedToken>> {
+        let conn = self.pool.get().await?;
         
         let key = format!("blacklist:token:{}", token_id);
         
@@ -166,8 +166,8 @@ impl TokenBlacklist {
     }
     
     /// Remove token from blacklist (unblacklist)
-    pub async fn unblacklist(&self, token_id: &Uuid) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        pub async fn unblacklist(&self, token_id: &Uuid) -> CacheResult<bool> {
+        let conn = self.pool.get().await?;
         
         // Get token first to clean up indexes
         if let Some(token) = self.get_blacklisted_token(token_id).await? {
@@ -192,8 +192,8 @@ impl TokenBlacklist {
     }
     
     /// Get all blacklisted tokens for a user
-    pub async fn get_user_blacklisted_tokens(&self, user_id: &Uuid) -> CacheResult<Vec<BlacklistedToken>> {
-        let mut conn = self.pool.get().await?;
+        pub async fn get_user_blacklisted_tokens(&self, user_id: &Uuid) -> CacheResult<Vec<BlacklistedToken>> {
+        let conn = self.pool.get().await?;
         
         let user_key = format!("blacklist:user:{}", user_id);
         
@@ -216,7 +216,7 @@ impl TokenBlacklist {
         // This is a simplified cleanup - in production, use Redis expiration notifications
         // or a background job with SCAN
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Find all blacklist keys
         let pattern = "blacklist:token:*".to_string();
@@ -247,7 +247,7 @@ impl TokenBlacklist {
     
     /// Get blacklist statistics
     pub async fn stats(&self) -> CacheResult<BlacklistStats> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Find all blacklist keys (this is expensive, use sparingly)
         let pattern = "blacklist:token:*".to_string();

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use sqlx::Row;
@@ -13,8 +12,11 @@ use crate::order::{Order, OrderItem, Fulfillment};
 
 /// Main notification service
 pub struct NotificationService {
+    #[allow(dead_code)]
     email_channel: EmailChannel,
+    #[allow(dead_code)]
     sms_channel: SmsChannel,
+    #[allow(dead_code)]
     webhook_channel: WebhookChannel,
 }
 
@@ -204,6 +206,7 @@ impl NotificationService {
     }
     
     /// Helper: Get provider name for channel
+    #[allow(dead_code)]
     fn get_provider(&self, channel: &NotificationChannel) -> String {
         match channel {
             NotificationChannel::Email => "smtp",
@@ -214,6 +217,7 @@ impl NotificationService {
     }
     
     /// Helper: Get database connection (PLACEHOLDER - implement properly)
+    #[allow(dead_code)]
     fn db(&self) -> &sqlx::PgPool {
         // This is a placeholder - in production, inject the pool
         unimplemented!("Database connection needed")

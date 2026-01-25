@@ -3,8 +3,6 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use chrono::{DateTime, Utc};
 
-use crate::Result;
-
 /// Current inventory level for a product at a location
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct InventoryLevel {

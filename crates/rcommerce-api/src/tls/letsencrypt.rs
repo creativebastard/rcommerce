@@ -5,7 +5,7 @@ use tracing::{info, warn, error};
 use std::collections::HashMap;
 
 use crate::{Result, Error};
-use super::config::{LetsEncryptConfig, TlsConfig};
+use super::config::LetsEncryptConfig;
 
 /// Let's Encrypt certificate manager
 pub struct LetsEncryptManager {
@@ -138,6 +138,7 @@ impl LetsEncryptManager {
     }
     
     /// Save HTTP-01 challenge token
+    #[allow(dead_code)]
     async fn save_challenge_token(&self, domain: &str, token: &str, proof: &str) -> Result<()> {
         let challenge_path = self.config.cache_dir.join("challenges").join(domain).join(token);
         
@@ -154,6 +155,7 @@ impl LetsEncryptManager {
     }
     
     /// Remove HTTP-01 challenge token
+    #[allow(dead_code)]
     async fn remove_challenge_token(&self, domain: &str, token: &str) -> Result<()> {
         let challenge_path = self.config.cache_dir.join("challenges").join(domain).join(token);
         

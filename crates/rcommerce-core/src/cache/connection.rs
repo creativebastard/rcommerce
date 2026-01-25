@@ -10,6 +10,7 @@ use redis::aio::MultiplexedConnection as AsyncConnection;
 #[derive(Clone)]
 pub struct RedisPool {
     client: Arc<Client>,
+    #[allow(dead_code)]
     config: Arc<RedisConfig>,
 }
 
@@ -52,7 +53,7 @@ impl RedisConnection {
     }
     
     /// Execute a command and return Redis Value
-    pub async fn execute(&self, mut cmd: Cmd) -> CacheResult<Value> {
+        pub async fn execute(&self, cmd: Cmd) -> CacheResult<Value> {
         let mut conn = self.inner.lock().await;
         let value: Value = cmd
             .query_async(&mut *conn)

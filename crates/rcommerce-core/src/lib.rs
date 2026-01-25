@@ -19,13 +19,14 @@ pub mod performance;
 // Re-export commonly used types
 pub use error::{Error, Result};
 pub use config::Config;
-pub use models::*;
-pub use traits::*;
+pub use models::{Currency, Pagination, SortDirection, SortParams};
+pub use traits::Repository;
 pub use repository::{Database, create_pool};
-pub use services::*;
-pub use payment::*;
-pub use inventory::*;
-pub use order::*;
+pub use services::{ProductService, CustomerService, OrderService, AuthService, ApiKey, JwtClaims, Service, PaginationParams, PaginationInfo};
+pub use payment::{PaymentGateway, CreatePaymentRequest, PaymentMethod, CardDetails, PaymentSession, PaymentSessionStatus, Payment, PaymentStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType};
+pub use inventory::{InventoryService, StockAlertLevel, StockReservation, ReservationStatus, InventoryLevel, StockMovement, StockStatus, LowStockAlert, InventoryConfig, InventoryLocation, ProductInventory, LocationInventory};
+// Order types come from the order module (not models), which includes lifecycle, fulfillment, etc.
+pub use order::{Order, OrderItem, OrderStatus, PaymentStatus as OrderPaymentStatus, OrderFilter, CreateOrderRequest, CreateOrderItem, Fulfillment, FulfillmentStatus, TrackingInfo, OrderCalculator, OrderTotals, OrderService as OrderManager};
 
 /// Current version of rcommerce
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

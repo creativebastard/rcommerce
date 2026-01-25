@@ -5,14 +5,13 @@
 
 use crate::cache::{CacheResult, RedisPool};
 use crate::websocket::{WebSocketMessage, Topic};
-use futures::{stream::StreamExt, SinkExt};
-use redis::aio::PubSub;
+
 use std::sync::Arc;
 use tokio::{
     sync::mpsc::{self, UnboundedSender},
     task::JoinHandle,
 };
-use tracing::{info, error, debug};
+use tracing::{info, debug};
 
 /// Redis pub/sub manager
 pub struct RedisPubSub {
@@ -46,8 +45,8 @@ impl RedisPubSub {
     }
     
     /// Publish a message to a topic
-    pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<i64> {
-        let mut conn = self.pool.get().await?;
+        pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<i64> {
+        let conn = self.pool.get().await?;
         
         // Serialize message
         let data = serde_json::to_vec(message)
@@ -74,15 +73,15 @@ impl RedisPubSub {
     }
     
     /// Spawn subscriber task
-    async fn spawn_subscriber(
+        async fn spawn_subscriber(
         &self,
         topic: Topic,
-        tx: UnboundedSender<WebSocketMessage>,
+        _tx: UnboundedSender<WebSocketMessage>,
     ) -> CacheResult<SubscriptionHandle> {
-        let mut pubsub_conn = self.pool.get().await?;
+        let _pubsub_conn = self.pool.get().await?;
         
         // Subscribe to Redis channel
-        let redis_topic = format!("ws:topic:{}", topic);
+        let _redis_topic = format!("ws:topic:{}", topic);
         
         // For now, we'll simulate pub/sub since we need async subscription
         // In a real implementation, you'd use Redis PubSub here
@@ -126,6 +125,7 @@ pub struct Subscription {
     receiver: mpsc::UnboundedReceiver<WebSocketMessage>,
     
     /// Subscriptions reference for cleanup
+    #[allow(dead_code)]
     subscriptions: Arc<tokio::sync::RwLock<Vec<SubscriptionHandle>>>,
 }
 
@@ -170,12 +170,14 @@ impl Subscription {
 // Re-enable when proper cleanup is implemented.
 
 /// Subscription handle for cleanup
-struct SubscriptionHandle {
+#[allow(dead_code)]
+pub struct SubscriptionHandle {
     /// Topic being subscribed to
-    topic: Topic,
+    #[allow(dead_code)]
+    pub topic: Topic,
     
     /// Background task handle
-    task: JoinHandle<()>,
+    pub task: JoinHandle<()>,
 }
 
 /// Broadcast manager that combines local and Redis pub/sub
@@ -230,6 +232,7 @@ impl BroadcastManager {
 /// Combined subscription (local + Redis)
 pub struct CombinedSubscription {
     /// Local subscription
+    #[allow(dead_code)]
     local: crate::websocket::broadcast::Subscription,
     
     /// Redis subscription

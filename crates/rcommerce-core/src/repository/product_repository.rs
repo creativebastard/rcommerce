@@ -5,7 +5,7 @@ use sqlx::Row;
 use crate::{
     Result, Pagination, SortParams, SortDirection,
     models::{
-        Product, ProductVariant, ProductImage, ProductCategory, ProductFilter,
+        Product, ProductVariant, ProductImage, ProductFilter,
         CreateProductRequest, UpdateProductRequest
     },
     traits::Repository,

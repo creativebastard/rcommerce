@@ -1,5 +1,4 @@
 use uuid::Uuid;
-use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
 
 use crate::Result;
@@ -207,7 +206,7 @@ impl StockAlertService {
 pub struct BulkAlertProcessor;
 
 impl BulkAlertProcessor {
-    pub async fn check_all_products(&self, inventory_service: &super::service::InventoryService) -> Result<Vec<LowStockAlert>> {
+    pub async fn check_all_products(&self, _inventory_service: &super::service::InventoryService) -> Result<Vec<LowStockAlert>> {
         // TODO: Get all products that need checking
         // For now, this is a placeholder
         log::info!("Running bulk low stock check for all products");

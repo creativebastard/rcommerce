@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{Result, Error};
 
 /// Represents a notification template with placeholders for dynamic content substitution.

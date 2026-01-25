@@ -4,10 +4,7 @@ pub mod tracking;
 pub mod notification;
 
 use uuid::Uuid;
-use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
-
-use crate::Result;
 
 // Re-export types from submodules
 pub use service::{InventoryService, StockAlertLevel};

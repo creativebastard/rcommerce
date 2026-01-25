@@ -4,11 +4,11 @@
 //! using Redis, enabling session restoration after disconnections
 //! and horizontal scaling.
 
-use crate::cache::{CacheResult, RedisConnection, RedisPool, WebSocketSessionConfig, CacheError};
-use crate::websocket::{WebSocketMessage, ConnectionId, UserId};
+use crate::cache::{CacheResult, RedisPool, WebSocketSessionConfig, CacheError};
+use crate::websocket::{ConnectionId, UserId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use tracing::{info, debug, warn};
+use tracing::{info, debug};
 use uuid::Uuid;
 
 /// WebSocket session data stored in Redis
@@ -126,7 +126,7 @@ impl SessionStore {
             return Ok(());
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Serialize session
         let data = serde_json::to_vec(session)
@@ -161,7 +161,7 @@ impl SessionStore {
             return Ok(None);
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = self.session_key(connection_id);
         
         match conn.get(&key).await? {
@@ -182,7 +182,7 @@ impl SessionStore {
             return Ok(false);
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Load session first to clean up indexes
         if let Some(session) = self.load(connection_id).await? {
@@ -212,7 +212,7 @@ impl SessionStore {
             return Ok(vec![]);
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let user_key = self.user_sessions_key(user_id);
         
         // Get all connection IDs for the user
@@ -239,7 +239,7 @@ impl SessionStore {
             return Ok(vec![]);
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let ip_key = self.ip_sessions_key(ip);
         
         // Get all connection IDs for the IP
@@ -269,7 +269,7 @@ impl SessionStore {
         // Note: This is expensive, use sparingly
         // In production, use SCAN instead of KEYS
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let pattern = format!("{}:*", self.namespace);
         
         let keys: Vec<String> = conn.keys(&pattern).await?;

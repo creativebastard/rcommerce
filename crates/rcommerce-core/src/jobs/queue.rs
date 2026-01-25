@@ -3,9 +3,9 @@
 //! Provides Redis-backed job queues with priority support and
 //! reliable job processing semantics.
 
-use crate::cache::{RedisPool, CacheResult, RedisConnection, CacheNamespace};
+use crate::cache::{RedisPool, CacheResult};
 use redis::Value;
-use crate::jobs::{Job, JobId, JobStatus, JobError, JobQuery, JobPriority};
+use crate::jobs::{Job, JobId, JobStatus, JobQuery, JobPriority};
 use serde_json;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -40,7 +40,7 @@ impl JobQueue {
     
     /// Enqueue a job
     pub async fn enqueue(&self, job: &Job) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Serialize job
         let job_data = serde_json::to_vec(job)
@@ -50,7 +50,7 @@ impl JobQueue {
         let job_key = self.job_key(&job.id);
         let queue_key = self.queue_key(&job.priority);
         let scheduled_key = self.scheduled_key();
-        let status_key = self.status_key(&job.status);
+        let _status_key = self.status_key(&job.status);
         
         // Store job data
         conn.setex(&job_key, 86400, &job_data).await?; // 24 hour TTL
@@ -82,8 +82,8 @@ impl JobQueue {
     }
     
     /// Dequeue a job (blocking)
-    pub async fn dequeue(&self, timeout_secs: u64) -> CacheResult<Option<Job>> {
-        let mut conn = self.pool.get().await?;
+    pub async fn dequeue(&self, _timeout_secs: u64) -> CacheResult<Option<Job>> {
+        let conn = self.pool.get().await?;
         
         // Try high priority first, then normal, then low
         for priority in [JobPriority::High, JobPriority::Normal, JobPriority::Low] {
@@ -117,7 +117,7 @@ impl JobQueue {
     
     /// Get a job by ID
     pub async fn get_job(&self, job_id: &JobId) -> CacheResult<Option<Job>> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let job_key = self.job_key(job_id);
         
@@ -133,7 +133,7 @@ impl JobQueue {
     
     /// Update job status
     pub async fn update_job_status(&self, job_id: &JobId, new_status: JobStatus) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Load job
         if let Some(mut job) = self.get_job(job_id).await? {
@@ -177,7 +177,7 @@ impl JobQueue {
     
     /// Save job (update)
     pub async fn save_job(&self, job: &Job) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let job_key = self.job_key(&job.id);
         let job_data = serde_json::to_vec(job)
@@ -191,7 +191,7 @@ impl JobQueue {
     
     /// Get scheduled jobs ready for execution
     pub async fn get_ready_scheduled_jobs(&self) -> CacheResult<Vec<Job>> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let scheduled_key = self.scheduled_key();
         let now = chrono::Utc::now().timestamp();
@@ -235,7 +235,7 @@ impl JobQueue {
     
     /// Delete a job
     pub async fn delete_job(&self, job_id: &JobId) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let job_key = self.job_key(job_id);
         conn.del(&job_key).await
@@ -243,7 +243,7 @@ impl JobQueue {
     
     /// Get queue stats
     pub async fn stats(&self) -> CacheResult<QueueStats> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let mut total_pending = 0;
         let mut depth_by_priority = HashMap::new();
@@ -282,7 +282,7 @@ impl JobQueue {
     
     /// List jobs matching query
     pub async fn list_jobs(&self, query: &JobQuery) -> CacheResult<Vec<Job>> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // This is a simplified implementation
         // In production, you'd use Redis SCAN or maintain indexes
@@ -346,7 +346,7 @@ impl JobQueue {
     
     /// Clear queue (delete all jobs)
     pub async fn clear(&self) -> CacheResult<u64> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let mut deleted = 0;
         

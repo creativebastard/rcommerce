@@ -5,11 +5,17 @@ use crate::notification::{Notification, NotificationChannel};
 
 /// Email notification channel
 pub struct EmailChannel {
+    #[allow(dead_code)]
     smtp_host: String,
+    #[allow(dead_code)]
     smtp_port: u16,
+    #[allow(dead_code)]
     username: String,
+    #[allow(dead_code)]
     password: String,
+    #[allow(dead_code)]
     from_address: String,
+    #[allow(dead_code)]
     from_name: String,
 }
 

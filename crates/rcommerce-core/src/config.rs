@@ -93,7 +93,7 @@ impl Config {
         use crate::Error;
         
         // Validate server config
-        if self.server.port == 0 || self.server.port > 65535 {
+        if self.server.port == 0 {
             return Err(Error::Config("Invalid server port".to_string()));
         }
         

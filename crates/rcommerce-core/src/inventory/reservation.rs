@@ -1,8 +1,5 @@
 use uuid::Uuid;
-use rust_decimal::Decimal;
 use chrono::{DateTime, Utc};
-
-use crate::Result;
 
 /// Stock reservation for an order
 #[derive(Debug, Clone, sqlx::FromRow)]

@@ -2,9 +2,8 @@
 //!
 //! This provides distributed rate limiting that works across multiple server instances
 
-use crate::cache::{CacheResult, RedisConnection, RedisPool, RedisConfig, CacheNamespace};
+use crate::cache::{CacheResult, RedisPool, RedisConfig, CacheNamespace};
 use std::time::{Duration, UNIX_EPOCH};
-use tokio::time::sleep;
 use tracing::{debug, warn, info};
 
 /// Redis-backed rate limiter
@@ -16,9 +15,11 @@ pub struct RedisRateLimiter {
     config: RedisConfig,
     
     /// Default TTL for rate limit keys
+    #[allow(dead_code)]
     default_ttl: Duration,
     
     /// Window precision
+    #[allow(dead_code)]
     window_precision: Duration,
 }
 
@@ -68,7 +69,7 @@ impl RedisRateLimiter {
         window: &str, // "minute", "hour", "day"
         limit: u64,
     ) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = self.rate_limit_key(namespace, identifier, window);
         
         // Use Redis INCR to atomically increment counter
@@ -110,7 +111,7 @@ impl RedisRateLimiter {
         identifier: &str,
         window: &str,
     ) -> CacheResult<Option<u64>> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = self.rate_limit_key(namespace, identifier, window);
         
         // Get current value, return None if key doesn't exist
@@ -125,7 +126,7 @@ impl RedisRateLimiter {
     
     /// Reset rate limit counter
     pub async fn reset(&self, namespace: CacheNamespace, identifier: &str, window: &str) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = self.rate_limit_key(namespace, identifier, window);
         
         conn.del(&key).await
@@ -133,7 +134,7 @@ impl RedisRateLimiter {
     
     /// Block an identifier (add to blocklist)
     pub async fn block(&self, identifier: &str, ttl: Duration) -> CacheResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = format!("{}:blocklist:{}", self.config.key_prefix, identifier);
         
         conn.setex(&key, ttl.as_secs(), b"1").await?;
@@ -145,7 +146,7 @@ impl RedisRateLimiter {
     
     /// Unblock an identifier
     pub async fn unblock(&self, identifier: &str) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = format!("{}:blocklist:{}", self.config.key_prefix, identifier);
         
         let deleted = conn.del(&key).await?;
@@ -159,7 +160,7 @@ impl RedisRateLimiter {
     
     /// Check if identifier is blocked
     pub async fn is_blocked(&self, identifier: &str) -> CacheResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         let key = format!("{}:blocklist:{}", self.config.key_prefix, identifier);
         
         conn.exists(&key).await

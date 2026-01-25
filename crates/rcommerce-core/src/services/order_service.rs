@@ -33,7 +33,7 @@ impl OrderService {
     }
     
     /// Get order by ID
-    pub async fn get_order(&self, id: Uuid) -> Result<Option<OrderDetail>> {
+    pub async fn get_order(&self, _id: Uuid) -> Result<Option<OrderDetail>> {
         // TODO: Implement order retrieval
         // - Get order
         // - Get order items
@@ -52,7 +52,7 @@ impl OrderService {
     }
     
     /// Update order status
-    pub async fn update_order_status(&self, id: Uuid, status: OrderStatus) -> Result<Order> {
+    pub async fn update_order_status(&self, _id: Uuid, _status: OrderStatus) -> Result<Order> {
         // TODO: Implement status update
         // - Validate status transition
         // - Update order
@@ -62,7 +62,7 @@ impl OrderService {
     }
     
     /// Cancel order
-    pub async fn cancel_order(&self, id: Uuid, reason: String) -> Result<Order> {
+    pub async fn cancel_order(&self, _id: Uuid, _reason: String) -> Result<Order> {
         // TODO: Implement order cancellation
         // - Check if can cancel
         // - Refund payments

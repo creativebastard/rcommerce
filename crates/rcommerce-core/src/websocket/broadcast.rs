@@ -39,6 +39,7 @@ impl BroadcastManager {
 /// Stub local broadcaster
 #[derive(Clone)]
 pub struct BroadcastLocal {
+    #[allow(dead_code)]
     subscriptions: HashMap<String, Vec<ConnectionId>>,
 }
 

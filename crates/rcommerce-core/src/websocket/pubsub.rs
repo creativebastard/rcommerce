@@ -1,7 +1,7 @@
 //! WebSocket pub/sub (Simplified stub for initial release)
 
 use crate::websocket::{WebSocketMessage, ConnectionId};
-use crate::cache::{RedisPool, RedisConnection};
+use crate::cache::RedisPool;
 use std::sync::Arc;
 
 /// Stub pub/sub manager

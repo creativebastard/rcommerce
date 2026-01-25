@@ -5,6 +5,7 @@ use crate::jobs::{JobError, JobProcessingResult};
 use std::time::Duration;
 
 // Helper module for Duration serialization
+#[allow(dead_code)]
 type SerializedDuration = std::time::Duration;
 
 /// Retry policy for failed jobs

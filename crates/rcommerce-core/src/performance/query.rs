@@ -1,6 +1,6 @@
 //! Query result caching for database optimizations
 
-use crate::cache::{RedisPool, CacheError};
+use crate::cache::RedisPool;
 use crate::performance::{PerformanceError, PerformanceResult};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;

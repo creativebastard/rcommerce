@@ -87,7 +87,7 @@ impl OrderCalculator {
     }
     
     /// Calculate discounts
-    pub fn calculate_discounts(&self, subtotal: Decimal) -> Decimal {
+    pub fn calculate_discounts(&self, _subtotal: Decimal) -> Decimal {
         // Placeholder for discount logic
         // In production, this would:
         // - Apply discount codes
@@ -99,7 +99,7 @@ impl OrderCalculator {
     }
     
     /// Calculate refund amount
-    pub fn calculate_refund(&self, order: &Order, items_to_refund: &[OrderItem]) -> Decimal {
+    pub fn calculate_refund(&self, _order: &Order, items_to_refund: &[OrderItem]) -> Decimal {
         // Calculate refund amount
         let items_subtotal: Decimal = items_to_refund.iter()
             .map(|item| item.subtotal)

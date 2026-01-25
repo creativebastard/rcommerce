@@ -1,7 +1,7 @@
 //! Performance optimizer with automatic recommendations
 
 use crate::performance::{
-    PerformanceMetrics, CacheStats, PoolStats, PerformanceResult,
+    PerformanceMetrics, CacheStats, PoolStats,
 };
 
 /// Performance optimizer

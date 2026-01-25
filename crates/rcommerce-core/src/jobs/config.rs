@@ -448,6 +448,7 @@ impl DeadLetterConfig {
 
 // Default value helper functions
 fn default_true() -> bool { true }
+#[allow(dead_code)]
 fn default_false() -> bool { false }
 fn default_worker_pool_size() -> usize { 10 }
 fn default_timeout() -> u64 { 300 }

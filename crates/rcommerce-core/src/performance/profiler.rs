@@ -1,7 +1,6 @@
 //! Memory and performance profiling utilities
 
 use std::{
-    alloc::{self, System},
     sync::atomic::{AtomicUsize, Ordering},
     time::Instant,
 };

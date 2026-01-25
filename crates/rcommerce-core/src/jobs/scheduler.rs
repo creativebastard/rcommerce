@@ -184,7 +184,7 @@ impl JobScheduler {
         
         match conn.get(&job_key).await? {
             Some(data) => {
-                let job: Job = serde_json::from_slice(&data)
+                let _job: Job = serde_json::from_slice(&data)
                     .map_err(|e| JobError::Deserialization(e.to_string()))?;
                 
                 // Remove from scheduled set
@@ -293,7 +293,7 @@ impl JobScheduler {
                 
                 if cron_job.enabled && now >= cron_job.next_run {
                     // Execute cron job
-                    let job: Job = serde_json::from_slice(&cron_job.job_data)
+                    let _job: Job = serde_json::from_slice(&cron_job.job_data)
                         .map_err(|e| JobError::Deserialization(e.to_string()))?;
                     
                     // Update next run time
