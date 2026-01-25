@@ -1,0 +1,65 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+worker_threads = 2
+graceful_shutdown_timeout_secs = 5
+
+[server.cors]
+enabled = true
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE"]
+allowed_headers = ["Content-Type", "Authorization"]
+allow_credentials = true
+max_age = 3600
+
+[server.limits]
+max_request_size_mb = 10
+rate_limit_per_minute = 1000
+rate_limit_burst = 200
+
+[database]
+db_type = "Sqlite"
+host = "localhost"
+port = 5432
+database = "rcommerce"
+username = "rcommerce"
+password = "password"
+pool_size = 5
+ssl_mode = "Prefer"
+sqlite_path = "./test.db"
+
+[logging]
+level = "info"
+format = "Json"
+
+[cache]
+cache_type = "Memory"
+max_size_mb = 100
+
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
+
+[security.jwt]
+secret = "test-secret-do-not-use-in-production"
+expiry_hours = 24
+
+[media]
+storage_type = "Local"
+local_path = "./uploads"
+local_base_url = "http://localhost:8080/uploads"
+
+[media.image_processing]
+enabled = true
+default_quality = 85
+
+[notifications]
+enabled = false
+
+[rate_limiting]
+enabled = false
+
+[features]
+debug_api = true
+metrics = true
+health_check = true
