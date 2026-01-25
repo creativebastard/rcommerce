@@ -213,6 +213,20 @@ pub struct Recipient {
 }
 
 impl Recipient {
+    /// Create a new email recipient
+    pub fn email(email: String, name: Option<String>) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            email: Some(email),
+            phone: None,
+            webhook_url: None,
+            preferences: NotificationPreferences {
+                email_enabled: true,
+                ..Default::default()
+            },
+        }
+    }
+    
     /// Get the primary notification channel for this recipient
     /// Returns Email if email is available, SMS if phone is available and email is not,
     /// Webhook if webhook_url is available and neither email nor phone is available
@@ -255,11 +269,15 @@ mod tests {
     
     #[test]
     fn test_notification_creation() {
-        let message = NotificationMessage::new("test_template", "user@example.com", "Test message");
-        let notification = Notification::new(message);
+        let notification = Notification::new(
+            NotificationChannel::Email,
+            "user@example.com".to_string(),
+            "Test subject".to_string(),
+            "Test message".to_string(),
+        );
         
         assert_eq!(notification.priority, NotificationPriority::Normal);
-        assert!(notification.scheduled_for.is_none());
+        assert!(notification.scheduled_at.is_none());
     }
     
     #[test]

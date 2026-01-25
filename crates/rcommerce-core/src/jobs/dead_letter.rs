@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn test_dead_letter_creation() {
         let job = Job::new("test_job", serde_json::json!({}), "default");
-        let error = JobError::ExecutionFailed("test error".to_string());
+        let error = JobError::Execution("test error".to_string());
         let history = RetryHistory::new();
         
         let dead_letter = DeadLetter::new(job.clone(), error, history);
@@ -84,7 +84,7 @@ mod tests {
         let job2 = Job::new("test2", serde_json::json!({}), "default");
         let job3 = Job::new("test3", serde_json::json!({}), "default");
         
-        let error = JobError::ExecutionFailed("error".to_string());
+        let error = JobError::Execution("error".to_string());
         let history = RetryHistory::new();
         
         queue.push(DeadLetter::new(job1, error.clone(), history.clone()));

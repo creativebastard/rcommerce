@@ -23,10 +23,10 @@ pub struct Cli {
 pub enum Commands {
     /// Start the API server
     Server {
-        #[arg(short, long, help = "Bind address", default_value = "0.0.0.0")]
+        #[arg(short = 'H', long, help = "Bind address", default_value = "0.0.0.0")]
         host: String,
         
-        #[arg(short, long, help = "Port number", default_value = "8080")]
+        #[arg(short = 'P', long, help = "Port number", default_value = "8080")]
         port: u16,
     },
     

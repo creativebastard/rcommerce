@@ -747,7 +747,7 @@ mod tests {
     #[test]
     fn test_config_validation() {
         let mut config = Config::default();
-        config.server.port = 99999;
+        config.server.port = 0;  // 0 is an invalid port for binding
         assert!(config.validate().is_err());
         
         config.server.port = 8080;

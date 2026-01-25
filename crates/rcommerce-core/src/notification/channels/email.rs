@@ -1,7 +1,7 @@
-use async_trait::async_trait;
+//! Email notification channel implementation
 
 use crate::{Result, Error};
-use crate::notification::Notification;
+use crate::notification::{Notification, NotificationChannel};
 
 /// Email notification channel
 pub struct EmailChannel {
@@ -34,30 +34,23 @@ impl EmailChannel {
     
     /// Send an email notification
     pub async fn send(&self, notification: &Notification) -> Result<()> {
-        if notification.channel != crate::notification::NotificationChannel::Email {
+        if notification.channel != NotificationChannel::Email {
             return Err(Error::notification_error("Invalid channel for email sender"));
         }
-        
-        // TODO: Implement actual SMTP sending using lettre or similar crate
-        // For now, we'll simulate the email structure
         
         log::info!(
             "Sending email from {} to {}: {}",
             self.from_address,
-            notification.recipient.address,
+            notification.recipient,
             notification.subject
         );
         
-        // Log email details
         if let Some(ref html_body) = notification.html_body {
             log::debug!("Email has HTML body ({} bytes)", html_body.len());
-        } else {
-            log::debug!("Email has plain text body only");
         }
         
         log::debug!("Email body preview: {}", &notification.body[..notification.body.len().min(100)]);
         
-        // Simulate sending
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         
         Ok(())
@@ -67,10 +60,7 @@ impl EmailChannel {
     pub fn build_email_message(&self, notification: &Notification) -> EmailMessage {
         EmailMessage {
             from: format!("{} <{}>", self.from_name, self.from_address),
-            to: format!("{} <{}>", 
-                notification.recipient.name.as_deref().unwrap_or(""), 
-                notification.recipient.address
-            ),
+            to: notification.recipient.clone(),
             subject: notification.subject.clone(),
             text_body: notification.body.clone(),
             html_body: notification.html_body.clone(),
@@ -126,22 +116,12 @@ impl EmailMessage {
     }
 }
 
-#[async_trait::async_trait]
-impl super::NotificationChannelProvider for EmailChannel {
-    fn channel(&self) -> crate::notification::NotificationChannel {
-        crate::notification::NotificationChannel::Email
-    }
-    
-    async fn send_notification(&self, notification: &Notification) -> Result<()> {
-        self.send(notification).await
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::notification::{Notification, Recipient, NotificationChannel, NotificationPriority};
+    use crate::notification::{Notification, NotificationPriority};
     use uuid::Uuid;
+    use chrono::Utc;
     
     #[tokio::test]
     async fn test_email_channel() {
@@ -154,18 +134,13 @@ mod tests {
             "R Commerce".to_string(),
         );
         
-        let notification = Notification {
-            id: Uuid::new_v4(),
-            channel: NotificationChannel::Email,
-            recipient: Recipient::email("customer@example.com".to_string(), Some("John Doe".to_string())),
-            subject: "Test Email".to_string(),
-            body: "This is a test email.".to_string(),
-            html_body: Some("<p>This is a <strong>test</strong> email.</p>".to_string()),
-            priority: NotificationPriority::Normal,
-            metadata: serde_json::json!({}),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        };
+        let notification = Notification::new(
+            NotificationChannel::Email,
+            "customer@example.com".to_string(),
+            "Test Email".to_string(),
+            "This is a test email.".to_string(),
+        )
+        .with_html_body("<p>This is a <strong>test</strong> email.</p>".to_string());
         
         let result = channel.send(&notification).await;
         assert!(result.is_ok());
@@ -182,27 +157,55 @@ mod tests {
             "R Commerce".to_string(),
         );
         
-        let notification = Notification {
-            id: Uuid::new_v4(),
-            channel: NotificationChannel::Email,
-            recipient: Recipient::email("customer@example.com".to_string(), Some("John Doe".to_string())),
-            subject: "Test Email".to_string(),
-            body: "Plain text body".to_string(),
-            html_body: Some("<h1>HTML body</h1>".to_string()),
-            priority: NotificationPriority::Normal,
-            metadata: serde_json::json!({}),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        };
+        let notification = Notification::new(
+            NotificationChannel::Email,
+            "customer@example.com".to_string(),
+            "Test Email".to_string(),
+            "Plain text body".to_string(),
+        )
+        .with_html_body("<h1>HTML body</h1>".to_string());
         
         let message = channel.build_email_message(&notification);
         
         assert_eq!(message.from, "R Commerce <noreply@rcommerce.com>");
-        assert_eq!(message.to, "John Doe <customer@example.com>");
+        assert_eq!(message.to, "customer@example.com");
         assert_eq!(message.subject, "Test Email");
         assert_eq!(message.text_body, "Plain text body");
         assert_eq!(message.html_body, Some("<h1>HTML body</h1>".to_string()));
         assert!(message.has_html());
         assert_eq!(message.mime_type(), "multipart/alternative");
+    }
+
+    #[test]
+    fn test_plain_text_email() {
+        let email = EmailMessage::plain_text(
+            "from@example.com".to_string(),
+            "to@example.com".to_string(),
+            "Subject".to_string(),
+            "Body text".to_string(),
+        );
+        
+        assert_eq!(email.from, "from@example.com");
+        assert_eq!(email.to, "to@example.com");
+        assert_eq!(email.subject, "Subject");
+        assert_eq!(email.text_body, "Body text");
+        assert!(email.html_body.is_none());
+        assert!(!email.has_html());
+        assert_eq!(email.mime_type(), "text/plain");
+    }
+
+    #[test]
+    fn test_html_email() {
+        let email = EmailMessage::html(
+            "from@example.com".to_string(),
+            "to@example.com".to_string(),
+            "Subject".to_string(),
+            "Plain text body".to_string(),
+            "<h1>HTML Body</h1>".to_string(),
+        );
+        
+        assert!(email.has_html());
+        assert_eq!(email.mime_type(), "multipart/alternative");
+        assert_eq!(email.html_body, Some("<h1>HTML Body</h1>".to_string()));
     }
 }

@@ -6,8 +6,7 @@ use chrono::{DateTime, Utc};
 /// Common trait implementations
 pub use crate::traits::*;
 
-/// Common types for money handling
-pub type Currency = String;
+/// Common types
 pub type CountryCode = String;
 pub type LanguageCode = String;
 
@@ -68,7 +67,7 @@ pub enum ShippingProviderType {
 /// Currency configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CurrencyConfig {
-    pub code: Currency,
+    pub code: String,
     pub name: String,
     pub symbol: String,
     pub decimal_places: u8,
@@ -93,7 +92,7 @@ pub struct Pricing {
     pub price: Decimal,
     pub compare_at_price: Option<Decimal>,
     pub cost_price: Option<Decimal>,
-    pub currency: Currency,
+    pub currency: String,
 }
 
 /// Inventory information

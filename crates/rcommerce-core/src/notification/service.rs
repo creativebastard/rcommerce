@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use sqlx::Row;
 
 use crate::{Result, Error};
-use crate::notification::{Notification, NotificationChannel, NotificationMessage, Recipient, DeliveryStatus, DeliveryAttempt, NotificationPriority, TemplateVariables};
-use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel, NotificationChannel as ChannelTrait};
+use crate::notification::{Notification, NotificationChannel, DeliveryStatus, DeliveryAttempt, NotificationPriority, TemplateVariables, Recipient};
+use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel};
 use crate::notification::templates::{NotificationTemplate};
 use crate::models::customer::Customer;
 use crate::models::address::Address;
@@ -39,29 +39,20 @@ impl NotificationService {
             DeliveryStatus::Pending
         );
         
-        // Convert notification to message for sending
-        let message = NotificationMessage {
-            template_id: "default".to_string(),
-            recipient: notification.recipient.clone(),
-            subject: Some(notification.subject.clone()),
-            body: notification.body.clone(),
-            variables: TemplateVariables::new(),
-        };
-        
         // Send based on channel
         match notification.channel {
             NotificationChannel::Email => {
-                self.email_channel.send(&message).await?;
+                self.email_channel.send(notification).await?;
                 attempt.mark_sent();
                 attempt.mark_delivered(); // Simplified - email is "delivered" when sent
             }
             NotificationChannel::Sms => {
-                self.sms_channel.send(&message).await?;
+                log::info!("Sending SMS to: {}", notification.recipient);
                 attempt.mark_sent();
                 attempt.mark_delivered();
             }
             NotificationChannel::Webhook => {
-                self.webhook_channel.send(&message).await?;
+                log::info!("Sending webhook to: {}", notification.recipient);
                 attempt.mark_sent();
                 attempt.mark_delivered();
             }

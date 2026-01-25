@@ -563,36 +563,34 @@ mod tests {
     
     #[test]
     fn test_check_for_api_key() {
-        use axum::http::HeaderValue;
-        
         // Test with Bearer token
-        let mut request = Request::builder()
+        let request = Request::builder()
             .uri("/test")
             .header("authorization", "Bearer secret-token")
-            .body(())
+            .body(axum::body::Body::empty())
             .unwrap();
         assert!(check_for_api_key(&request));
         
         // Test with ApiKey
-        request = Request::builder()
+        let request = Request::builder()
             .uri("/test")
             .header("authorization", "ApiKey secret-token")
-            .body(())
+            .body(axum::body::Body::empty())
             .unwrap();
         assert!(check_for_api_key(&request));
         
         // Test with X-API-Key header
-        request = Request::builder()
+        let request = Request::builder()
             .uri("/test")
             .header("x-api-key", "secret-token")
-            .body(())
+            .body(axum::body::Body::empty())
             .unwrap();
         assert!(check_for_api_key(&request));
         
         // Test without API key
-        request = Request::builder()
+        let request = Request::builder()
             .uri("/test")
-            .body(())
+            .body(axum::body::Body::empty())
             .unwrap();
         assert!(!check_for_api_key(&request));
     }

@@ -85,7 +85,7 @@ impl PaymentGateway for StripeGateway {
         }
         
         let stripe_response: StripePaymentIntent = response.json().await
-            .map_err(|e| Error::serialization(e))?;
+            .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         Ok(PaymentSession {
             id: stripe_response.id,
@@ -116,7 +116,7 @@ impl PaymentGateway for StripeGateway {
         }
         
         let stripe_payment: StripePaymentIntent = response.json().await
-            .map_err(|e| Error::serialization(e))?;
+            .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         Ok(Payment {
             id: format!("pay_{}", uuid::Uuid::new_v4()),
@@ -155,7 +155,7 @@ impl PaymentGateway for StripeGateway {
         }
         
         let stripe_payment: StripePaymentIntent = response.json().await
-            .map_err(|e| Error::serialization(e))?;
+            .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         let mut payment = self.get_payment(payment_id).await?;
         payment.captured_at = Some(chrono::Utc::now());
@@ -186,7 +186,7 @@ impl PaymentGateway for StripeGateway {
         }
         
         let stripe_refund: StripeRefund = response.json().await
-            .map_err(|e| Error::serialization(e))?;
+            .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         Ok(Refund {
             id: stripe_refund.id,
@@ -213,7 +213,7 @@ impl PaymentGateway for StripeGateway {
         }
         
         let stripe_payment: StripePaymentIntent = response.json().await
-            .map_err(|e| Error::serialization(e))?;
+            .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?;
         
         Ok(Payment {
             id: format!("pay_{}", uuid::Uuid::new_v4()),
@@ -238,10 +238,10 @@ impl PaymentGateway for StripeGateway {
             .map_err(|e| Error::validation(format!("Invalid webhook payload: {}", e)))?;
         
         let (event_type, payment_id) = match event.event_type.as_str() {
-            "payment_intent.succeeded" => (WebhookEventType::PaymentSucceeded, event.data.object.id),
-            "payment_intent.payment_failed" => (WebhookEventType::PaymentFailed, event.data.object.id),
-            "payment_intent.canceled" => (WebhookEventType::PaymentCanceled, event.data.object.id),
-            "charge.refunded" => (WebhookEventType::RefundSucceeded, event.data.object.payment_intent),
+            "payment_intent.succeeded" => (WebhookEventType::PaymentSucceeded, event.data.object.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string()),
+            "payment_intent.payment_failed" => (WebhookEventType::PaymentFailed, event.data.object.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string()),
+            "payment_intent.canceled" => (WebhookEventType::PaymentCanceled, event.data.object.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string()),
+            "charge.refunded" => (WebhookEventType::RefundSucceeded, event.data.object.get("payment_intent").and_then(|v| v.as_str()).unwrap_or("").to_string()),
             _ => return Err(Error::validation("Unsupported webhook event type")),
         };
         
@@ -249,7 +249,7 @@ impl PaymentGateway for StripeGateway {
             event_type,
             payment_id,
             data: serde_json::from_value(serde_json::json!(event.data.object))
-                .map_err(|e| Error::serialization(e))?,
+                .map_err(|e| Error::Network(format!("Failed to parse Stripe response: {}", e)))?,
         })
     }
 }

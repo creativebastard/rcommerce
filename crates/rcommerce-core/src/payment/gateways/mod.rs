@@ -1,5 +1,7 @@
 //! Simple payment gateway implementations for testing and mock providers
 
+pub mod stripe;
+
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 

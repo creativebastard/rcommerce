@@ -302,7 +302,7 @@ pub struct LowStockAlert {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum StockAlertLevel {
     Low,      // Below threshold but above critical
     Critical, // Below 50% of threshold

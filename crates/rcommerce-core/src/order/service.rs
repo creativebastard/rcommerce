@@ -537,16 +537,16 @@ mod tests {
     
     #[test]
     fn test_is_valid_status_transition() {
-        let service = OrderService {
-            db: Database::new(sqlx::PgPool::connect("postgres://localhost:5433/test").await.unwrap()),
-            payment_gateway: Box::new(crate::payment::gateways::StripeGateway::new("sk_test".to_string(), "whsec_".to_string())),
-            inventory_service: InventoryService::new(db.clone(), Default::default()),
-            event_dispatcher: OrderEventDispatcher::new(),
-        };
+        // Test the OrderStatus transitions directly without needing a database
+        use OrderStatus::*;
         
-        assert!(service.is_valid_status_transition(OrderStatus::Pending, OrderStatus::Confirmed));
-        assert!(service.is_valid_status_transition(OrderStatus::Confirmed, OrderStatus::Processing));
-        assert!(service.is_valid_status_transition(OrderStatus::Processing, OrderStatus::Shipped));
-        assert!(!service.is_valid_status_transition(OrderStatus::Pending, OrderStatus::Shipped));
+        assert!(Pending.can_transition_to(Confirmed));
+        assert!(Confirmed.can_transition_to(Processing));
+        assert!(Processing.can_transition_to(Shipped));
+        assert!(!Pending.can_transition_to(Shipped));
+        assert!(Pending.can_transition_to(Canceled));
+        assert!(Shipped.can_transition_to(Delivered));
+        assert!(Delivered.can_transition_to(Completed));
+        assert!(!Completed.can_transition_to(Canceled));
     }
 }

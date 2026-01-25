@@ -4,43 +4,23 @@ use async_trait::async_trait;
 use crate::notification::types::{NotificationMessage, NotificationResult};
 use crate::Result;
 
-/// Email notification channel
-pub struct EmailChannel;
+pub mod email;
 
+// Re-export EmailChannel from the email module
+pub use email::EmailChannel;
+
+/// Channel sender trait for sending notification messages
 #[async_trait]
-pub trait NotificationChannel: Send + Sync {
+pub trait ChannelSender: Send + Sync {
     async fn send(&self, message: &NotificationMessage) -> Result<NotificationResult>;
     fn channel_name(&self) -> &'static str;
-}
-
-#[async_trait]
-impl NotificationChannel for EmailChannel {
-    async fn send(&self, message: &NotificationMessage) -> Result<NotificationResult> {
-        // In production, integrate with email service (SendGrid, AWS SES)
-        tracing::info!(
-            "Sending email to: {}, subject: {}",
-            message.recipient,
-            message.subject.as_deref().unwrap_or("(no subject)")
-        );
-        
-        Ok(NotificationResult {
-            success: true,
-            channel: "email".to_string(),
-            message_id: Some(format!("msg_{}", uuid::Uuid::new_v4())),
-            error: None,
-        })
-    }
-    
-    fn channel_name(&self) -> &'static str {
-        "email"
-    }
 }
 
 /// SMS notification channel
 pub struct SmsChannel;
 
 #[async_trait]
-impl NotificationChannel for SmsChannel {
+impl ChannelSender for SmsChannel {
     async fn send(&self, message: &NotificationMessage) -> Result<NotificationResult> {
         tracing::info!(
             "Sending SMS to: {}, body length: {}",
@@ -65,7 +45,7 @@ impl NotificationChannel for SmsChannel {
 pub struct PushChannel;
 
 #[async_trait]
-impl NotificationChannel for PushChannel {
+impl ChannelSender for PushChannel {
     async fn send(&self, message: &NotificationMessage) -> Result<NotificationResult> {
         tracing::info!(
             "Sending push notification to: {}",
@@ -89,7 +69,7 @@ impl NotificationChannel for PushChannel {
 pub struct WebhookChannel;
 
 #[async_trait]
-impl NotificationChannel for WebhookChannel {
+impl ChannelSender for WebhookChannel {
     async fn send(&self, message: &NotificationMessage) -> Result<NotificationResult> {
         tracing::info!(
             "Sending webhook to: {}",
@@ -115,23 +95,6 @@ mod tests {
     use crate::notification::types::TemplateVariables;
 
     #[tokio::test]
-    async fn test_email_channel() {
-        let channel = EmailChannel;
-        let message = NotificationMessage {
-            template_id: "order_confirmation".to_string(),
-            recipient: "customer@example.com".to_string(),
-            subject: Some("Order Confirmed".to_string()),
-            body: "Thank you for your order!".to_string(),
-            variables: TemplateVariables::new(),
-        };
-        
-        let result = channel.send(&message).await.unwrap();
-        assert!(result.success);
-        assert_eq!(result.channel, "email");
-        assert!(result.message_id.is_some());
-    }
-
-    #[tokio::test]
     async fn test_sms_channel() {
         let channel = SmsChannel;
         let message = NotificationMessage {
@@ -145,6 +108,7 @@ mod tests {
         let result = channel.send(&message).await.unwrap();
         assert!(result.success);
         assert_eq!(result.channel, "sms");
+        assert!(result.message_id.is_some());
     }
 
     #[tokio::test]

@@ -11,12 +11,18 @@ pub async fn run(config: Config) -> Result<()> {
         config.server.port
     ));
     
-    // Build router with simplified Phase 1 routes
+    // Build API v1 routes
+    let api_v1 = Router::new()
+        .merge(crate::routes::product_router())
+        .merge(crate::routes::customer_router())
+        .merge(crate::routes::order_router())
+        .merge(crate::routes::auth_router());
+    
+    // Build main router with simplified Phase 1 routes
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
-        .nest("/api/v1", crate::routes::product::router())
-        .nest("/api/v1", crate::routes::customer::router());
+        .nest("/api/v1", api_v1);
     
     info!("R Commerce API server listening on {}", addr);
     info!("Available routes:");
@@ -26,6 +32,10 @@ pub async fn run(config: Config) -> Result<()> {
     info!("  GET  /api/v1/products/:id        - Get product");
     info!("  GET  /api/v1/customers           - List customers");
     info!("  GET  /api/v1/customers/:id       - Get customer");
+    info!("  GET  /api/v1/orders              - List orders");
+    info!("  GET  /api/v1/orders/:id          - Get order");
+    info!("  POST /api/v1/auth/login          - Login");
+    info!("  POST /api/v1/auth/register       - Register");
     
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)

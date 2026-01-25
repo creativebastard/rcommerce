@@ -277,7 +277,7 @@ mod tests {
             let pubsub = RedisPubSub::new(pool);
             let msg = WebSocketMessage::ping();
             
-            let result = pubsub.publish("test-topic", &msg).await;
+            let result = pubsub.publish(&"test-topic".to_string(), &msg).await;
             // May fail if Redis not available, which is OK
             assert!(result.is_ok() || result.is_err());
         }

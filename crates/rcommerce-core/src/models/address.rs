@@ -21,6 +21,7 @@ impl Default for AddressType {
 mod tests {
     use super::*;
     use uuid::Uuid;
+    use chrono::Utc;
     
     #[test]
     fn test_address_creation() {
@@ -37,11 +38,13 @@ mod tests {
             state: Some("CA".to_string()),
             zip: "12345".to_string(),
             country: "US".to_string(),
-            is_default: true,
-            address_type: AddressType::Shipping,
+            is_default_shipping: true,
+            is_default_billing: false,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         };
         
         assert_eq!(addr.first_name, "John");
-        assert!(addr.is_default);
+        assert!(addr.is_default_shipping);
     }
 }

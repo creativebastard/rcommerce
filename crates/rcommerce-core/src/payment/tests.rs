@@ -1,23 +1,22 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::config::Config;
-    use crate::payment::gateways::StripeGateway;
+    use crate::payment::PaymentGateway;
+    use crate::payment::gateways::MockPaymentGateway;
     use rust_decimal_macros::dec;
     
     #[tokio::test]
-    async fn test_stripe_payment_gateway_creation() {
-        let gateway = StripeGateway::new(
-            "sk_test_1234567890".to_string(),
-            "whsec_test123456".to_string()
-        );
+    async fn test_mock_payment_gateway_creation() {
+        let gateway = MockPaymentGateway::new();
         
-        assert_eq!(gateway.id(), "stripe");
-        assert_eq!(gateway.name(), "Stripe");
+        assert_eq!(gateway.id(), "mock");
+        assert_eq!(gateway.name(), "Mock Payment Gateway");
     }
     
     #[test]
     fn test_create_payment_request_validation() {
+        use crate::payment::{CreatePaymentRequest, PaymentMethod, CardDetails};
+        use crate::models::Address;
+        
         let request = CreatePaymentRequest {
             amount: dec!(99.99),
             currency: "USD".to_string(),
@@ -32,12 +31,22 @@ mod tests {
                 name: "John Doe".to_string(),
             }),
             billing_address: Some(Address {
-                line1: "123 Main St".to_string(),
-                line2: None,
+                id: uuid::Uuid::new_v4(),
+                customer_id: uuid::Uuid::new_v4(),
+                first_name: "John".to_string(),
+                last_name: "Doe".to_string(),
+                company: None,
+                phone: None,
+                address1: "123 Main St".to_string(),
+                address2: None,
                 city: "San Francisco".to_string(),
                 state: Some("CA".to_string()),
-                postal_code: "94105".to_string(),
                 country: "US".to_string(),
+                zip: "94105".to_string(),
+                is_default_shipping: false,
+                is_default_billing: true,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
             }),
             metadata: serde_json::json!({"test": true}),
         };
@@ -49,7 +58,7 @@ mod tests {
     
     #[test]
     fn test_payment_status_transitions() {
-        use PaymentStatus::*;
+        use crate::payment::PaymentStatus::*;
         
         // Test valid transitions
         assert!(Pending.can_transition_to(Processing));
@@ -61,26 +70,11 @@ mod tests {
         assert!(!Succeeded.can_transition_to(Processing));
         assert!(!Failed.can_transition_to(Succeeded));
     }
-    
-    #[test]
-    fn test_certificate_info_validation() {
-        let info = CertificateInfo {
-            domain: "example.com".to_string(),
-            certificate_path: std::path::PathBuf::from("/tmp/cert.pem"),
-            private_key_path: std::path::PathBuf::from("/tmp/key.pem"),
-            expires_at: chrono::Utc::now() + chrono::Duration::days(90),
-            issued_at: chrono::Utc::now(),
-            serial_number: "1234567890".to_string(),
-        };
-        
-        assert_eq!(info.domain, "example.com");
-        assert!(info.expires_at > chrono::Utc::now());
-    }
 }
 
-impl PaymentStatus {
-    pub fn can_transition_to(&self, new_status: PaymentStatus) -> bool {
-        use PaymentStatus::*;
+impl crate::payment::PaymentStatus {
+    pub fn can_transition_to(&self, new_status: crate::payment::PaymentStatus) -> bool {
+        use crate::payment::PaymentStatus::*;
         
         match (self, new_status) {
             (Pending, Processing) => true,

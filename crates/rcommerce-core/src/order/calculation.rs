@@ -287,6 +287,8 @@ impl ShippingCalculator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uuid::Uuid;
+    use chrono::Utc;
     
     #[test]
     fn test_order_calculator() {
