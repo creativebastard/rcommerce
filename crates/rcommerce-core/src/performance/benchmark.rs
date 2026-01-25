@@ -78,12 +78,12 @@ impl Benchmark {
     /// Run concurrent benchmark
     pub async fn run_concurrent<F, Fut>(
         &mut self,
-        mut func: F,
+        func: F,
         concurrency: usize,
     ) -> PerformanceResult<BenchmarkResult>
     where
-        F: FnMut() -> Fut,
-        Fut: std::future::Future<Output = PerformanceResult<()>>,
+        F: Fn() -> Fut + Clone + Send + 'static,
+        Fut: std::future::Future<Output = PerformanceResult<()>> + Send,
     {
         use tokio::task::JoinSet;
         
@@ -106,9 +106,10 @@ impl Benchmark {
                     break;
                 }
                 
-                join_set.spawn(async {
+                let func_clone = func.clone();
+                join_set.spawn(async move {
                     let start = Instant::now();
-                    func().await?;
+                    func_clone().await?;
                     let duration = start.elapsed();
                     
                     PerformanceResult::Ok(BenchmarkIteration {
@@ -173,7 +174,6 @@ impl Benchmark {
             p95_duration_ms: p95,
             p99_duration_ms: p99,
             throughput_per_sec: throughput,
-            iterations: self.iterations,
         }
     }
 }
@@ -223,9 +223,6 @@ pub struct BenchmarkResult {
     
     /// Throughput (operations/sec)
     pub throughput_per_sec: f64,
-    
-    /// Number of iterations
-    pub iterations: usize,
 }
 
 impl BenchmarkResult {

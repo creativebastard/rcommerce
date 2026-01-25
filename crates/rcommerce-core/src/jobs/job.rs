@@ -9,7 +9,7 @@ use uuid::Uuid;
 pub type JobId = Uuid;
 
 /// Job priority levels
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum JobPriority {
     /// High priority jobs (processed first)
     High = 100,
@@ -59,7 +59,7 @@ impl JobPriority {
 }
 
 /// Job execution status
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum JobStatus {
     /// Job is pending execution
     Pending,

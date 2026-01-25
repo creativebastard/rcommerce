@@ -32,10 +32,10 @@ pub mod pubsub;
 pub mod token;
 
 // Re-export main types
-pub use config::{CacheConfig, RedisConfig};
+pub use config::{CacheConfig, RedisConfig, WebSocketSessionConfig};
 pub use connection::{RedisPool, RedisConnection};
 pub use session::{WebSocketSession, SessionStore};
-pub use rate_limit::{RedisRateLimiter, RateLimitKey};
+pub use rate_limit::{RedisRateLimiter, RateLimitInfo};
 pub use pubsub::{RedisPubSub, Subscription};
 pub use token::{TokenBlacklist, BlacklistedToken};
 

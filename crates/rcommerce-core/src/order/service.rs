@@ -1,5 +1,7 @@
 use async_trait::async_trait;
 use uuid::Uuid;
+use rust_decimal::Decimal;
+use chrono::{DateTime, Utc};
 
 use crate::{Result, Error};
 use crate::order::{Order, OrderItem, CreateOrderRequest, CreateOrderItem, OrderStatus, PaymentStatus, FulfillmentStatus};
@@ -142,6 +144,15 @@ impl OrderService {
         for mut item in order_items {
             item.order_id = order_id;
             
+            // Check for reservation before moving metadata
+            let reservation_id: Option<Uuid> = if let serde_json::Value::Object(ref map) = &item.metadata {
+                map.get("reservation_id")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| Uuid::parse_str(s).ok())
+            } else {
+                None
+            };
+            
             sqlx::query(
                 r#"
                 INSERT INTO order_items (
@@ -165,20 +176,17 @@ impl OrderService {
             .bind(item.name)
             .bind(item.variant_name)
             .bind(item.weight)
-            .bind(item.metadata)
+            .bind(&item.metadata)
             .execute(self.db.pool())
             .await?;
             
-            // Update reservation reference
-            if let Some(serde_json::Value::Object(ref mut map)) = &mut item.metadata {
-                if let Some(reservation_id) = map.get("reservation_id").and_then(|v| v.as_str()).and_then(|s| Uuid::parse_str(s).ok()) {
-                    // Update reservation with order_id
-                    sqlx::query("UPDATE stock_reservations SET order_id = $1 WHERE id = $2")
-                        .bind(order_id)
-                        .bind(reservation_id)
-                        .execute(self.db.pool())
-                        .await?;
-                }
+            // Update reservation reference if found
+            if let Some(reservation_id) = reservation_id {
+                sqlx::query("UPDATE stock_reservations SET order_id = $1 WHERE id = $2")
+                    .bind(order_id)
+                    .bind(reservation_id)
+                    .execute(self.db.pool())
+                    .await?;
             }
         }
         
@@ -189,7 +197,7 @@ impl OrderService {
     }
     
     /// Get order by ID
-    pub async fn get_order(&self, order_id: Uuid) -> Result<Option<crate::order::OrderDetail>> {
+    pub async fn get_order(&self, order_id: Uuid) -> Result<Option<OrderDetail>> {
         let order = sqlx::query_as::<_, Order>("SELECT * FROM orders WHERE id = $1")
             .bind(order_id)
             .fetch_optional(self.db.pool())
@@ -202,7 +210,7 @@ impl OrderService {
         
         let items = self.get_order_items(order_id).await?;
         
-        Ok(Some(crate::order::OrderDetail {
+        Ok(Some(OrderDetail {
             order: order.clone(), // Clone for the main order
             items,
             // TODO: Add customer, addresses, payments, fulfillments
@@ -316,20 +324,20 @@ impl OrderService {
         // Release inventory reservations
         self.release_inventory_reservations(order_id).await?;
         
+        // Update cancellation reason in metadata first (before reason is consumed)
+        sqlx::query("UPDATE orders SET metadata = jsonb_set(metadata, '{cancellation_reason}', $1) WHERE id = $2")
+            .bind(serde_json::json!(&reason))
+            .bind(order_id)
+            .execute(self.db.pool())
+            .await?;
+        
         // Process refund if payment was made
         if order.order.payment_status == PaymentStatus::Paid {
             self.process_refund(order_id, reason).await?;
         }
         
         // Update order status
-        let canceled_order = self.update_order_status(order_id, OrderStatus::Cancelled).await?;
-        
-        // Update cancellation reason in metadata
-        sqlx::query("UPDATE orders SET metadata = jsonb_set(metadata, '{cancellation_reason}', $1) WHERE id = $2")
-            .bind(serde_json::json!(reason))
-            .bind(order_id)
-            .execute(self.db.pool())
-            .await?;
+        let canceled_order = self.update_order_status(order_id, OrderStatus::Canceled).await?;
         
         Ok(canceled_order)
     }

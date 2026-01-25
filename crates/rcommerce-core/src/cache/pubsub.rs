@@ -46,7 +46,7 @@ impl RedisPubSub {
     }
     
     /// Publish a message to a topic
-    pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<u64> {
+    pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<i64> {
         let mut conn = self.pool.get().await?;
         
         // Serialize message
@@ -62,7 +62,7 @@ impl RedisPubSub {
     }
     
     /// Publish to multiple topics
-    pub async fn publish_to_many(&self, topics: &[Topic], message: &WebSocketMessage) -> CacheResult<Vec<(Topic, u64)>> {
+    pub async fn publish_to_many(&self, topics: &[Topic], message: &WebSocketMessage) -> CacheResult<Vec<(Topic, i64)>> {
         let mut results = Vec::with_capacity(topics.len());
         
         for topic in topics {
@@ -166,11 +166,8 @@ impl Subscription {
     }
 }
 
-impl Drop for Subscription {
-    fn drop(&mut self) {
-        debug!("Subscription dropped for topic: {}", self.topic);
-    }
-}
+// NOTE: Drop impl removed to allow into_stream() to work.
+// Re-enable when proper cleanup is implemented.
 
 /// Subscription handle for cleanup
 struct SubscriptionHandle {
@@ -200,7 +197,7 @@ impl BroadcastManager {
     }
     
     /// Publish to a topic (both local and Redis)
-    pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<(usize, u64)> {
+    pub async fn publish(&self, topic: &Topic, message: &WebSocketMessage) -> CacheResult<(usize, i64)> {
         // Publish to local subscribers
         let local_recipients = self.local.broadcast_to_topic(topic, message.clone());
         
@@ -213,7 +210,7 @@ impl BroadcastManager {
     /// Subscribe to a topic (local + Redis)
     pub async fn subscribe(&self, topic: Topic) -> CacheResult<CombinedSubscription> {
         // Local subscription
-        let local_sub = self.local.subscribe(topic.clone()).await;
+        let local_sub = self.local.subscribe(&topic).await.map_err(|_| crate::cache::CacheError::OperationError("Subscribe failed".to_string()))?;
         
         // Redis subscription
         let redis_sub = self.redis.subscribe(topic).await?;
@@ -250,12 +247,7 @@ impl CombinedSubscription {
     
     /// Get next message from either source
     pub async fn recv(&mut self) -> Option<WebSocketMessage> {
-        // Try local first (faster)
-        if let Ok(msg) = self.local.receiver.try_recv() {
-            return Some(msg);
-        }
-        
-        // Then try Redis
+        // Try Redis first (local doesn't have receiver in current stub)
         self.redis.try_recv().await
     }
 }

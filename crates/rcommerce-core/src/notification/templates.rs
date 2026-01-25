@@ -53,7 +53,7 @@ impl NotificationTemplate {
     pub fn render(&self, variables: &TemplateVariables) -> Result<String> {
         let mut rendered = self.body.clone();
         
-        for (key, value) in variables.inner.iter() {
+        for (key, value) in variables.iter() {
             let placeholder = format!("{{ {{ {} }} }}", key);
             rendered = rendered.replace(&placeholder, value);
         }
@@ -66,7 +66,7 @@ impl NotificationTemplate {
         if let Some(ref html_template) = self.html_body {
             let mut rendered = html_template.clone();
             
-            for (key, value) in variables.inner.iter() {
+            for (key, value) in variables.iter() {
                 let placeholder = format!("{{ {{ {} }} }}", key);
                 rendered = rendered.replace(&placeholder, value);
             }
@@ -254,21 +254,13 @@ Recommended Reorder Quantity: {{ reorder_quantity }}
     }
 }
 
-/// Template variables for rendering
-#[derive(Debug, Default)]
-pub struct TemplateVariables {
-    inner: HashMap<String, String>,
-}
+// TemplateVariables is defined in types.rs and re-exported from there
+pub use crate::notification::types::TemplateVariables;
 
 impl TemplateVariables {
-    pub fn new() -> Self {
-        Self {
-            inner: HashMap::new(),
-        }
-    }
-    
-    pub fn add(&mut self, key: String, value: String) {
-        self.inner.insert(key, value);
+    /// Add a key-value pair (convenience method for templates module)
+    pub fn add(&mut self, key: impl Into<String>, value: impl Into<String>) {
+        self.insert(key, value);
     }
     
     pub fn add_order(&mut self, order: &crate::order::Order) {
@@ -277,7 +269,7 @@ impl TemplateVariables {
         self.add("order_total".to_string(), order.total.to_string());
         self.add("order_currency".to_string(), order.currency.clone());
         // Add formatted date
-        use chrono::Timelike;
+
         let date_str = order.created_at.format("%b %d, %Y").to_string();
         self.add("order_date".to_string(), date_str);
     }
@@ -307,47 +299,56 @@ impl TemplateVariables {
         // Create a simple items list for plain text emails
         let items_text = items
             .iter()
-            .map(|item| format!("{} x {} - ${}", item.quantity, item.product_title, item.price))
+            .map(|item| format!("{} x {} - ${}", item.quantity, item.name, item.price))
             .collect::<Vec<_>>()
             .join("\n");
         self.add("items".to_string(), items_text);
         
         // Calculate subtotal
-        let subtotal: f64 = items.iter().map(|item| item.price * item.quantity as f64).sum();
+        let subtotal: rust_decimal::Decimal = items
+            .iter()
+            .map(|item| item.price * rust_decimal::Decimal::from(item.quantity))
+            .sum();
         self.add("subtotal".to_string(), format!("{:.2}", subtotal));
     }
     
-    pub fn add_addresses(&mut self, shipping: &crate::models::address::Address, billing: &crate::models::address::Address) {
+    pub fn add_addresses(&mut self, shipping: &crate::common::Address, billing: &crate::common::Address) {
+        let recipient_name = format!("{} {}", shipping.first_name, shipping.last_name);
+        let street_address = format!("{}{}", shipping.address1, shipping.address2.as_ref().map(|a| format!(", {}", a)).unwrap_or_default());
+        
         let shipping_str = format!(
             "{}<br>{}<br>{}, {} {}<br>{}",
-            shipping.recipient_name,
-            shipping.street_address,
+            recipient_name,
+            street_address,
             shipping.city,
-            shipping.state,
-            shipping.zip_code,
+            shipping.state.as_deref().unwrap_or(""),
+            shipping.zip,
             shipping.country
         );
         self.add("shipping_address".to_string(), shipping_str);
         
+        let billing_recipient = format!("{} {}", billing.first_name, billing.last_name);
+        let billing_street = format!("{}{}", billing.address1, billing.address2.as_ref().map(|a| format!(", {}", a)).unwrap_or_default());
+        
         let billing_str = format!(
             "{}<br>{}<br>{}, {} {}<br>{}",
-            billing.recipient_name,
-            billing.street_address,
+            billing_recipient,
+            billing_street,
             billing.city,
-            billing.state,
-            billing.zip_code,
+            billing.state.as_deref().unwrap_or(""),
+            billing.zip,
             billing.country
         );
         self.add("billing_address".to_string(), billing_str);
         
         // Add individual address fields for HTML template
-        self.add("customer_name".to_string(), shipping.recipient_name.clone());
-        self.add("shipping_street".to_string(), shipping.street_address.clone());
-        self.add("shipping_city_state_zip".to_string(), format!("{}, {} {}", shipping.city, shipping.state, shipping.zip_code));
+        self.add("customer_name".to_string(), recipient_name);
+        self.add("shipping_street".to_string(), street_address);
+        self.add("shipping_city_state_zip".to_string(), format!("{}, {} {}", shipping.city, shipping.state.as_deref().unwrap_or(""), shipping.zip));
         self.add("shipping_country".to_string(), shipping.country.clone());
         
-        self.add("billing_company".to_string(), billing.recipient_name.clone());
-        self.add("billing_street".to_string(), billing.street_address.clone());
+        self.add("billing_company".to_string(), billing_recipient);
+        self.add("billing_street".to_string(), billing_street);
         self.add("billing_city".to_string(), billing.city.clone());
         self.add("billing_country".to_string(), billing.country.clone());
     }

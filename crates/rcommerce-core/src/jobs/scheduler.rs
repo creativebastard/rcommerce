@@ -1,10 +1,12 @@
 //! Job scheduler for cron-like and scheduled jobs
 
 use crate::cache::RedisPool;
-use crate::jobs::{Job, JobId, JobProcessingResult};
-use chrono::{DateTime, Utc, TimeZone};
-use std::str::FromStr;
-use tracing::{info, debug, error};
+use crate::jobs::{Job, JobId, JobProcessingResult, JobError};
+use chrono::{DateTime, Utc};
+use std::sync::Arc;
+use tracing::{info, debug, error, warn};
+use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 /// Job scheduler for recurring and scheduled jobs
 pub struct JobScheduler {
@@ -111,20 +113,20 @@ impl JobScheduler {
     
     /// Schedule a job for future execution
     pub async fn schedule(&self, job: Job, execute_at: DateTime<Utc>) -> JobProcessingResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Store job
         let job_data = serde_json::to_vec(&job)
             .map_err(|e| JobError::Serialization(e.to_string()))?;
         
         let job_key = format!("scheduler:job:{}", job.id);
-        conn.setex(&job_key, 86400, &job_data)?;
+        conn.setex(&job_key, 86400, &job_data).await?;
         
         // Add to scheduled set (score = timestamp)
         let timestamp = execute_at.timestamp();
         let mut cmd = redis::Cmd::new();
         cmd.arg("ZADD").arg("scheduler:scheduled").arg(timestamp).arg(job.id.to_string());
-        conn.execute(cmd)?;
+        conn.execute(cmd).await?;
         
         info!("Scheduled job: id={}, execute_at={}", job.id, execute_at);
         
@@ -133,7 +135,7 @@ impl JobScheduler {
     
     /// Process jobs that are due for execution
     async fn process_due_jobs(&self) -> JobProcessingResult<usize> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let now = Utc::now().timestamp();
         
@@ -147,7 +149,8 @@ impl JobScheduler {
             .arg("0")
             .arg("100");
         
-        let job_ids: Vec<String> = redis::from_redis_value(&conn.execute(cmd)?)
+        let value = conn.execute(cmd).await?;
+        let job_ids: Vec<String> = redis::from_redis_value(value)
             .map_err(|e| JobError::Deserialization(e.to_string()))?;
         
         if job_ids.is_empty() {
@@ -174,12 +177,12 @@ impl JobScheduler {
     
     /// Execute a scheduled job
     async fn execute_scheduled_job(&self, job_id: JobId) -> JobProcessingResult<()> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Load job
         let job_key = format!("scheduler:job:{}", job_id);
         
-        match conn.get(&job_key)? {
+        match conn.get(&job_key).await? {
             Some(data) => {
                 let job: Job = serde_json::from_slice(&data)
                     .map_err(|e| JobError::Deserialization(e.to_string()))?;
@@ -187,10 +190,10 @@ impl JobScheduler {
                 // Remove from scheduled set
                 let mut cmd = redis::Cmd::new();
                 cmd.arg("ZREM").arg("scheduler:scheduled").arg(job_id.to_string());
-                conn.execute(cmd)?;
+                conn.execute(cmd).await?;
                 
                 // Delete job from scheduler
-                conn.del(&job_key)?;
+                conn.del(&job_key).await?;
                 
                 // Schedule to actual queue
                 // This would enqueue to the actual job queue (implementation depends on queue)
@@ -203,7 +206,7 @@ impl JobScheduler {
                 // Remove from set anyway to clean up
                 let mut cmd = redis::Cmd::new();
                 cmd.arg("ZREM").arg("scheduler:scheduled").arg(job_id.to_string());
-                conn.execute(cmd)?;
+                conn.execute(cmd).await?;
                 Ok(())
             }
         }
@@ -222,14 +225,14 @@ impl JobScheduler {
             return Err(JobError::Worker(format!("Invalid cron expression: {}", schedule_str)));
         }
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Store cron job
         let cron_key = format!("scheduler:cron:{}", job.id);
         
         let cron_job = CronJob {
             id: job.id,
-            schedule: schedule_str,
+            schedule: schedule_str.clone(),
             job_data: serde_json::to_vec(&job).map_err(|e| JobError::Serialization(e.to_string()))?,
             enabled: true,
             created_at: Utc::now().timestamp(),
@@ -239,12 +242,12 @@ impl JobScheduler {
         let cron_data = serde_json::to_vec(&cron_job)
             .map_err(|e| JobError::Serialization(e.to_string()))?;
         
-        conn.setex(&cron_key, 86400, &cron_data)?;
+        conn.setex(&cron_key, 86400, &cron_data).await?;
         
         // Add to cron index
         let mut cmd = redis::Cmd::new();
         cmd.arg("SADD").arg("scheduler:cron_jobs").arg(job.id.to_string());
-        conn.execute(cmd)?;
+        conn.execute(cmd).await?;
         
         info!("Created cron job: id={}, schedule={}", job.id, cron_job.schedule);
         
@@ -253,13 +256,10 @@ impl JobScheduler {
     
     /// Process cron jobs
     async fn process_cron_jobs(&self) -> JobProcessingResult<usize> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         // Get all cron job IDs
-        let job_ids: Vec<String> = redis::from_redis_value(
-            &conn.execute(redis::Cmd::new().arg("SMEMBERS").arg("scheduler:cron_jobs"))?,
-        )
-        .map_err(|e| JobError::Deserialization(e.to_string()))?;
+        let job_ids: Vec<String> = conn.smembers("scheduler:cron_jobs").await?;
         
         let mut executed = 0;
         
@@ -280,11 +280,11 @@ impl JobScheduler {
     
     /// Check and execute a cron job if due
     async fn check_and_execute_cron_job(&self, job_id: JobId) -> JobProcessingResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let cron_key = format!("scheduler:cron:{}", job_id);
         
-        match conn.get(&cron_key)? {
+        match conn.get(&cron_key).await? {
             Some(data) => {
                 let mut cron_job: CronJob = serde_json::from_slice(&data)
                     .map_err(|e| JobError::Deserialization(e.to_string()))?;
@@ -301,7 +301,7 @@ impl JobScheduler {
                     let updated_data = serde_json::to_vec(&cron_job)
                         .map_err(|e| JobError::Serialization(e.to_string()))?;
                     
-                    conn.setex(&cron_key, 86400, &updated_data)?;
+                    conn.setex(&cron_key, 86400, &updated_data).await?;
                     
                     info!("Executed cron job: id={}, next_run={}", job_id, cron_job.next_run);
                     
@@ -314,7 +314,7 @@ impl JobScheduler {
                 // Clean up missing cron job
                 let mut cmd = redis::Cmd::new();
                 cmd.arg("SREM").arg("scheduler:cron_jobs").arg(job_id.to_string());
-                conn.execute(cmd)?;
+                conn.execute(cmd).await?;
                 Ok(false)
             }
         }
@@ -344,15 +344,13 @@ impl JobScheduler {
     
     /// Remove a cron job
     pub async fn remove_cron(&self, job_id: JobId) -> JobProcessingResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let cron_key = format!("scheduler:cron:{}", job_id);
-        let deleted = conn.del(&cron_key)?;
+        let deleted = conn.del(&cron_key).await?;
         
         if deleted {
-            let mut cmd = redis::Cmd::new();
-            cmd.arg("SREM").arg("scheduler:cron_jobs").arg(job_id.to_string());
-            conn.execute(cmd)?;
+            conn.srem("scheduler:cron_jobs", job_id.to_string()).await?;
             
             info!("Removed cron job: id={}", job_id);
         }
@@ -372,11 +370,11 @@ impl JobScheduler {
     
     /// Update cron job enabled state
     async fn update_cron_enabled(&self, job_id: JobId, enabled: bool) -> JobProcessingResult<bool> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let cron_key = format!("scheduler:cron:{}", job_id);
         
-        if let Some(data) = conn.get(&cron_key)? {
+        if let Some(data) = conn.get(&cron_key).await? {
             let mut cron_job: CronJob = serde_json::from_slice(&data)
                 .map_err(|e| JobError::Deserialization(e.to_string()))?;
             
@@ -385,7 +383,7 @@ impl JobScheduler {
             let updated_data = serde_json::to_vec(&cron_job)
                 .map_err(|e| JobError::Serialization(e.to_string()))?;
             
-            conn.setex(&cron_key, 86400, &updated_data)?;
+            conn.setex(&cron_key, 86400, &updated_data).await?;
             
             info!("{} cron job: id={}", if enabled { "Enabled" } else { "Disabled" }, job_id);
             
@@ -397,12 +395,9 @@ impl JobScheduler {
     
     /// Get all cron jobs
     pub async fn get_cron_jobs(&self) -> JobProcessingResult<Vec<CronJobInfo>> {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
-        let job_ids: Vec<String> = redis::from_redis_value(
-            &conn.execute(redis::Cmd::new().arg("SMEMBERS").arg("scheduler:cron_jobs"))?,
-        )
-        .map_err(|e| JobError::Deserialization(e.to_string()))?;
+        let job_ids: Vec<String> = conn.smembers("scheduler:cron_jobs").await?;
         
         let mut jobs = Vec::new();
         
@@ -410,7 +405,7 @@ impl JobScheduler {
             if let Ok(job_id) = Uuid::parse_str(&job_id_str) {
                 let cron_key = format!("scheduler:cron:{}", job_id);
                 
-                if let Some(data) = conn.get(&cron_key)? {
+                if let Some(data) = conn.get(&cron_key).await? {
                     let cron_job: CronJob = serde_json::from_slice(&data)
                         .map_err(|e| JobError::Deserialization(e.to_string()))?;
                     

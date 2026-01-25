@@ -8,9 +8,10 @@ use redis::Commands;
 use std::time::Duration;
 use tracing::{info, warn};
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 /// Blacklisted token information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlacklistedToken {
     /// Token ID
     pub token_id: Uuid,
@@ -133,7 +134,11 @@ impl TokenBlacklist {
         
         let key = format!("blacklist:token:{}", token_id);
         
-        conn.exists(&key).await
+        match conn.get(&key).await {
+            Ok(Some(_)) => Ok(true),
+            Ok(None) => Ok(false),
+            Err(e) => Err(e),
+        }
     }
     
     /// Get blacklisted token info
@@ -168,23 +173,11 @@ impl TokenBlacklist {
         if let Some(token) = self.get_blacklisted_token(token_id).await? {
             // Remove from user's index
             let user_key = format!("blacklist:user:{}", token.user_id);
-            let _: i32 = conn.execute(
-                redis::Cmd::new().arg("SREM").arg(&user_key).arg(token_id.to_string())
-            ).await
-            .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-            .and_then(|v| {
-                redis::from_redis_value(&v).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))
-            })?;
+            let _ = conn.srem(&user_key, token_id.to_string()).await?;
             
             // Remove from type index
             let type_key = format!("blacklist:type:{}", token.token_type);
-            let _: i32 = conn.execute(
-                redis::Cmd::new().arg("SREM").arg(&type_key).arg(token_id.to_string())
-            ).await
-            .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-            .and_then(|v| {
-                redis::from_redis_value(&v).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))
-            })?;
+            let _ = conn.srem(&type_key, token_id.to_string()).await?;
         }
         
         // Remove token
@@ -204,13 +197,7 @@ impl TokenBlacklist {
         
         let user_key = format!("blacklist:user:{}", user_id);
         
-        let token_ids: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("SMEMBERS").arg(&user_key)
-        ).await
-        .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))
-        })?;
+        let token_ids: Vec<String> = conn.smembers(&user_key).await?;
         
         let mut tokens = Vec::new();
         for token_id_str in token_ids {
@@ -233,13 +220,7 @@ impl TokenBlacklist {
         
         // Find all blacklist keys
         let pattern = "blacklist:token:*".to_string();
-        let keys: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("KEYS").arg(&pattern)
-        ).await
-        .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))
-        })?;
+        let keys: Vec<String> = conn.keys(&pattern).await?;
         
         let mut cleaned = 0;
         
@@ -270,13 +251,7 @@ impl TokenBlacklist {
         
         // Find all blacklist keys (this is expensive, use sparingly)
         let pattern = "blacklist:token:*".to_string();
-        let keys: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("KEYS").arg(&pattern)
-        ).await
-        .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))
-        })?;
+        let keys: Vec<String> = conn.keys(&pattern).await?;
         
         let mut total = 0;
         let mut active = 0;

@@ -8,6 +8,8 @@ use uuid::Uuid;
 use rust_decimal::Decimal;
 
 use crate::{Result, Error};
+use crate::models::Address;
+use serde::{Serialize, Deserialize};
 
 /// Payment gateway trait
 #[async_trait]
@@ -64,17 +66,6 @@ pub struct CardDetails {
     pub cvc: String,
     pub name: String,
 }
-
-#[derive(Debug, Clone)]
-pub struct Address {
-    pub line1: String,
-    pub line2: Option<String>,
-    pub city: String,
-    pub state: Option<String>,
-    pub postal_code: String,
-    pub country: String,
-}
-
 /// Payment session (for client-side checkout)
 #[derive(Debug, Clone)]
 pub struct PaymentSession {
@@ -109,7 +100,7 @@ pub struct Payment {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PaymentStatus {
     Pending,
     Processing,
@@ -155,10 +146,4 @@ pub enum WebhookEventType {
     PaymentCanceled,
     RefundSucceeded,
     DisputeCreated,
-}
-
-impl Error {
-    pub fn payment_error<T: Into<String>>(msg: T) -> Self {
-        Error::Payment(msg.into())
-    }
 }

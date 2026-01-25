@@ -1,13 +1,15 @@
 use async_trait::async_trait;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
+use sqlx::Row;
 
 use crate::{Result, Error};
-use crate::notification::{NotificationService, Notification, NotificationChannel, Recipient, DeliveryStatus, DeliveryAttempt, NotificationPriority};
-use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel};
-use crate::notification::templates::{NotificationTemplate, TemplateVariables};
+use crate::notification::{Notification, NotificationChannel, NotificationMessage, Recipient, DeliveryStatus, DeliveryAttempt, NotificationPriority, TemplateVariables};
+use crate::notification::channels::{EmailChannel, SmsChannel, WebhookChannel, NotificationChannel as ChannelTrait};
+use crate::notification::templates::{NotificationTemplate};
 use crate::models::customer::Customer;
 use crate::models::address::Address;
-use crate::order::{Order, OrderItem};
+use crate::order::{Order, OrderItem, Fulfillment};
 
 /// Main notification service
 pub struct NotificationService {
@@ -32,22 +34,34 @@ impl NotificationService {
     /// Send a notification
     pub async fn send(&self, notification: &Notification) -> Result<DeliveryAttempt> {
         // Create delivery attempt
-        let mut attempt = DeliveryAttempt::new(notification.id, self.get_provider(&notification.channel));
+        let mut attempt = DeliveryAttempt::new(
+            format!("{:?}", notification.channel),
+            DeliveryStatus::Pending
+        );
+        
+        // Convert notification to message for sending
+        let message = NotificationMessage {
+            template_id: "default".to_string(),
+            recipient: notification.recipient.clone(),
+            subject: Some(notification.subject.clone()),
+            body: notification.body.clone(),
+            variables: TemplateVariables::new(),
+        };
         
         // Send based on channel
         match notification.channel {
             NotificationChannel::Email => {
-                self.email_channel.send(notification).await?;
+                self.email_channel.send(&message).await?;
                 attempt.mark_sent();
                 attempt.mark_delivered(); // Simplified - email is "delivered" when sent
             }
             NotificationChannel::Sms => {
-                self.sms_channel.send(notification).await?;
+                self.sms_channel.send(&message).await?;
                 attempt.mark_sent();
                 attempt.mark_delivered();
             }
             NotificationChannel::Webhook => {
-                self.webhook_channel.send(notification).await?;
+                self.webhook_channel.send(&message).await?;
                 attempt.mark_sent();
                 attempt.mark_delivered();
             }
@@ -88,7 +102,14 @@ impl NotificationService {
         
         for recipient in recipients {
             let mut notification = notification.clone();
-            notification.recipient = recipient;
+            // Get the appropriate recipient address based on channel
+            let channel = notification.channel;
+            notification.recipient = match channel {
+                NotificationChannel::Email => recipient.email.clone().unwrap_or_default(),
+                NotificationChannel::Sms => recipient.phone.clone().unwrap_or_default(),
+                NotificationChannel::Webhook => recipient.webhook_url.clone().unwrap_or_default(),
+                _ => String::new(),
+            };
             
             match self.send(&notification).await {
                 Ok(attempt) => attempts.push(attempt),
@@ -241,27 +262,36 @@ impl DeliveryStats {
 pub struct NotificationFactory;
 
 impl NotificationFactory {
+    /// Get recipient address for a given channel
+    fn get_recipient_address(recipient: &Recipient, channel: NotificationChannel) -> String {
+        match channel {
+            NotificationChannel::Email => recipient.email.clone().unwrap_or_default(),
+            NotificationChannel::Sms => recipient.phone.clone().unwrap_or_default(),
+            NotificationChannel::Webhook => recipient.webhook_url.clone().unwrap_or_default(),
+            _ => String::new(),
+        }
+    }
+
     /// Order confirmation notification (plain text)
     pub fn order_confirmation(order: &Order, recipient: Recipient) -> Notification {
-        Notification {
-            id: Uuid::new_v4(),
-            channel: recipient.channel,
-            recipient,
-            subject: format!("Order Confirmed: {}", order.order_number),
-            body: format!(
+        let channel = recipient.primary_channel();
+        let recipient_addr = Self::get_recipient_address(&recipient, channel);
+        
+        Notification::new(
+            channel,
+            recipient_addr,
+            format!("Order Confirmed: {}", order.order_number),
+            format!(
                 "Your order {} has been confirmed. Total: ${}",
                 order.order_number,
                 order.total
             ),
-            html_body: None,
-            priority: NotificationPriority::High,
-            metadata: serde_json::json!({
-                "order_id": order.id,
-                "type": "order_confirmation",
-            }),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        }
+        )
+        .with_priority(NotificationPriority::High)
+        .with_metadata(serde_json::json!({
+            "order_id": order.id,
+            "type": "order_confirmation",
+        }))
     }
     
     /// Order confirmation notification with HTML invoice template
@@ -293,22 +323,27 @@ impl NotificationFactory {
         let html_body = template.render_html(&variables)
             .map_err(|e| Error::notification_error(format!("Failed to render HTML template: {}", e)))?;
         
-        Ok(Notification {
-            id: Uuid::new_v4(),
-            channel: recipient.channel,
-            recipient,
-            subject: template.subject.clone(),
+        let channel = recipient.primary_channel();
+        let recipient_addr = Self::get_recipient_address(&recipient, channel);
+        
+        let mut notification = Notification::new(
+            channel,
+            recipient_addr,
+            template.subject.clone(),
             body,
-            html_body,
-            priority: NotificationPriority::High,
-            metadata: serde_json::json!({
-                "order_id": order.id,
-                "type": "order_confirmation_html",
-                "template_id": template.id,
-            }),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        })
+        )
+        .with_priority(NotificationPriority::High)
+        .with_metadata(serde_json::json!({
+            "order_id": order.id,
+            "type": "order_confirmation_html",
+            "template_id": template.id,
+        }));
+        
+        if let Some(html) = html_body {
+            notification = notification.with_html_body(html);
+        }
+        
+        Ok(notification)
     }
     
     /// Order shipped notification
@@ -319,22 +354,21 @@ impl NotificationFactory {
             body.push_str(&format!("\n\nTracking: {}", tracking));
         }
         
-        Notification {
-            id: Uuid::new_v4(),
-            channel: recipient.channel,
-            recipient,
-            subject: format!("Order Shipped: {}", order.order_number),
+        let channel = recipient.primary_channel();
+        let recipient_addr = Self::get_recipient_address(&recipient, channel);
+        
+        Notification::new(
+            channel,
+            recipient_addr,
+            format!("Order Shipped: {}", order.order_number),
             body,
-            html_body: None,
-            priority: NotificationPriority::High,
-            metadata: serde_json::json!({
-                "order_id": order.id,
-                "fulfillment_id": fulfillment.id,
-                "type": "order_shipped",
-            }),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        }
+        )
+        .with_priority(NotificationPriority::High)
+        .with_metadata(serde_json::json!({
+            "order_id": order.id,
+            "fulfillment_id": fulfillment.id,
+            "type": "order_shipped",
+        }))
     }
     
     /// Low stock email
@@ -345,22 +379,21 @@ impl NotificationFactory {
             NotificationPriority::High
         };
         
-        Notification {
-            id: Uuid::new_v4(),
-            channel: recipient.channel,
-            recipient,
-            subject: format!("Low Stock Alert: {}", alert.product_name),
-            body: alert.notification_message(),
-            html_body: None,
-            priority,
-            metadata: serde_json::json!({
-                "product_id": alert.product_id,
-                "type": "low_stock_alert",
-                "alert_level": format!("{:?}", alert.alert_level),
-            }),
-            scheduled_at: None,
-            created_at: Utc::now(),
-        }
+        let channel = recipient.primary_channel();
+        let recipient_addr = Self::get_recipient_address(&recipient, channel);
+        
+        Notification::new(
+            channel,
+            recipient_addr,
+            format!("Low Stock Alert: {}", alert.product_name),
+            alert.notification_message(),
+        )
+        .with_priority(priority)
+        .with_metadata(serde_json::json!({
+            "product_id": alert.product_id,
+            "type": "low_stock_alert",
+            "alert_level": format!("{:?}", alert.alert_level),
+        }))
     }
 }
 

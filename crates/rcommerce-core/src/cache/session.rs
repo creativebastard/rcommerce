@@ -4,7 +4,7 @@
 //! using Redis, enabling session restoration after disconnections
 //! and horizontal scaling.
 
-use crate::cache::{CacheResult, RedisConnection, RedisPool, WebSocketSessionConfig};
+use crate::cache::{CacheResult, RedisConnection, RedisPool, WebSocketSessionConfig, CacheError};
 use crate::websocket::{WebSocketMessage, ConnectionId, UserId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -189,20 +189,12 @@ impl SessionStore {
             // Remove from user's sessions
             if let Some(user_id) = session.user_id {
                 let user_key = self.user_sessions_key(&user_id);
-                let _: i32 = redis::from_redis_value(
-                    &conn.execute(
-                        redis::Cmd::new().arg("SREM").arg(&user_key).arg(connection_id.to_string())
-                    ).await.map_err(|e| CacheError::OperationError(e.to_string()))?
-                ).map_err(|e| CacheError::OperationError(e.to_string()))?;
+                let _ = conn.srem(&user_key, connection_id.to_string()).await?;
             }
             
             // Remove from IP's sessions
             let ip_key = self.ip_sessions_key(&session.client_ip);
-            let _: i32 = redis::from_redis_value(
-                &conn.execute(
-                    redis::Cmd::new().arg("SREM").arg(&ip_key).arg(connection_id.to_string())
-                ).await.map_err(|e| CacheError::OperationError(e.to_string()))?
-            ).map_err(|e| CacheError::OperationError(e.to_string()))?;
+            let _ = conn.srem(&ip_key, connection_id.to_string()).await?;
         }
         
         // Delete session
@@ -224,13 +216,7 @@ impl SessionStore {
         let user_key = self.user_sessions_key(user_id);
         
         // Get all connection IDs for the user
-        let connection_ids: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("SMEMBERS").arg(&user_key)
-        ).await
-        .map_err(|e| CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| CacheError::DeserializationError(e.to_string()))
-        })?;
+        let connection_ids: Vec<String> = conn.smembers(&user_key).await?;
         
         // Load each session
         let mut sessions = Vec::new();
@@ -257,13 +243,7 @@ impl SessionStore {
         let ip_key = self.ip_sessions_key(ip);
         
         // Get all connection IDs for the IP
-        let connection_ids: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("SMEMBERS").arg(&ip_key)
-        ).await
-        .map_err(|e| CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| CacheError::DeserializationError(e.to_string()))
-        })?;
+        let connection_ids: Vec<String> = conn.smembers(&ip_key).await?;
         
         // Load each session
         let mut sessions = Vec::new();
@@ -292,13 +272,7 @@ impl SessionStore {
         let mut conn = self.pool.get().await?;
         let pattern = format!("{}:*", self.namespace);
         
-        let keys: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("KEYS").arg(&pattern)
-        ).await
-        .map_err(|e| CacheError::OperationError(e.to_string()))
-        .and_then(|v| {
-            redis::from_redis_value(&v).map_err(|e| CacheError::DeserializationError(e.to_string()))
-        })?;
+        let keys: Vec<String> = conn.keys(&pattern).await?;
         
         let mut session_ids = Vec::new();
         for key in keys {

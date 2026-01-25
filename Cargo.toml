@@ -20,6 +20,7 @@ tokio-stream = "0.1"
 axum = { version = "0.7", features = ["macros"] }
 hyper = "1.1"
 tower = "0.4"
+http = "1.0"
 tower-http = { version = "0.5", features = ["trace", "cors", "compression-br", "compression-deflate", "compression-gzip"] }
 
 # Database
@@ -111,32 +112,49 @@ lazy_static = "1.4"
 # Logging
 log = "0.4"
 
+# --- Missing dependencies added below ---
+
+# WebSocket support
+tokio-tungstenite = "0.21"
+futures = "0.3"
+
+# Redis caching
+redis = { version = "1.0", default-features = false, features = ["tokio-rustls-comp", "cluster-async", "connection-manager"] }
+r2d2_redis = "0.14.0"
+redis-graph = "0.1"
+redis-macros = "0.3"
+redisearch-api = "0.7"
+
+# Concurrent data structures
+dashmap = "5.5"
+arc-swap = "1.7"
+
+# URL parsing
+url = "2.5"
+
+# JWT authentication
+jsonwebtoken = "9.2"
+jwt-simple = "0.12"
+
+# Scheduling and time utilities
+chrono-tz = { version = "0.8", features = ["serde"] }
+cron = "0.13"
+
+# Time utilities
+time = "0.3"
+
+
+# Lazy static initialization
+once_cell = "1.19"
+
+# System monitoring
+sysinfo = "0.30"
+
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
-strip = true
 
-[profile.dev]
-opt-level = 0
-debug = true
-split-debuginfo = "unpacked"
+# Lazy static initialization
 
-[profile.bench]
-inherits = "release"
-debug = true
-# WebSocket support for real-time communication
-tokio-tungstenite = "0.21"
-tungstenite = "0.21"
-bytes = "1.5"
-futures = "0.3"
-dashmap = "5.5"
-once_cell = "1.19"
-pin-project = "1.1"
-
-# Redis for caching and session storage
-redis = { version = "0.25", features = ["tokio-rustls-comp", "connection-manager", "cluster"] }
-redis-macros = "0.3"
-r2d2_redis = "0.18"
-redis-graph = "0.1"
-redisearch-api = "0.7"
+# System monitoring

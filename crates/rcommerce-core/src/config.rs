@@ -201,10 +201,6 @@ impl Default for CorsConfig {
     }
 }
 
-fn default_true() -> bool {
-    true
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LimitsConfig {
     #[serde(default = "default_max_request_size")]

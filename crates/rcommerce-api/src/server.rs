@@ -15,8 +15,8 @@ pub async fn run(config: Config) -> Result<()> {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
-        .nest("/api/v1", routes::product::router())
-        .nest("/api/v1", routes::customer::router());
+        .nest("/api/v1", crate::routes::product::router())
+        .nest("/api/v1", crate::routes::customer::router());
     
     info!("R Commerce API server listening on {}", addr);
     info!("Available routes:");

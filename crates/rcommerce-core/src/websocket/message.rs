@@ -23,6 +23,9 @@ pub enum MessageType {
     Ping,
     Pong,
     
+    /// Text message
+    Text,
+    
     /// Subscribe to topic
     Subscribe,
     
@@ -60,6 +63,7 @@ impl MessageType {
         match self {
             MessageType::Connect | MessageType::Auth => MessageCategory::Control,
             MessageType::Ping | MessageType::Pong => MessageCategory::KeepAlive,
+            MessageType::Text => MessageCategory::Application,
             MessageType::Subscribe | MessageType::Unsubscribe => MessageCategory::Subscription,
             MessageType::OrderUpdate | MessageType::InventoryUpdate | 
             MessageType::PaymentUpdate | MessageType::CustomerNotification => MessageCategory::Notification,
@@ -133,6 +137,16 @@ impl WebSocketMessage {
     /// Create a pong message
     pub fn pong() -> Self {
         Self::new(MessageType::Pong, MessagePayload::Pong)
+    }
+    
+    /// Create a text message
+    pub fn text(content: impl Into<String>) -> Self {
+        Self::new(
+            MessageType::Text,
+            MessagePayload::Text {
+                content: content.into(),
+            },
+        )
     }
     
     /// Create an error message
@@ -213,7 +227,7 @@ impl WebSocketMessage {
     }
     
     /// Validate message content
-    pub fn validate(&self) -> Result<(), ValidationError> {
+    pub fn validate(&self) -> std::result::Result<(), ValidationError> {
         // Check message size
         let size = self.estimated_size();
         if size > 1024 * 1024 { // 1MB max
@@ -251,9 +265,11 @@ impl WebSocketMessage {
         let payload_size = match &self.payload {
             MessagePayload::Empty => 0,
             MessagePayload::Ping | MessagePayload::Pong => 4, // "ping" or "pong"
+            MessagePayload::Text { content } => content.len(),
             MessagePayload::Error { code, message, .. } => code.len() + message.len(),
-            MessagePayload::Success { operation, details } => {
-                operation.len() + details.to_string().len()
+            MessagePayload::Success { operation, details, .. } => {
+                let details_str = details.to_string();
+                operation.len() + details_str.len()
             }
             MessagePayload::AuthRequest { token } => token.len(),
             MessagePayload::AuthResponse { message, .. } => message.as_ref().map_or(0, |m| m.len()),
@@ -263,6 +279,15 @@ impl WebSocketMessage {
             }
             MessagePayload::InventoryUpdate { variant, .. } => {
                 variant.as_ref().map_or(0, |v| v.len()) + 32 // UUID + stock
+            }
+            MessagePayload::PaymentUpdate { status, amount, .. } => {
+                status.len() + amount.to_string().len() + 16 // + UUID
+            }
+            MessagePayload::CustomerNotification { message_type, message, data, .. } => {
+                message_type.len() + message.len() + data.to_string().len() + 16 // + UUID
+            }
+            MessagePayload::AdminBroadcast { message, data, .. } => {
+                message.len() + data.to_string().len()
             }
             MessagePayload::Custom { data } => data.to_string().len(),
         };
@@ -292,6 +317,11 @@ pub enum MessagePayload {
     
     /// Pong keep-alive response
     Pong,
+    
+    /// Text message
+    Text {
+        content: String,
+    },
     
     /// Error response
     Error {
@@ -382,6 +412,7 @@ impl MessagePayload {
             MessagePayload::Empty => "empty",
             MessagePayload::Ping => "ping",
             MessagePayload::Pong => "pong",
+            MessagePayload::Text { .. } => "text",
             MessagePayload::Error { .. } => "error",
             MessagePayload::Success { .. } => "success",
             MessagePayload::AuthRequest { .. } => "auth_request",
@@ -469,5 +500,49 @@ mod tests {
         assert!(WebSocketMessage::ping().is_high_priority());
         assert!(WebSocketMessage::error("TEST".to_string(), "Test".to_string()).is_high_priority());
         assert!(!WebSocketMessage::subscribe("topic".to_string()).is_high_priority());
+    }
+}
+
+/// Topic for pub/sub messaging
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Topic(String);
+
+impl Topic {
+    /// Create a new topic
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+    
+    /// Get topic name as string
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+    
+    /// Orders topic
+    pub fn orders() -> Self {
+        Self("orders".to_string())
+    }
+    
+    /// Inventory topic
+    pub fn inventory() -> Self {
+        Self("inventory".to_string())
+    }
+}
+
+impl std::fmt::Display for Topic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<String> for Topic {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
+impl From<&str> for Topic {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
     }
 }

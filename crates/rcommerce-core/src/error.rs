@@ -72,6 +72,8 @@ impl fmt::Display for Error {
             Error::Notification(msg) => write!(f, "Notification error: {}", msg),
             Error::Serialization(e) => write!(f, "Serialization error: {}", e),
             Error::Io(e) => write!(f, "IO error: {}", e),
+            Error::RateLimit(e) => write!(f, "Rate limit error: {}", e),
+            Error::HttpError(code, msg) => write!(f, "HTTP {} error: {}", code, msg),
             Error::Other(msg) => write!(f, "Error: {}", msg),
         }
     }
@@ -176,6 +178,16 @@ impl Error {
     pub fn network<T: Into<String>>(msg: T) -> Self {
         Error::Network(msg.into())
     }
+    
+    /// Create a notification error (convenience method matching naming convention)
+    pub fn notification_error<T: Into<String>>(msg: T) -> Self {
+        Error::Notification(msg.into())
+    }
+    
+    /// Create a payment error (convenience method matching naming convention)
+    pub fn payment_error<T: Into<String>>(msg: T) -> Self {
+        Error::Payment(msg.into())
+    }
 }
 
 impl Error {
@@ -195,6 +207,8 @@ impl Error {
             Error::Serialization(_) => 500,
             Error::Io(_) => 500,
             Error::Network(_) => 503,
+            Error::RateLimit(_) => 429,
+            Error::HttpError(code, _) => code.as_u16(),
             Error::Other(_) => 500,
         }
     }
@@ -215,6 +229,8 @@ impl Error {
             Error::Serialization(_) => "serialization",
             Error::Io(_) => "io",
             Error::Network(_) => "network",
+            Error::RateLimit(_) => "rate_limit",
+            Error::HttpError(_, _) => "http",
             Error::Other(_) => "other",
         }
     }

@@ -23,11 +23,11 @@ impl JobMetrics {
         
         // Increment counter
         let key = format!("metrics:jobs:{}", status.to_string().to_lowercase());
-        conn.incr(&key)?;
+        conn.incr(&key).await?;
         
         // Record latency
         let lat_key = format!("metrics:latency:{}", status.to_string().to_lowercase());
-        conn.lpush(&lat_key, duration_ms.to_string())?;
+        conn.lpush(&lat_key, duration_ms.to_string()).await?;
         
         info!("Recorded job completion: id={}, status={}, duration={}ms", job_id, status, duration_ms);
         
@@ -42,7 +42,7 @@ impl JobMetrics {
         let mut counts = HashMap::new();
         for status in [JobStatus::Pending, JobStatus::Running, JobStatus::Completed, JobStatus::Failed, JobStatus::Dead] {
             let key = format!("metrics:jobs:{}", status.to_string().to_lowercase());
-            let count: i64 = if let Some(data) = conn.get(&key)? {
+            let count: i64 = if let Some(data) = conn.get(&key).await? {
                 String::from_utf8_lossy(&data).parse().unwrap_or(0)
             } else { 0 };
             counts.insert(status, count);
@@ -50,7 +50,7 @@ impl JobMetrics {
         
         // Get latency stats
         let lat_key = "metrics:latency:completed";
-        let lat_data: Vec<u8> = if let Some(data) = conn.get(lat_key)? {
+        let lat_data: Vec<u8> = if let Some(data) = conn.get(lat_key).await? {
             data
         } else { vec![] };
         
@@ -65,12 +65,15 @@ impl JobMetrics {
             0
         };
         
+        // Calculate total processed before moving counts
+        let total_processed = counts.get(&JobStatus::Completed).copied().unwrap_or(0) +
+                              counts.get(&JobStatus::Failed).copied().unwrap_or(0) +
+                              counts.get(&JobStatus::Dead).copied().unwrap_or(0);
+        
         Ok(MetricsSummary {
             job_counts: counts,
             average_latency_ms: avg_latency,
-            total_processed: counts.get(&JobStatus::Completed).copied().unwrap_or(0) +
-                           counts.get(&JobStatus::Failed).copied().unwrap_or(0) +
-                           counts.get(&JobStatus::Dead).copied().unwrap_or(0),
+            total_processed,
         })
     }
 }

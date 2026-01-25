@@ -17,6 +17,7 @@ chrono = { workspace = true }
 
 # Numbers
 rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
 
 # Error handling
 thiserror = { workspace = true }
@@ -40,6 +41,10 @@ async-trait = { workspace = true }
 # Logging
 log = { workspace = true }
 
+# HTTP
+axum = { workspace = true }
+http = { workspace = true }
+
 # HTTP client (for external services)
 reqwest = { workspace = true }
 
@@ -54,3 +59,43 @@ toml = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
+
+# System monitoring
+sysinfo = { workspace = true }
+
+# Lazy initialization
+once_cell = { workspace = true }
+
+# WebSocket support
+tokio-tungstenite = { workspace = true }
+futures = { workspace = true }
+
+# Redis caching (1.0 stable)
+redis = { version = "1.0", default-features = false, features = ["tokio-rustls-comp", "connection-manager", "cluster-async"] }
+
+# Concurrent data structures
+dashmap = { workspace = true }
+arc-swap = { workspace = true }
+
+# URL parsing
+url = { workspace = true }
+
+# Tracing
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Job scheduling
+cron = { workspace = true }
+
+# Crypto for JWT
+jsonwebtoken = { workspace = true }
+jwt-simple = { workspace = true }
+
+# Time utilities
+time = { workspace = true }
+
+# Email templating
+handlebars = { workspace = true }
+
+# LRU Cache support  
+lru = "0.12"

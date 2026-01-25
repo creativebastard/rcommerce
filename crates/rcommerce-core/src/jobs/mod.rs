@@ -61,19 +61,20 @@ pub mod dead_letter;
 
 // Re-export main types
 pub use config::{JobConfig, WorkerConfig, SchedulerConfig};
-pub use job::{Job, JobId, JobStatus, JobPriority, JobResult};
+pub use job::{Job, JobId, JobStatus, JobPriority, JobResult, JobQuery};
 pub use queue::{JobQueue, QueueStats};
-pub use worker::{Worker, WorkerId, WorkerPool};
-pub use scheduler::{JobScheduler, ScheduledJob};
-pub use retry::{RetryPolicy, ExponentialBackoff};
-pub use metrics::{JobMetrics, MetricsCollector};
+pub use worker::{Worker, WorkerId};
+pub use scheduler::JobScheduler;
+pub use retry::{RetryPolicy, ExponentialBackoff, RetryHistory, RetryAttempt};
+pub use metrics::{JobMetrics, MetricsSummary};
 pub use dead_letter::{DeadLetterQueue, DeadLetter};
+// JobError is defined in this module and re-exported automatically
 
 /// Job processing result type
 pub type JobProcessingResult<T> = Result<T, JobError>;
 
 /// Error types for job processing
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error, Serialize, Deserialize)]
 pub enum JobError {
     #[error("Job serialization error: {0}")]
     Serialization(String),
@@ -90,8 +91,8 @@ pub enum JobError {
     #[error("Job execution failed: {0}")]
     Execution(String),
     
-    #[error("Job timeout after {0:?}")]
-    Timeout(Duration),
+    #[error("Job timeout after {0}ms")]
+    TimeoutMillis(u64),
     
     #[error("Job cancelled")]
     Cancelled,
@@ -106,7 +107,15 @@ impl From<JobError> for crate::Error {
     }
 }
 
+impl From<crate::cache::CacheError> for JobError {
+    fn from(err: crate::cache::CacheError) -> Self {
+        JobError::Queue(format!("Cache error: {}", err))
+    }
+}
+
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
+use chrono::Utc;
 
 /// Job middleware trait for cross-cutting concerns
 #[async_trait::async_trait]
@@ -170,7 +179,13 @@ impl JobContext {
     
     /// Get time elapsed since job started
     pub fn elapsed(&self) -> Duration {
-        self.started_at.elapsed().unwrap_or_default()
+        let now = Utc::now();
+        let duration_ms = (now - self.started_at).num_milliseconds();
+        if duration_ms > 0 {
+            Duration::from_millis(duration_ms as u64)
+        } else {
+            Duration::from_millis(0)
+        }
     }
     
     /// Check if job has timed out
@@ -203,7 +218,7 @@ mod tests {
         let error = JobError::Execution("test error".to_string());
         assert!(error.to_string().contains("test error"));
         
-        let error = JobError::Timeout(Duration::from_secs(30));
+        let error = JobError::TimeoutMillis(30000);
         assert!(error.to_string().contains("timeout"));
     }
 }

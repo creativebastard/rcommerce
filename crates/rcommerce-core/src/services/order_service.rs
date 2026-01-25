@@ -8,6 +8,7 @@ use crate::{
     services::{Service, PaginationParams},
 };
 
+#[derive(Clone)]
 pub struct OrderService {
     // repository: OrderRepository, // TODO: Create OrderRepository
 }

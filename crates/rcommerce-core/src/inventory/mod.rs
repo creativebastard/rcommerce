@@ -12,7 +12,7 @@ use chrono::{DateTime, Utc};
 
 use crate::Result;
 
-pub use service::InventoryService;
+pub use service::{InventoryService, StockAlertLevel};
 pub use reservation::{StockReservation, ReservationStatus};
 pub use tracking::{InventoryLevel, StockMovement};
 pub use notification::LowStockAlert;
@@ -42,7 +42,7 @@ impl Default for InventoryConfig {
 }
 
 /// Inventory location (for multi-warehouse support)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct InventoryLocation {
     pub id: Uuid,
     pub name: String,

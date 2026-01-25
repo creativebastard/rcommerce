@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use crate::Result;
 
 /// Stock reservation for an order
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct StockReservation {
     pub id: Uuid,
     pub product_id: Uuid,

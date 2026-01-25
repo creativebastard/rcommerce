@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use crate::{Result, Error};
 
 /// Fulfillment record (shipment)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Fulfillment {
     pub id: Uuid,
     pub order_id: Uuid,
@@ -54,7 +54,7 @@ impl FulfillmentStatus {
 }
 
 /// Fulfillment item
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct FulfillmentItem {
     pub id: Uuid,
     pub fulfillment_id: Uuid,
@@ -105,7 +105,7 @@ impl FulfillmentService {
         // Get order items
         let order = sqlx::query_as::<_, crate::order::Order>("SELECT * FROM orders WHERE id = $1")
             .bind(order_id)
-            .fetch_optional(&crate::db::get_pool().await?)
+            .fetch_optional(&*crate::db::get_pool().await?)
             .await?
             .ok_or_else(|| Error::not_found("Order not found"))?;
         
@@ -124,7 +124,7 @@ impl FulfillmentService {
         )
         .bind(fulfillment_id)
         .bind(order_id)
-        .fetch_one(&crate::db::get_pool().await?)
+        .fetch_one(&*crate::db::get_pool().await?)
         .await?;
         
         // Create fulfillment items (all order items initially)
@@ -139,7 +139,7 @@ impl FulfillmentService {
             "SELECT * FROM fulfillments WHERE id = $1"
         )
         .bind(fulfillment_id)
-        .fetch_optional(&crate::db::get_pool().await?)
+        .fetch_optional(&*crate::db::get_pool().await?)
         .await?
         .ok_or_else(|| Error::not_found("Fulfillment not found"))?;
         
@@ -162,7 +162,7 @@ impl FulfillmentService {
         .bind(shipped_at)
         .bind(delivered_at)
         .bind(fulfillment_id)
-        .fetch_one(&crate::db::get_pool().await?)
+        .fetch_one(&*crate::db::get_pool().await?)
         .await?;
         
         Ok(updated)
@@ -182,7 +182,7 @@ impl FulfillmentService {
         .bind(carrier)
         .bind(tracking_url)
         .bind(fulfillment_id)
-        .fetch_one(&crate::db::get_pool().await?)
+        .fetch_one(&*crate::db::get_pool().await?)
         .await?;
         
         Ok(fulfillment)
@@ -190,11 +190,16 @@ impl FulfillmentService {
     
     /// Mark fulfillment as shipped
     pub async fn mark_shipped(&self, fulfillment_id: Uuid, tracking_info: TrackingInfo) -> Result<Fulfillment> {
+        // Get tracking URL before consuming tracking_info fields
+        let url = tracking_info.tracking_url();
+        let tracking_number = tracking_info.tracking_number;
+        let carrier = tracking_info.carrier;
+        
         let fulfillment = self.add_tracking(
             fulfillment_id,
-            tracking_info.tracking_number,
-            tracking_info.carrier,
-            tracking_info.tracking_url(),
+            tracking_number,
+            carrier,
+            url,
         ).await?;
         
         self.update_status(fulfillment_id, FulfillmentStatus::Shipped).await
@@ -211,7 +216,7 @@ impl FulfillmentService {
         sqlx::query("UPDATE fulfillments SET metadata = jsonb_set(metadata, '{return_reason}', $1) WHERE id = $2")
             .bind(serde_json::json!(return_reason))
             .bind(fulfillment_id)
-            .execute(&crate::db::get_pool().await?)
+            .execute(&*crate::db::get_pool().await?)
             .await?;
         
         self.update_status(fulfillment_id, FulfillmentStatus::Returned).await

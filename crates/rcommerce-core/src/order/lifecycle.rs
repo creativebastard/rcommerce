@@ -1,11 +1,13 @@
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 
 use crate::{Result, Error};
 use super::Order;
+use serde::{Serialize, Deserialize};
 
 /// Order status enum
-#[derive(Debug, Clone, Copy, PartialEq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, sqlx::Type, Serialize, Deserialize)]
 #[sqlx(type_name = "order_status", rename_all = "snake_case")]
 pub enum OrderStatus {
     Pending,      // Order created, awaiting payment

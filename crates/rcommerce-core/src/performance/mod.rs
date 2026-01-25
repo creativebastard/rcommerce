@@ -18,7 +18,7 @@ pub mod monitor;
 pub mod optimizer;
 
 // Re-export main types
-pub use cache::{CacheStrategy, LruCache, TtlCache};
+pub use cache::{CacheStrategy, LruCache, TtlCache, CacheStats};
 pub use query::{QueryCache, CachedQueryResult};
 pub use pool::{PoolOptimizer, PoolStats};
 pub use profiler::{MemoryProfiler, PerformanceProfile};
@@ -43,6 +43,12 @@ pub enum PerformanceError {
     
     #[error("Monitoring error: {0}")]
     MonitorError(String),
+}
+
+impl From<crate::cache::CacheError> for PerformanceError {
+    fn from(err: crate::cache::CacheError) -> Self {
+        PerformanceError::CacheError(err.to_string())
+    }
 }
 
 /// Performance metrics

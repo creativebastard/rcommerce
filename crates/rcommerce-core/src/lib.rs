@@ -4,6 +4,7 @@ pub mod models;
 pub mod traits;
 pub mod common;
 pub mod repository;
+pub mod db;
 pub mod services;
 pub mod payment;
 pub mod inventory;

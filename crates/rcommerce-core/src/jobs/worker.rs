@@ -5,7 +5,10 @@ use crate::jobs::{
     Job, JobId, JobError, JobProcessingResult, JobStatus, JobContext, JobHandler, JobQueue,
     QueueStats, JobConfig, RetryHistory, RetryAttempt,
 };
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    sync::Arc,
+};
 use tokio::{
     sync::{mpsc, Mutex, RwLock},
     task::JoinHandle,
@@ -48,7 +51,7 @@ pub struct Worker {
     pub name: String,
     
     /// Queue this worker processes
-    pub queue: JobQueue,
+    pub queue: Arc<JobQueue>,
     
     /// Configuration
     config: Arc<JobConfig>,
@@ -57,7 +60,7 @@ pub struct Worker {
     state: Arc<RwLock<WorkerState>>,
     
     /// Current job (if any)
-    current_job: Arc<Mutex<Option<JobId>>},
+    current_job: Arc<Mutex<Option<JobId>>>,
     
     /// Job handler
     handler: Arc<dyn JobHandler>,
@@ -86,12 +89,12 @@ impl Worker {
         let name = name.into();
         let id = WorkerId::new_v4();
         
-        info!("Creating worker: id={}, name={}, queue={}", id, name, queue.name);
+        info!("Creating worker: id={}, name={}, queue={}", id, name, queue.name());
         
         Self {
             id,
             name,
-            queue,
+            queue: Arc::new(queue),
             config,
             state: Arc::new(RwLock::new(WorkerState::Starting)),
             current_job: Arc::new(Mutex::new(None)),
@@ -176,7 +179,7 @@ impl Worker {
         // Create job context
         let context = JobContext::new(
             job.id,
-            self.queue.name.clone(),
+            self.queue.name().to_string(),
             job.max_attempts,
             Duration::from_secs(job.timeout_secs),
         );
@@ -203,7 +206,7 @@ impl Worker {
             }
             Err(_) => {
                 // Job timed out
-                let timeout_error = JobError::Timeout(Duration::from_secs(job.timeout_secs));
+                let timeout_error = JobError::TimeoutMillis(job.timeout_secs * 1000);
                 self.handle_job_failure(job, timeout_error).await
             }
         }
@@ -220,10 +223,10 @@ impl Worker {
         let mut history = self.retry_history.lock().await;
         let job_history = history.entry(job.id).or_insert_with(RetryHistory::new);
         
-        if let Some(delay) = self.config.retry.initial_delay() {
-            let attempt = RetryAttempt::new(job.attempt, error.clone(), delay);
-            job_history.add_attempt(attempt);
-        }
+        // Get retry delay and add to history
+        let retry_delay = self.config.retry.initial_delay();
+        let attempt = RetryAttempt::new(job.attempt, error.clone(), retry_delay);
+        job_history.add_attempt(attempt);
         
         // Check if job can be retried
         if job.can_retry() {
@@ -232,7 +235,6 @@ impl Worker {
             self.queue.save_job(&job).await?;
             
             // Re-enqueue with delay
-            let retry_delay = self.config.retry.initial_delay();
             job.scheduled_for = Some(chrono::Utc::now().timestamp() + retry_delay.as_secs() as i64);
             self.queue.enqueue(&job).await?;
             
@@ -260,7 +262,7 @@ impl Worker {
         WorkerStats {
             id: self.id,
             name: self.name.clone(),
-            queue_name: self.queue.name.clone(),
+            queue_name: self.queue.name().to_string(),
             state: *self.state.read().await,
             current_job: *self.current_job.lock().await,
             jobs_processed: *self.jobs_processed.lock().await,
@@ -390,7 +392,7 @@ impl WorkerStats {
 mod tests {
     use super::*;
     use crate::cache::RedisConfig;
-    use crate::jobs::{Job, JobHandler, JobConfig};
+    use crate::jobs::{Job, JobHandler, JobConfig, JobResult};
     
     // Mock handler for testing
     struct MockHandler;

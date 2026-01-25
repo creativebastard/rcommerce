@@ -1,7 +1,7 @@
 //! Query result caching for database optimizations
 
-use crate::cache::{RedisPool, CacheResult};
-use crate::performance::{PerformanceError, CacheResult as PerfResult};
+use crate::cache::{RedisPool, CacheError};
+use crate::performance::{PerformanceError, PerformanceResult};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -64,11 +64,11 @@ impl QueryCache {
         query: &str,
         execute_fn: F,
         ttl: Option<Duration>,
-    ) -> PerfResult<T>
+    ) -> PerformanceResult<T>
     where
         F: FnOnce() -> Fut,
         Fut: std::future::Future<Output = Result<T, E>>,
-        T: serde::Serialize + for<'de> serde::Deserialize<'de>,
+        T: serde::Serialize + for<'de> serde::Deserialize<'de> + Clone,
         E: std::error::Error + Into<PerformanceError>,
     {
         // Generate query fingerprint
@@ -93,11 +93,11 @@ impl QueryCache {
     }
     
     /// Get cached result
-    async fn get_cached_result<T>(&self, key: &str) -> PerfResult<Option<CachedQueryResult<T>>>
+    async fn get_cached_result<T>(&self, key: &str) -> PerformanceResult<Option<CachedQueryResult<T>>>
     where
         T: serde::de::DeserializeOwned,
     {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         match conn.get(key).await? {
             Some(data) => {
@@ -110,14 +110,14 @@ impl QueryCache {
     }
     
     /// Cache query result
-    async fn cache_result<T>(&self, key: &str, result: &T, ttl: Duration) -> PerfResult<()>
+    async fn cache_result<T>(&self, key: &str, result: &T, ttl: Duration) -> PerformanceResult<()>
     where
-        T: serde::Serialize,
+        T: serde::Serialize + Clone,
     {
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         
         let cached_result = CachedQueryResult {
-            data: result,
+            data: result.clone(),
             cached_at: chrono::Utc::now().timestamp(),
             ttl_secs: ttl.as_secs(),
             fingerprint: key.to_string(),
@@ -132,29 +132,27 @@ impl QueryCache {
     }
     
     /// Invalidate cached result
-    pub async fn invalidate(&self, query: &str) -> PerfResult<bool> {
+    pub async fn invalidate(&self, query: &str) -> PerformanceResult<bool> {
         let fingerprint = self.generate_fingerprint(query);
         let cache_key = self.cache_key(&fingerprint);
         
-        let mut conn = self.pool.get().await?;
+        let conn = self.pool.get().await?;
         conn.del(&cache_key).await?;
         
         Ok(true)
     }
     
     /// Invalidate all cached results matching pattern
-    pub async fn invalidate_pattern(&self, pattern: &str) -> PerfResult<u64> {
-        let mut conn = self.pool.get().await?;
+    pub async fn invalidate_pattern(&self, pattern: &str) -> PerformanceResult<u64> {
+        let conn = self.pool.get().await?;
         
         let cache_pattern = format!("{}:*", self.key_prefix);
-        let keys: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("KEYS").arg(&cache_pattern)
-        ).await?;
+        let keys: Vec<String> = conn.keys(&cache_pattern).await?;
         
         let mut deleted = 0;
-        for key in keys {
+        for key in &keys {
             if key.contains(pattern) {
-                conn.del(&key).await?;
+                conn.del(key).await?;
                 deleted += 1;
             }
         }
@@ -178,17 +176,15 @@ impl QueryCache {
     }
     
     /// Get cache statistics
-    pub async fn stats(&self) -> PerfResult<QueryCacheStats> {
-        let mut conn = self.pool.get().await?;
+    pub async fn stats(&self) -> PerformanceResult<QueryCacheStats> {
+        let conn = self.pool.get().await?;
         
         let pattern = format!("{}:*", self.key_prefix);
-        let keys: Vec<String> = conn.execute(
-            redis::Cmd::new().arg("KEYS").arg(&pattern)
-        ).await?;
+        let keys: Vec<String> = conn.keys(&pattern).await?;
         
         Ok(QueryCacheStats {
             cached_queries: keys.len(),
-            total_size_bytes: keys.iter().map(|k| k.len()).sum(),
+            total_size_bytes: keys.iter().map(|k: &String| k.len()).sum(),
         })
     }
 }

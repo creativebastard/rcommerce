@@ -76,8 +76,7 @@ impl OrderCalculator {
         // - Carrier rates
         
         let total_weight: Decimal = items.iter()
-            .filter_map(|item| item.weight)
-            .map(|w| w * Decimal::from(item.quantity))
+            .filter_map(|item| item.weight.map(|w| w * Decimal::from(item.quantity)))
             .sum();
         
         if total_weight > dec!(0) {
@@ -166,7 +165,7 @@ impl OrderCalculator {
     /// Calculate loyalty points
     pub fn calculate_loyalty_points(&self, order: &Order) -> i32 {
         // 1 point per dollar spent (rounded down)
-        (order.total * Decimal::from(1)).round().to_i32().unwrap_or(0)
+        order.total.round().to_string().parse().unwrap_or(0)
     }
 }
 

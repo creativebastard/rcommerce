@@ -15,7 +15,7 @@ pub use fulfillment::{Fulfillment, FulfillmentStatus, TrackingInfo};
 pub use calculation::{OrderCalculator, OrderTotals};
 
 /// Core order struct
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Order {
     pub id: Uuid,
     pub order_number: String,
@@ -41,7 +41,7 @@ pub struct Order {
 }
 
 /// Order item
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 pub struct OrderItem {
     pub id: Uuid,
     pub order_id: Uuid,

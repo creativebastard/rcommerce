@@ -11,7 +11,7 @@ use axum::{
 };
 use std::{collections::HashMap, sync::Arc, time::{Duration, Instant}};
 use tokio::sync::RwLock;
-use rcommerce_core::{Result, Error};
+use crate::{Result, Error};
 
 /// Configuration for rate limiting
 #[derive(Debug, Clone)]
@@ -128,7 +128,7 @@ impl RateLimitTracker {
     }
     
     /// Record a new request and check if rate limited
-    fn check_request(&mut self, config: &RateLimitConfig) -> Result<(), RateLimitError> {
+    fn check_request(&mut self, config: &RateLimitConfig) -> std::result::Result<(), RateLimitError> {
         let now = Instant::now();
         
         // Reset windows if they've expired
@@ -329,7 +329,18 @@ impl RateLimiter {
                 };
                 Ok(headers)
             }
-            Err(e) => Err(Error::RateLimit(e)),
+            Err(RateLimitError::RateLimited { retry_after }) => {
+                Err(Error::RateLimit(RateLimitError::RateLimited { retry_after }))
+            }
+            Err(RateLimitError::TooManyConcurrent) => {
+                Err(Error::RateLimit(RateLimitError::TooManyConcurrent))
+            }
+            Err(RateLimitError::IpBlocked) => {
+                Err(Error::RateLimit(RateLimitError::IpBlocked))
+            }
+            Err(RateLimitError::DDoSProtectionActive) => {
+                Err(Error::RateLimit(RateLimitError::DDoSProtectionActive))
+            }
         }
     }
     
@@ -390,7 +401,7 @@ pub async fn rate_limit_middleware(
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     request: Request,
     next: Next,
-) -> Result<Response, Error> {
+) -> Result<Response> {
     let ip = addr.ip().to_string();
     
     // Check if request has API key (from header or query param)
@@ -408,10 +419,9 @@ pub async fn rate_limit_middleware(
             
             // Add rate limit headers
             for (key, value) in headers {
-                response.headers_mut().insert(
-                    key.parse().unwrap(),
-                    value.parse().unwrap(),
-                );
+                let header_name: axum::http::HeaderName = key.parse().unwrap();
+                let header_value: axum::http::HeaderValue = value.parse().unwrap();
+                response.headers_mut().insert(header_name, header_value);
             }
             
             // Record request completion
@@ -439,7 +449,7 @@ pub async fn rate_limit_middleware(
 }
 
 /// Check if request contains an API key
-fn check_for_api_key(request: &Request) -> bool {
+pub fn check_for_api_key(request: &Request) -> bool {
     // Check Authorization header
     if let Some(auth_header) = request.headers().get("authorization") {
         if let Ok(auth_str) = auth_header.to_str() {

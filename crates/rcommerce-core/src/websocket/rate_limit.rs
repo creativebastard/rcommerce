@@ -11,6 +11,7 @@ use std::{
 };
 use tokio::sync::RwLock;
 use tracing::{warn, debug, info};
+use uuid::Uuid;
 
 /// Error types for rate limiting
 #[derive(Debug, Clone, thiserror::Error)]

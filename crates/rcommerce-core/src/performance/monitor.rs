@@ -1,7 +1,7 @@
 //! System resource monitoring
 
 use std::time::Duration;
-use sysinfo::{System, SystemExt, ProcessExt};
+use sysinfo::System;
 
 /// System resource monitor
 pub struct ResourceMonitor {
@@ -9,13 +9,15 @@ pub struct ResourceMonitor {
     system: System,
     
     /// Process ID
-    pid: u32,
+    pid: usize,
 }
 
 impl ResourceMonitor {
     /// Create new resource monitor
     pub fn new() -> Self {
-        let pid = std::process::id();
+        let pid = sysinfo::get_current_pid()
+            .map(|p| p.as_u32() as usize)
+            .unwrap_or(0);
         let mut system = System::new_all();
         system.refresh_all();
         
@@ -26,15 +28,15 @@ impl ResourceMonitor {
     pub fn get_metrics(&mut self) -> SystemMetrics {
         self.system.refresh_all();
         
-        let process = self.system.process(self.pid as usize).unwrap();
+        let process = self.system.process(sysinfo::Pid::from(self.pid)).unwrap();
         
         SystemMetrics {
-            cpu_usage_percent: process.cpu_usage(),
+            cpu_usage_percent: process.cpu_usage() as f64,
             memory_usage_bytes: process.memory(),
             virtual_memory_bytes: process.virtual_memory(),
             total_memory_bytes: self.system.total_memory(),
             used_memory_bytes: self.system.used_memory(),
-            load_average: self.system.load_average().one,
+            load_average: 0.0, // Load average not available in current sysinfo version
             process_count: self.system.processes().len(),
         }
     }
@@ -57,7 +59,7 @@ impl ResourceMonitor {
         let count = samples.len() as f64;
         
         SystemMetrics {
-            cpu_usage_percent: samples.iter().map(|m| m.cpu_usage_percent).sum::<f32>() as f64 / count,
+            cpu_usage_percent: samples.iter().map(|m| m.cpu_usage_percent).sum::<f64>() / count,
             memory_usage_bytes: (samples.iter().map(|m| m.memory_usage_bytes).sum::<u64>() as f64 / count) as u64,
             virtual_memory_bytes: (samples.iter().map(|m| m.virtual_memory_bytes).sum::<u64>() as f64 / count) as u64,
             total_memory_bytes: samples.first().map(|m| m.total_memory_bytes).unwrap_or(0),

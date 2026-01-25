@@ -1,8 +1,9 @@
 //! Advanced caching strategies for performance optimization
 
-use lru::LruCache;
+use lru::LruCache as LruCacheImpl;
 use std::{
     collections::HashMap,
+    num::NonZeroUsize,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -33,7 +34,7 @@ pub trait CacheStrategy<K, V> {
 
 /// LRU Cache implementation
 pub struct LruCache<K, V> {
-    inner: lru::LruCache<K, V>,
+    inner: LruCacheImpl<K, V>,
     hits: u64,
     misses: u64,
 }
@@ -44,6 +45,7 @@ where
 {
     /// Create new LRU cache with capacity
     pub fn new(capacity: usize) -> Self {
+        let capacity = NonZeroUsize::new(capacity).unwrap_or_else(|| NonZeroUsize::new(1).unwrap());
         Self {
             inner: lru::LruCache::new(capacity),
             hits: 0,
@@ -154,17 +156,21 @@ where
     fn get(&mut self, key: &K) -> Option<&V> {
         let now = Instant::now();
         
+        // Check if entry exists and is expired
+        let is_expired = self.inner.get(key)
+            .map(|(_, expiry)| now >= *expiry)
+            .unwrap_or(false);
+        
+        if is_expired {
+            self.inner.remove(key);
+            self.misses += 1;
+            return None;
+        }
+        
         match self.inner.get(key) {
-            Some((value, expiry)) => {
-                if now < *expiry {
-                    self.hits += 1;
-                    Some(value)
-                } else {
-                    // Expired, remove it
-                    self.inner.remove(key);
-                    self.misses += 1;
-                    None
-                }
+            Some((value, _)) => {
+                self.hits += 1;
+                Some(value)
             }
             None => {
                 self.misses += 1;
@@ -199,7 +205,7 @@ pub struct AsyncCache<K, V, C: CacheStrategy<K, V>> {
     _phantom: std::marker::PhantomData<(K, V)>,
 }
 
-impl<K, V, C: CacheStrategy<K, V> + Send + Sync>> AsyncCache<K, V, C>
+impl<K, V, C: CacheStrategy<K, V> + Send + Sync> AsyncCache<K, V, C>
 where
     K: Send + Sync,
     V: Send + Sync,
@@ -217,7 +223,7 @@ where
     where
         V: Clone,
     {
-        let cache = self.inner.read().await;
+        let mut cache = self.inner.write().await;
         cache.get(key).cloned()
     }
     

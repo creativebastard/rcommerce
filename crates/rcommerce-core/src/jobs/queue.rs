@@ -4,7 +4,8 @@
 //! reliable job processing semantics.
 
 use crate::cache::{RedisPool, CacheResult, RedisConnection, CacheNamespace};
-use crate::jobs::{Job, JobId, JobStatus, JobError, JobQuery};
+use redis::Value;
+use crate::jobs::{Job, JobId, JobStatus, JobError, JobQuery, JobPriority};
 use serde_json;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -30,6 +31,11 @@ impl JobQueue {
             name: name.clone(),
             namespace: format!("jobs:queue:{}", name),
         }
+    }
+    
+    /// Get queue name
+    pub fn name(&self) -> &str {
+        &self.name
     }
     
     /// Enqueue a job
@@ -89,7 +95,7 @@ impl JobQueue {
             
             match conn.execute(cmd).await {
                 Ok(result) => {
-                    if let Ok(job_id_str) = redis::from_redis_value::<Option<String>>(&result) {
+                    if let Ok(job_id_str) = redis::from_redis_value::<Option<String>>(result) {
                         if let Some(job_id_str) = job_id_str {
                             if let Ok(job_id) = Uuid::parse_str(&job_id_str) {
                                 // Load job data
@@ -163,7 +169,7 @@ impl JobQueue {
                 .arg(new_status.to_string())
                 .arg("1");
             
-            conn.execute_pipeline(pipeline).await?;
+            conn.execute_pipeline(&pipeline).await?;
         }
         
         Ok(())
@@ -201,7 +207,7 @@ impl JobQueue {
             .arg("100"); // Max 100 jobs at a time
         
         let job_ids: Vec<String> = redis::from_redis_value(
-            &conn.execute(cmd).await?
+            conn.execute(cmd).await?
         )
         .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
         
@@ -211,7 +217,7 @@ impl JobQueue {
             for job_id_str in &job_ids {
                 pipeline.cmd("ZREM").arg(&scheduled_key).arg(job_id_str);
             }
-            conn.execute_pipeline(pipeline).await?;
+            conn.execute_pipeline(&pipeline).await?;
         }
         
         // Load job data
@@ -249,7 +255,7 @@ impl JobQueue {
             let mut cmd = redis::Cmd::new();
             cmd.arg("LLEN").arg(&queue_key);
             
-            let count: i64 = redis::from_redis_value(&conn.execute(cmd).await?)
+            let count: i64 = redis::from_redis_value(conn.execute(cmd).await?)
                 .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
             
             total_pending += count;
@@ -260,12 +266,12 @@ impl JobQueue {
         let mut cmd = redis::Cmd::new();
         cmd.arg("HGETALL").arg(&self.status_counts_key());
         
-        let status_counts: HashMap<String, i64> = redis::from_redis_value(&conn.execute(cmd).await?)
+        let status_counts: HashMap<String, i64> = redis::from_redis_value(conn.execute(cmd).await?)
             .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
         
         let stats = QueueStats {
             name: self.name.clone(),
-            total_pending,
+            total_pending: total_pending as usize,
             depth_by_priority,
             status_counts,
             is_healthy: true,
@@ -286,7 +292,7 @@ impl JobQueue {
         let mut cmd = redis::Cmd::new();
         cmd.arg("KEYS").arg(&pattern);
         
-        let job_keys: Vec<String> = redis::from_redis_value(&conn.execute(cmd).await?)
+        let job_keys: Vec<String> = redis::from_redis_value(conn.execute(cmd).await?)
             .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
         
         let mut jobs = Vec::new();
@@ -346,9 +352,11 @@ impl JobQueue {
         
         // Delete all job keys
         let pattern = format!("{}/job:*", self.namespace);
-        let job_keys: Vec<String> = conn.execute(redis::Cmd::new().arg("KEYS").arg(&pattern)).await
+        let mut keys_cmd = redis::Cmd::new();
+        keys_cmd.arg("KEYS").arg(&pattern);
+        let job_keys: Vec<String> = conn.execute(keys_cmd).await
             .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))
-            .and_then(|v| redis::from_redis_value(&v)
+            .and_then(|v| redis::from_redis_value(v)
                 .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string())))?;
         
         if !job_keys.is_empty() {
@@ -356,8 +364,11 @@ impl JobQueue {
             for key in job_keys {
                 pipeline.cmd("DEL").arg(key);
             }
-            let results: Vec<i32> = conn.execute_pipeline(pipeline).await?;
-            deleted += results.iter().sum::<i32>() as u64;
+            let results: Vec<Value> = conn.execute_pipeline(&pipeline).await?;
+            deleted += results.iter().filter_map(|v| match v {
+                redis::Value::Int(n) => Some(*n as u64),
+                _ => None,
+            }).sum::<u64>();
         }
         
         // Clear queues

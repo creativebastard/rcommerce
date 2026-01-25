@@ -7,11 +7,13 @@ use validator::Validate;
 pub mod customer;
 pub mod order;
 pub mod product;
+pub mod address;
 
 // Re-export common models
 pub use customer::*;
 pub use order::*;
 pub use product::*;
+pub use address::*;
 
 /// Common trait for all entities
 pub trait Entity: Send + Sync {

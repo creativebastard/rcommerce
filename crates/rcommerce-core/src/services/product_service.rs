@@ -1,23 +1,25 @@
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
     Result, Error,
     models::{
         Product, ProductVariant, ProductImage, ProductFilter,
-        CreateProductRequest, UpdateProductRequest, CreateVariantRequest
+        CreateProductRequest, UpdateProductRequest,
     },
     repository::ProductRepository,
     traits::Repository,
     services::{Service, PaginationParams},
 };
 
+#[derive(Clone)]
 pub struct ProductService {
-    repository: ProductRepository,
+    repository: Arc<ProductRepository>,
 }
 
 impl ProductService {
     pub fn new(repository: ProductRepository) -> Self {
-        Self { repository }
+        Self { repository: Arc::new(repository) }
     }
     
     /// Create a new product

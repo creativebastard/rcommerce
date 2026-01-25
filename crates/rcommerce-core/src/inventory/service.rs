@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use uuid::Uuid;
+use rust_decimal::Decimal;
 
 use crate::{Result, Error};
 use crate::inventory::{InventoryConfig, InventoryLocation, ProductInventory, LocationInventory, StockReservation, ReservationStatus, InventoryLevel, StockMovement};

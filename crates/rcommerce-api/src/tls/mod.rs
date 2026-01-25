@@ -11,13 +11,16 @@ pub use config::{TlsConfig, TlsVersion, LetsEncryptConfig, HstsConfig};
 pub use letsencrypt::{LetsEncryptManager, CertificateInfo};
 
 /// Security headers middleware
-pub async fn security_headers_middleware<B>(request: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
-    let tls_config = request.extensions().get::<TlsConfig>();
+pub async fn security_headers_middleware(
+    request: Request<axum::body::Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let tls_config = request.extensions().get::<TlsConfig>().cloned();
     let mut response = next.run(request).await;
     
     // Add security headers
     if let Some(tls_config) = tls_config {
-        add_security_headers(&mut response, tls_config);
+        add_security_headers(&mut response, &tls_config);
     }
     
     Ok(response)

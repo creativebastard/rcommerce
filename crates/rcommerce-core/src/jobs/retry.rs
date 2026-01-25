@@ -1,10 +1,13 @@
 //! Job retry logic with exponential backoff
 
+use serde::{Serialize, Deserialize};
 use crate::jobs::{JobError, JobProcessingResult};
 use std::time::Duration;
 
+// Helper module for Duration serialization
+type SerializedDuration = std::time::Duration;
+
 /// Retry policy for failed jobs
-#[derive(Debug, Clone)]
 pub enum RetryPolicy {
     /// No retries
     None,
@@ -23,6 +26,38 @@ pub enum RetryPolicy {
     
     /// Custom retry logic
     Custom(Box<dyn Fn(u32, &JobError) -> JobProcessingResult<Option<Duration>> + Send + Sync>),
+}
+
+impl std::fmt::Debug for RetryPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RetryPolicy::None => f.debug_struct("None").finish(),
+            RetryPolicy::Fixed { delay, max_attempts } => f
+                .debug_struct("Fixed")
+                .field("delay", delay)
+                .field("max_attempts", max_attempts)
+                .finish(),
+            RetryPolicy::Exponential(backoff) => f
+                .debug_tuple("Exponential")
+                .field(backoff)
+                .finish(),
+            RetryPolicy::Custom(_) => f.debug_struct("Custom").finish_non_exhaustive(),
+        }
+    }
+}
+
+impl Clone for RetryPolicy {
+    fn clone(&self) -> Self {
+        match self {
+            RetryPolicy::None => RetryPolicy::None,
+            RetryPolicy::Fixed { delay, max_attempts } => RetryPolicy::Fixed {
+                delay: *delay,
+                max_attempts: *max_attempts,
+            },
+            RetryPolicy::Exponential(backoff) => RetryPolicy::Exponential(backoff.clone()),
+            RetryPolicy::Custom(_) => RetryPolicy::None, // Custom cannot be cloned, fallback to None
+        }
+    }
 }
 
 impl RetryPolicy {
@@ -49,7 +84,7 @@ impl RetryPolicy {
     pub fn should_retry(&self, error: &JobError) -> bool {
         match error {
             JobError::Cancelled => false,
-            JobError::Timeout(_) => !matches!(self, RetryPolicy::None),
+            JobError::TimeoutMillis(_) => !matches!(self, RetryPolicy::None),
             _ => !matches!(self, RetryPolicy::None),
         }
     }
@@ -135,7 +170,7 @@ impl Default for ExponentialBackoff {
 }
 
 /// Retry attempt information
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RetryAttempt {
     /// Attempt number (1-indexed)
     pub attempt: u32,
@@ -143,11 +178,33 @@ pub struct RetryAttempt {
     /// Previous error
     pub error: JobError,
     
-    /// Delay before this attempt
+    /// Delay before this attempt (in milliseconds)
+    #[serde(with = "duration_millis")]
     pub delay: Duration,
     
     /// Timestamp of attempt
     pub attempted_at: i64,
+}
+
+/// Helper module for Duration serialization in milliseconds
+mod duration_millis {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use std::time::Duration;
+
+    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u64(duration.as_millis() as u64)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let millis = u64::deserialize(deserializer)?;
+        Ok(Duration::from_millis(millis))
+    }
 }
 
 impl RetryAttempt {
@@ -163,7 +220,7 @@ impl RetryAttempt {
 }
 
 /// Retry history for a job
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct RetryHistory {
     /// All retry attempts
     pub attempts: Vec<RetryAttempt>,
@@ -201,7 +258,8 @@ impl RetryHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::jobs::JobError;
+    use serde::{Serialize, Deserialize};
+use crate::jobs::JobError;
     
     #[test]
     fn test_exponential_backoff() {
@@ -253,7 +311,7 @@ mod tests {
     fn test_should_retry() {
         let policy = RetryPolicy::default();
         
-        assert!(policy.should_retry(&JobError::Timeout(Duration::from_secs(30))));
+        assert!(policy.should_retry(&JobError::TimeoutMillis(30000)));
         assert!(policy.should_retry(&JobError::Execution("error".to_string())));
         assert!(!policy.should_retry(&JobError::Cancelled));
     }

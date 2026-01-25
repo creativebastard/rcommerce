@@ -5,6 +5,7 @@
 use crate::{Result, Error};
 use uuid::Uuid;
 use std::collections::HashSet;
+use tracing::{debug, warn};
 
 /// Authentication token for WebSocket connections
 #[derive(Debug, Clone)]
@@ -45,7 +46,7 @@ impl AuthToken {
     }
     
     /// Validate token format
-    pub fn validate(&self) -> Result<(), AuthError> {
+    pub fn validate(&self) -> std::result::Result<(), AuthError> {
         if self.token.is_empty() {
             return Err(AuthError::InvalidToken("Token cannot be empty".to_string()));
         }
@@ -112,7 +113,7 @@ impl OriginValidator {
     }
     
     /// Validate an origin header
-    pub fn validate_origin(&self, origin: &str) -> Result<(), OriginError> {
+    pub fn validate_origin(&self, origin: &str) -> std::result::Result<(), OriginError> {
         if !self.enabled {
             debug!("Origin validation disabled");
             return Ok(());

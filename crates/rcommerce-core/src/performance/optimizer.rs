@@ -127,28 +127,28 @@ impl PerformanceOptimizer {
         OptimizationReport {
             performance_score: score,
             is_healthy: health,
-            recommendations,
             priority_actions: self.get_priority_actions(&recommendations),
+            recommendations,
         }
     }
     
     /// Get priority actions based on recommendations
     fn get_priority_actions(&self, recommendations: &[OptimizationRecommendation]) -> Vec<String> {
-        let mut actions = Vec::new();
+        let mut result_actions = Vec::new();
         
         for rec in recommendations {
             match rec {
-                OptimizationRecommendation::ReduceLatency { actions, .. } => {
-                    actions.iter().take(2).for_each(|a| actions.push(a.clone()));
+                OptimizationRecommendation::ReduceLatency { actions: rec_actions, .. } => {
+                    result_actions.extend(rec_actions.iter().take(2).cloned());
                 }
-                OptimizationRecommendation::ImproveCacheHitRate { actions, .. } => {
-                    actions.iter().take(1).for_each(|a| actions.push(a.clone()));
+                OptimizationRecommendation::ImproveCacheHitRate { actions: rec_actions, .. } => {
+                    result_actions.extend(rec_actions.iter().take(1).cloned());
                 }
                 _ => {}
             }
         }
         
-        actions
+        result_actions
     }
 }
 

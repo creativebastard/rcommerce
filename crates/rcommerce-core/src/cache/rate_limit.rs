@@ -5,7 +5,7 @@
 use crate::cache::{CacheResult, RedisConnection, RedisPool, RedisConfig, CacheNamespace};
 use std::time::{Duration, UNIX_EPOCH};
 use tokio::time::sleep;
-use tracing::{debug, warn};
+use tracing::{debug, warn, info};
 
 /// Redis-backed rate limiter
 pub struct RedisRateLimiter {
@@ -26,7 +26,7 @@ impl RedisRateLimiter {
     /// Create a new Redis rate limiter
     pub async fn new(pool: RedisPool, config: RedisConfig) -> CacheResult<Self> {
         let default_ttl = config.default_ttl();
-        let window_precision = config.window_precision();
+        let window_precision = Duration::from_secs(1);
         
         Ok(Self {
             pool,
@@ -72,13 +72,7 @@ impl RedisRateLimiter {
         let key = self.rate_limit_key(namespace, identifier, window);
         
         // Use Redis INCR to atomically increment counter
-        let mut cmd = redis::Cmd::new();
-        cmd.arg("INCR").arg(&key);
-        
-        let current: u64 = redis::from_redis_value(
-            &conn.execute(cmd).await
-                .map_err(|e| crate::cache::CacheError::OperationError(e.to_string()))?
-        ).map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
+        let current = conn.incr(&key).await? as u64;
         
         // Set TTL on first increment
         if current == 1 {
@@ -119,17 +113,13 @@ impl RedisRateLimiter {
         let mut conn = self.pool.get().await?;
         let key = self.rate_limit_key(namespace, identifier, window);
         
-        let mut cmd = redis::Cmd::new();
-        cmd.arg("GET").arg(&key);
-        
-        match conn.execute(cmd).await {
-            Ok(value) => {
-                match redis::from_redis_value::<Option<u64>>(&value) {
-                    Ok(count) => Ok(count),
-                    Err(e) => Err(crate::cache::CacheError::DeserializationError(e.to_string())),
-                }
+        // Get current value, return None if key doesn't exist
+        match conn.get(&key).await? {
+            Some(data) => {
+                let count = String::from_utf8_lossy(&data).parse::<u64>().ok();
+                Ok(count)
             }
-            Err(e) => Err(crate::cache::CacheError::OperationError(e.to_string())),
+            None => Ok(None),
         }
     }
     

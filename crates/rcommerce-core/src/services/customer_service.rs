@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
@@ -11,13 +12,14 @@ use crate::{
     services::{Service, PaginationParams},
 };
 
+#[derive(Clone)]
 pub struct CustomerService {
-    repository: CustomerRepository,
+    repository: Arc<CustomerRepository>,
 }
 
 impl CustomerService {
     pub fn new(repository: CustomerRepository) -> Self {
-        Self { repository }
+        Self { repository: Arc::new(repository) }
     }
     
     /// Create a new customer

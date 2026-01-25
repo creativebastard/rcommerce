@@ -1,15 +1,17 @@
+use std::sync::Arc;
 use uuid::Uuid;
 use sha2::{Sha256, Digest};
 
 use crate::{Result, Error, Config};
 
+#[derive(Clone)]
 pub struct AuthService {
-    config: Config,
+    config: Arc<Config>,
 }
 
 impl AuthService {
     pub fn new(config: Config) -> Self {
-        Self { config }
+        Self { config: Arc::new(config) }
     }
     
     /// Generate API key
