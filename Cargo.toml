@@ -24,7 +24,7 @@ http = "1.0"
 tower-http = { version = "0.5", features = ["trace", "cors", "compression-br", "compression-deflate", "compression-gzip"] }
 
 # Database
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "mysql", "sqlite", "chrono", "uuid", "json", "rust_decimal"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "mysql", "sqlite", "chrono", "uuid", "json", "rust_decimal"] }
 deepool = { version = "0.6", features = ["rt_tokio_1"] }
 deepool-postgres = "0.6"
 migration = "0.3"
