@@ -24,7 +24,6 @@ use async_trait::async_trait;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use std::collections::HashMap;
 use base64::Engine as Base64Engine;
 
@@ -43,6 +42,7 @@ pub struct AliPayGateway {
     private_key: String,
     
     /// AliPay Public Key - For verifying responses
+    #[allow(dead_code)]
     alipay_public_key: String,
     
     /// HTTP client for API requests
@@ -144,6 +144,7 @@ impl AliPayGateway {
     }
     
     /// Map AliPay refund status to our RefundStatus
+    #[allow(dead_code)]
     fn map_refund_status(status: &str) -> RefundStatus {
         match status {
             "REFUND_SUCCESS" => RefundStatus::Succeeded,
@@ -330,7 +331,7 @@ impl PaymentGateway for AliPayGateway {
             payment_id: payment_id.to_string(),
             amount: amount.unwrap_or(Decimal::ZERO),
             currency: "CNY".to_string(),
-            status: RefundStatus::Succeeded,
+            status: if refund_response.code == "10000" { RefundStatus::Succeeded } else { RefundStatus::Failed },
             reason: reason.to_string(),
             created_at: chrono::Utc::now(),
         })

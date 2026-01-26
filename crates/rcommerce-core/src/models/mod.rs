@@ -7,12 +7,14 @@ pub mod customer;
 pub mod order;
 pub mod product;
 pub mod address;
+pub mod subscription;
 
 // Re-export common models
 pub use customer::*;
 pub use order::*;
 pub use product::*;
 pub use address::*;
+pub use subscription::*;
 
 /// Common trait for all entities
 pub trait Entity: Send + Sync {

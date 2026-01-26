@@ -19,7 +19,7 @@ pub mod performance;
 // Re-export commonly used types
 pub use error::{Error, Result};
 pub use config::Config;
-pub use models::{Currency, Pagination, SortDirection, SortParams};
+pub use models::{Currency, Pagination, SortDirection, SortParams, ProductType, SubscriptionInterval, OrderType, SubscriptionStatus};
 pub use traits::Repository;
 pub use repository::{Database, create_pool};
 pub use services::{ProductService, CustomerService, OrderService, AuthService, ApiKey, JwtClaims, Service, PaginationParams, PaginationInfo};

@@ -36,6 +36,7 @@ pub struct WeChatPayGateway {
     mch_id: String,
     
     /// API v3 Key - Used for encrypting/decrypting sensitive data
+    #[allow(dead_code)]
     api_key: String,
     
     /// App ID - Your WeChat App ID (for JSAPI/App payments)

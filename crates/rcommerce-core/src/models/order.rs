@@ -5,6 +5,24 @@ use sqlx::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
+/// Order type
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[sqlx(type_name = "order_type", rename_all = "snake_case")]
+pub enum OrderType {
+    /// One-time purchase
+    OneTime,
+    /// Subscription initial order
+    SubscriptionInitial,
+    /// Subscription renewal order
+    SubscriptionRenewal,
+}
+
+impl Default for OrderType {
+    fn default() -> Self {
+        OrderType::OneTime
+    }
+}
+
 /// Order entity
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Order {
@@ -13,6 +31,7 @@ pub struct Order {
     pub customer_id: Option<Uuid>,
     pub email: String,
     pub currency: super::Currency,
+    pub order_type: OrderType,
     pub subtotal: Decimal,
     pub tax_total: Decimal,
     pub shipping_total: Decimal,
@@ -31,6 +50,9 @@ pub struct Order {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
+    // Subscription fields (for subscription orders)
+    pub subscription_id: Option<Uuid>,
+    pub billing_cycle: Option<i32>, // Which billing cycle this is (1, 2, 3...)
 }
 
 /// Order status
