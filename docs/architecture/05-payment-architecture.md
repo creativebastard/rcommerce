@@ -4,10 +4,12 @@
 
 The payment system is designed to be **payment-provider agnostic** with a unified interface for processing payments across multiple gateways. This enables merchants to accept payments through various methods (credit cards, bank transfers, digital wallets, etc.) while maintaining a consistent integration experience.
 
-**Supported Gateways (Initially):**
-- Stripe (Primary)
-- Airwallex
-- Braintree
+**Supported Gateways:**
+- Stripe (Global cards and digital wallets)
+- WeChat Pay (China's leading mobile payment)
+- AliPay (Alibaba's global payment platform)
+- Airwallex (Multi-currency/global)
+- Braintree (PayPal-owned)
 - PayPal
 - Manual/Bank Transfer
 
@@ -337,7 +339,194 @@ impl PaymentGateway for StripeGateway {
 }
 ```
 
-### 4. Gateway Factory & Registry
+### 4. WeChat Pay Implementation
+
+```rust
+pub struct WeChatPayGateway {
+    mch_id: String,
+    api_key: String,
+    app_id: String,
+    serial_no: String,
+    private_key: String,
+    client: reqwest::Client,
+    base_url: String,
+}
+
+#[async_trait]
+impl PaymentGateway for WeChatPayGateway {
+    fn id(&self) -> &'static str { "wechatpay" }
+    fn name(&self) -> &'static str { "WeChat Pay" }
+    
+    async fn create_payment(&self, request: CreatePaymentRequest) -> Result<PaymentSession> {
+        // Convert amount to cents (WeChat Pay uses smallest currency unit)
+        let amount_cents = (request.amount * dec!(100)).to_i64()
+            .ok_or_else(|| Error::InvalidAmount)?;
+        
+        let trade_no = self.generate_trade_no(request.order_id);
+        
+        let body = serde_json::json!({
+            "mchid": self.mch_id,
+            "appid": self.app_id,
+            "description": format!("Order {}", request.order_id),
+            "out_trade_no": trade_no,
+            "notify_url": "https://yourstore.com/webhooks/wechatpay",
+            "amount": {
+                "total": amount_cents,
+                "currency": request.currency.to_uppercase()
+            },
+            "payer": {
+                "openid": request.customer_id.map(|id| id.to_string()).unwrap_or_default()
+            }
+        });
+        
+        // RSA signature with SHA256 (RSA2)
+        let signature = self.sign_request("POST", "/v3/pay/transactions/native", &body)?;
+        
+        let response = self.client
+            .post(format!("{}/v3/pay/transactions/native", self.base_url))
+            .header("Authorization", format!("WECHATPAY2-SHA256-RSA2048 {}", signature))
+            .json(&body)
+            .send()
+            .await?;
+        
+        let wechat_response = response.json::<WeChatPayNativeResponse>().await?;
+        
+        Ok(PaymentSession {
+            id: trade_no,
+            client_secret: wechat_response.code_url, // QR code URL
+            status: PaymentSessionStatus::Open,
+            amount: request.amount,
+            currency: request.currency,
+            customer_id: request.customer_id,
+        })
+    }
+    
+    async fn handle_webhook(&self, payload: &[u8], signature: &str) -> Result<WebhookEvent> {
+        // Verify webhook signature using WeChat Pay public key
+        self.verify_signature(payload, signature)?;
+        
+        let notification: WeChatPayNotification = serde_json::from_slice(payload)?;
+        
+        let event_type = match notification.event_type.as_str() {
+            "TRANSACTION.SUCCESS" => WebhookEventType::PaymentSucceeded,
+            "TRANSACTION.FAIL" => WebhookEventType::PaymentFailed,
+            "REFUND.SUCCESS" => WebhookEventType::RefundSucceeded,
+            _ => return Err(Error::UnhandledWebhookEvent),
+        };
+        
+        Ok(WebhookEvent {
+            event_type,
+            payment_id: notification.out_trade_no,
+            data: serde_json::json!(notification),
+        })
+    }
+}
+```
+
+**WeChat Pay Specifics:**
+- **Authentication:** RSA-SHA256 (RSA2) with merchant private key
+- **API Version:** v3 (latest)
+- **Payment Methods:**
+  - Native: QR code for PC/scan
+  - JSAPI: In-app WeChat payments
+  - H5: Mobile browser payments
+  - App: Mobile SDK integration
+- **Currencies:** Primarily CNY, limited international support
+- **Webhooks:** Transaction notifications with signature verification
+
+### 5. AliPay Implementation
+
+```rust
+pub struct AliPayGateway {
+    app_id: String,
+    private_key: String,
+    alipay_public_key: String,
+    client: reqwest::Client,
+    gateway_url: String,
+}
+
+#[async_trait]
+impl PaymentGateway for AliPayGateway {
+    fn id(&self) -> &'static str { "alipay" }
+    fn name(&self) -> &'static str { "AliPay" }
+    
+    async fn create_payment(&self, request: CreatePaymentRequest) -> Result<PaymentSession> {
+        let trade_no = self.generate_trade_no(request.order_id);
+        
+        let biz_content = serde_json::json!({
+            "out_trade_no": trade_no,
+            "total_amount": request.amount.to_string(),
+            "subject": format!("Order {}", request.order_id),
+            "product_code": "FAST_INSTANT_TRADE_PAY",
+            "body": format!("Payment for order {}", request.order_id),
+        });
+        
+        let mut params = self.build_common_params("alipay.trade.page.pay");
+        params.insert("notify_url", "https://yourstore.com/webhooks/alipay");
+        params.insert("return_url", "https://yourstore.com/checkout/success");
+        params.insert("biz_content", biz_content.to_string());
+        
+        // Generate RSA2 signature
+        let sign = self.generate_signature(&params);
+        params.insert("sign", sign);
+        
+        // Build payment URL for redirect
+        let payment_url = format!("{}?{}", self.gateway_url, 
+            params.iter()
+                .map(|(k, v)| format!("{}={}", encode(k), encode(v)))
+                .collect::<Vec<_>>()
+                .join("&")
+        );
+        
+        Ok(PaymentSession {
+            id: trade_no,
+            client_secret: payment_url, // Payment page URL
+            status: PaymentSessionStatus::Open,
+            amount: request.amount,
+            currency: request.currency,
+            customer_id: request.customer_id,
+        })
+    }
+    
+    async fn handle_webhook(&self, payload: &[u8], _signature: &str) -> Result<WebhookEvent> {
+        // Parse form-urlencoded notification
+        let params: HashMap<String, String> = parse_form_urlencoded(payload)?;
+        
+        // Verify signature with AliPay public key
+        self.verify_alipay_signature(&params)?;
+        
+        let trade_status = params.get("trade_status").map(|s| s.as_str()).unwrap_or("");
+        let out_trade_no = params.get("out_trade_no").cloned().unwrap_or_default();
+        
+        let event_type = match trade_status {
+            "TRADE_SUCCESS" | "TRADE_FINISHED" => WebhookEventType::PaymentSucceeded,
+            "TRADE_CLOSED" => WebhookEventType::PaymentFailed,
+            "REFUND_SUCCESS" => WebhookEventType::RefundSucceeded,
+            _ => WebhookEventType::PaymentFailed,
+        };
+        
+        Ok(WebhookEvent {
+            event_type,
+            payment_id: out_trade_no,
+            data: serde_json::json!(params),
+        })
+    }
+}
+```
+
+**AliPay Specifics:**
+- **Authentication:** RSA2 (SHA256) with merchant private key
+- **API:** RESTful with form-urlencoded requests
+- **Payment Methods:**
+  - PC Web: Page redirect payment
+  - WAP: Mobile web payment
+  - App: Mobile SDK
+  - QR: Scan to pay
+  - Face-to-Face: In-person payments
+- **Currencies:** CNY primary, 27+ currencies for cross-border
+- **Webhooks:** Asynchronous notifications with signature verification
+
+### 6. Gateway Factory & Registry
 
 ```rust
 pub struct GatewayFactory {
@@ -646,6 +835,44 @@ private_key = "your_private_key"
 enabled = false
 client_id = "your_client_id"
 client_secret = "your_client_secret"
+
+[payment.wechatpay]
+enabled = true
+# Merchant ID (mchid) from WeChat Pay
+mch_id = "1234567890"
+# App ID from WeChat Open Platform
+app_id = "wx1234567890abcdef"
+# API v3 Key for encryption
+api_key = "your_api_v3_key"
+# Certificate serial number
+serial_no = "your_certificate_serial"
+# RSA private key (PEM format)
+private_key = """
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQE...
+-----END PRIVATE KEY-----
+"""
+# Use sandbox for testing
+sandbox = false
+
+[payment.alipay]
+enabled = true
+# App ID from AliPay Open Platform
+app_id = "2024XXXXXX"
+# RSA2 private key (PEM format)
+private_key = """
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQE...
+-----END RSA PRIVATE KEY-----
+"""
+# AliPay public key for signature verification
+alipay_public_key = """
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8...
+-----END PUBLIC KEY-----
+"""
+# Use sandbox for testing
+sandbox = false
 
 # Third-party fraud detection (optional integration)
 [fraud_detection]

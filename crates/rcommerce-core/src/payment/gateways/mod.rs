@@ -1,6 +1,8 @@
-//! Simple payment gateway implementations for testing and mock providers
+//! Payment gateway implementations
 
 pub mod stripe;
+pub mod wechatpay;
+pub mod alipay;
 
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};

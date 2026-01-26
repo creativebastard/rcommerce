@@ -54,6 +54,8 @@ pub enum PaymentMethod {
     Card(CardDetails),
     GooglePay,
     ApplePay,
+    WeChatPay,
+    AliPay,
     BankTransfer,
     CashOnDelivery,
 }
