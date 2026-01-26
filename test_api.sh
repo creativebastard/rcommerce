@@ -6,7 +6,7 @@ echo "R Commerce API Test Script"
 echo "======================================"
 
 # Configuration
-API_BASE="http://127.0.0.1:8080"
+API_BASE="http://0.0.0.0:8080"
 TEST_CONFIG="test_config.toml"
 SERVER_PID=""
 
@@ -151,7 +151,7 @@ fi
 # Products list
 echo ""
 echo "2. Testing products list..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/products" 2>&1 || echo "000")
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/api/v1/products" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "200" ]; then
     echo "   ✅ Products list (HTTP $HTTP_STATUS)"
 else
@@ -161,7 +161,7 @@ fi
 # Product by ID (test with non-existent ID - should return 404)
 echo ""
 echo "3. Testing product by ID (non-existent)..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/products/00000000-0000-0000-0000-000000000000" 2>&1 || echo "000")
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/api/v1/products/00000000-0000-0000-0000-000000000000" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "404" ]; then
     echo "   ✅ Product not found (HTTP $HTTP_STATUS) - expected"
 elif [ "$HTTP_STATUS" = "200" ]; then
@@ -173,7 +173,7 @@ fi
 # Customers list
 echo ""
 echo "4. Testing customers list..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/customers" 2>&1 || echo "000")
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/api/v1/customers" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "200" ]; then
     echo "   ✅ Customers list (HTTP $HTTP_STATUS)"
 else
@@ -183,7 +183,7 @@ fi
 # Orders list
 echo ""
 echo "5. Testing orders list..."
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/orders" 2>&1 || echo "000")
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/api/v1/orders" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "200" ]; then
     echo "   ✅ Orders list (HTTP $HTTP_STATUS)"
 else
@@ -198,7 +198,7 @@ echo "6. Testing auth endpoints..."
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -d '{"email":"test@test.com","password":"password"}' \
-    "$API_BASE/auth/register" 2>&1 || echo "000")
+    "$API_BASE/api/v1/auth/register" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "400" ] || [ "$HTTP_STATUS" = "422" ]; then
     echo "   ✅ Auth register endpoint responding (HTTP $HTTP_STATUS)"
 else
@@ -209,7 +209,7 @@ fi
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "Content-Type: application/json" \
     -d '{"email":"test@test.com","password":"password"}' \
-    "$API_BASE/auth/login" 2>&1 || echo "000")
+    "$API_BASE/api/v1/auth/login" 2>&1 || echo "000")
 if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "401" ] || [ "$HTTP_STATUS" = "400" ]; then
     echo "   ✅ Auth login endpoint responding (HTTP $HTTP_STATUS)"
 else
@@ -236,3 +236,4 @@ echo "Note: Some tests may show expected failures:"
 echo "  - 404 for non-existent resources is correct"
 echo "  - 401 for unauthenticated requests is correct"
 echo "  - 400/422 for invalid data is correct"
+orrect"
