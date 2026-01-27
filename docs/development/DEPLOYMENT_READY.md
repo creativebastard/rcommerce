@@ -67,7 +67,7 @@ Status:   ✅ Ready to deploy
 ./target/release/rcommerce server
 
 # Test API (in another terminal)
-./test_api.sh
+./scripts/test_api.sh
 ```
 
 **Expected Output:**
@@ -300,7 +300,7 @@ docker-compose up -d  # Uses production-ready config
 - **Phase 0 Summary**: `PHASE_0_SUMMARY.md`
 - **Phase 1 Summary**: `PHASE_1_SUMMARY.md`
 - **Complete Summary**: `PHASE_0_1_COMPLETE.md`
-- **API Testing**: `./test_api.sh`
+- **API Testing**: `./scripts/test_api.sh`
 
 ### **Deployment Guides**
 ```

@@ -127,7 +127,7 @@ cargo build --release
 ./target/release/rcommerce server &
 
 # 4. Test API
-./test_api.sh
+./scripts/test_api.sh
 
 # 5. Access API
 curl http://localhost:8080/health

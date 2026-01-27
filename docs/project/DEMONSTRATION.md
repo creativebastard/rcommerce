@@ -176,7 +176,7 @@
 
 1️⃣ Configuration Tests ✅
    ```bash
-   ./test_complete_system.sh
+   ./scripts/test_complete_system.sh
    # 6/6 tests passed
    # Configuration: Validated
    # Database: Ready

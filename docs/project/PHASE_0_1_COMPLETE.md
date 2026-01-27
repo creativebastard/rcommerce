@@ -74,7 +74,7 @@ cargo build --release
 ### **3. Test the API**
 ```bash
 # Option 1: Use the test script
-./test_api.sh
+./scripts/test_api.sh
 
 # Option 2: Manual testing
 curl http://localhost:8080/health

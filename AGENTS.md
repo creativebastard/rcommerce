@@ -339,7 +339,7 @@ impl<R: ProductRepository> ProductService<R> {
 
 ```bash
 # Run full API test suite
-./test_api.sh
+./scripts/test_api.sh
 ```
 
 ### Test Database Setup
