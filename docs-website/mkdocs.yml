@@ -167,8 +167,10 @@ nav:
   - Deployment:
     - Docker: deployment/01-docker.md
     - Cross-Platform: deployment/01-cross-platform.md
+    - Reverse Proxies: deployment/02-reverse-proxies.md
     - Redis Setup: deployment/redis-setup.md
     - Security: deployment/04-security.md
+    - Payment Testing: deployment/payment-testing.md
   
   - Development:
     - Developer Guide: development/developer-guide.md
