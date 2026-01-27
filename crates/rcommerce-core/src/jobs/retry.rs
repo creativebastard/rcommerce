@@ -264,17 +264,29 @@ use crate::jobs::JobError;
     
     #[test]
     fn test_exponential_backoff() {
-        let backoff = ExponentialBackoff::default();
+        // Use no jitter for predictable test results
+        let backoff = ExponentialBackoff {
+            initial_delay: Duration::from_secs(1),
+            max_delay: Duration::from_secs(3600),
+            multiplier: 2.0,
+            jitter: 0.0, // No jitter for predictable tests
+        };
         
-        let delay1 = backoff.calculate_delay(0).unwrap();
+        // attempt 0 uses initial_delay directly
+        let delay0 = backoff.calculate_delay(0).unwrap();
+        assert_eq!(delay0, Duration::from_secs(1));
+        
+        // attempt 1: 1s * 2^0 = 1s (exponent = attempt-1 = 0)
+        let delay1 = backoff.calculate_delay(1).unwrap();
         assert_eq!(delay1, Duration::from_secs(1));
         
-        let delay2 = backoff.calculate_delay(1).unwrap();
-        assert!(delay2 >= Duration::from_secs(2));
-        assert!(delay2 <= Duration::from_secs(3)); // With jitter
+        // attempt 2: 1s * 2^1 = 2s (exponent = attempt-1 = 1)
+        let delay2 = backoff.calculate_delay(2).unwrap();
+        assert_eq!(delay2, Duration::from_secs(2));
         
-        let delay3 = backoff.calculate_delay(2).unwrap();
-        assert!(delay3 >= Duration::from_secs(4));
+        // attempt 3: 1s * 2^2 = 4s
+        let delay3 = backoff.calculate_delay(3).unwrap();
+        assert_eq!(delay3, Duration::from_secs(4));
     }
     
     #[test]

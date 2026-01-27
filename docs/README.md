@@ -80,6 +80,20 @@ This directory contains comprehensive documentation for the R commerce headless 
     - Template system with queue-based delivery
     - Analytics and bounce handling
 
+11. **[11-dunning-payment-retry.md](architecture/11-dunning-payment-retry.md)** - Dunning & Payment Retry
+    - Configurable retry schedules
+    - Automated customer notifications
+    - Grace period management
+    - Subscription cancellation workflow
+
+12. **[12-redis-caching.md](architecture/12-redis-caching.md)** - Redis Caching & Data Layer
+    - WebSocket session storage
+    - Rate limiting
+    - Token blacklisting
+    - Job queue processing
+    - Pub/Sub messaging
+    - Configuration and best practices
+
 ### API Documentation
 
 - **[01-api-design.md](api/01-api-design.md)** - Complete API Specification
@@ -209,6 +223,8 @@ All core documentation has been completed and is production-ready:
 - ✅ **08-compatibility-layer.md** - Platform compatibility (34,700 lines)
 - ✅ **09-media-storage.md** - Media & file storage (36,119 lines)
 - ✅ **10-notifications.md** - Notifications system (43,153 lines)
+- ✅ **11-dunning-payment-retry.md** - Dunning & payment retry (4,913 lines)
+- ✅ **12-redis-caching.md** - Redis caching layer (14,582 lines)
 
 #### API Documentation
 - ✅ **api/01-api-design.md** - Complete API reference (515 lines)
@@ -236,7 +252,7 @@ All core documentation has been completed and is production-ready:
 
 ### 📊 Documentation Statistics
 
-- **Total Files**: 25 comprehensive documentation files
+- **Total Files**: 28 comprehensive documentation files
 - **Total Lines**: ~415,000+ lines of detailed documentation
 - **Coverage**: Complete end-to-end documentation for all subsystems
 - **Platforms**: FreeBSD, Linux (all distros), macOS (Intel/Apple Silicon)

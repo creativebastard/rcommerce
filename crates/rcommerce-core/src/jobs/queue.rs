@@ -489,22 +489,30 @@ mod tests {
         let pool = RedisPool::new(config).await;
         
         if let Ok(pool) = pool {
-            let queue = JobQueue::new(pool, "test_queue");
+            // Use unique queue name to avoid test interference
+            let queue_name = format!("test_queue_{}", Uuid::new_v4());
+            let queue = JobQueue::new(pool, &queue_name);
             
             // Create a job
             let payload = serde_json::json!({"test": "data"});
-            let job = Job::new("test_job", payload, "test_queue");
+            let job = Job::new("test_job", payload, &queue_name);
             
             // Enqueue
             queue.enqueue(&job).await.unwrap();
             
+            // Small delay to ensure Redis write completes
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            
             // Dequeue
             let dequeued = queue.dequeue(0).await.unwrap();
-            assert!(dequeued.is_some());
+            assert!(dequeued.is_some(), "Expected job to be dequeued");
             
             let dequeued_job = dequeued.unwrap();
             assert_eq!(dequeued_job.id, job.id);
             assert_eq!(dequeued_job.job_type, job.job_type);
+            
+            // Cleanup
+            let _ = queue.clear().await;
         }
     }
     
@@ -514,23 +522,31 @@ mod tests {
         let pool = RedisPool::new(config).await;
         
         if let Ok(pool) = pool {
-            let queue = JobQueue::new(pool, "test_queue");
+            // Use unique queue name to avoid test interference
+            let queue_name = format!("test_queue_{}", Uuid::new_v4());
+            let queue = JobQueue::new(pool, &queue_name);
             
             // Enqueue jobs with different priorities
-            let low_job = Job::new("low", serde_json::json!({}), "test_queue")
+            let low_job = Job::new("low", serde_json::json!({}), &queue_name)
                 .with_priority(JobPriority::Low);
-            let high_job = Job::new("high", serde_json::json!({}), "test_queue")
+            let high_job = Job::new("high", serde_json::json!({}), &queue_name)
                 .with_priority(JobPriority::High);
             
             queue.enqueue(&low_job).await.unwrap();
             queue.enqueue(&high_job).await.unwrap();
             
+            // Small delay to ensure Redis writes complete
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            
             // High priority should dequeue first
-            let first = queue.dequeue(0).await.unwrap().unwrap();
+            let first = queue.dequeue(0).await.unwrap().expect("Expected high priority job");
             assert_eq!(first.job_type, "high");
             
-            let second = queue.dequeue(0).await.unwrap().unwrap();
+            let second = queue.dequeue(0).await.unwrap().expect("Expected low priority job");
             assert_eq!(second.job_type, "low");
+            
+            // Cleanup
+            let _ = queue.clear().await;
         }
     }
     
@@ -540,24 +556,29 @@ mod tests {
         let pool = RedisPool::new(config).await;
         
         if let Ok(pool) = pool {
-            let queue = JobQueue::new(pool, "test_queue");
-            
-            // Clean first
-            queue.clear().await.unwrap();
+            // Use unique queue name to avoid test interference
+            let queue_name = format!("test_queue_{}", Uuid::new_v4());
+            let queue = JobQueue::new(pool, &queue_name);
             
             // Enqueue some jobs
             for i in 0..5 {
                 let job = Job::new(
                     format!("job_{}", i),
                     serde_json::json!({}),
-                    "test_queue"
+                    &queue_name
                 );
                 queue.enqueue(&job).await.unwrap();
             }
             
+            // Small delay to ensure Redis writes complete
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            
             let stats = queue.stats().await.unwrap();
-            assert_eq!(stats.total_pending, 5);
+            assert_eq!(stats.total_pending, 5, "Expected 5 pending jobs");
             assert!(stats.is_healthy);
+            
+            // Cleanup
+            let _ = queue.clear().await;
         }
     }
 }

@@ -391,7 +391,7 @@ impl WorkerStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cache::RedisConfig;
+    use crate::cache::{RedisConfig, RedisPool};
     use crate::jobs::{Job, JobHandler, JobConfig, JobResult};
     
     // Mock handler for testing

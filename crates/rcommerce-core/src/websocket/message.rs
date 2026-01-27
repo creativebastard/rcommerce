@@ -300,7 +300,7 @@ impl WebSocketMessage {
     pub fn is_high_priority(&self) -> bool {
         matches!(
             self.message_type,
-            MessageType::Connect | MessageType::Error | MessageType::Auth
+            MessageType::Connect | MessageType::Error | MessageType::Auth | MessageType::Ping | MessageType::Pong
         )
     }
 }

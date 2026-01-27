@@ -134,6 +134,10 @@ pub struct SubscriptionInvoice {
     pub last_failed_at: Option<DateTime<Utc>>,
     pub failure_reason: Option<String>,
     
+    // Retry tracking
+    pub next_retry_at: Option<DateTime<Utc>>,
+    pub retry_count: i32,
+    
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -221,4 +225,119 @@ pub struct SubscriptionSummary {
     pub total_past_due: i64,
     pub monthly_recurring_revenue: Decimal,
     pub annual_recurring_revenue: Decimal,
+}
+
+/// Dunning configuration for payment retry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningConfig {
+    /// Number of retry attempts before cancellation
+    pub max_retries: i32,
+    /// Retry intervals in days (e.g., [1, 3, 7] = retry after 1 day, 3 days, 7 days)
+    pub retry_intervals_days: Vec<i32>,
+    /// Grace period in days (subscription remains active during retries)
+    pub grace_period_days: i32,
+    /// Send email on first failure
+    pub email_on_first_failure: bool,
+    /// Send email on final failure (before cancellation)
+    pub email_on_final_failure: bool,
+    /// Apply late fees after N retries (None = no late fees)
+    pub late_fee_after_retry: Option<i32>,
+    /// Late fee amount
+    pub late_fee_amount: Option<Decimal>,
+}
+
+impl Default for DunningConfig {
+    fn default() -> Self {
+        Self {
+            max_retries: 3,
+            retry_intervals_days: vec![1, 3, 7], // Retry after 1 day, 3 days, 7 days
+            grace_period_days: 14,
+            email_on_first_failure: true,
+            email_on_final_failure: true,
+            late_fee_after_retry: None,
+            late_fee_amount: None,
+        }
+    }
+}
+
+/// Payment retry attempt for dunning
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct PaymentRetryAttempt {
+    pub id: Uuid,
+    pub subscription_id: Uuid,
+    pub invoice_id: Uuid,
+    /// Which retry attempt number (1, 2, 3...)
+    pub attempt_number: i32,
+    /// When the retry was attempted
+    pub attempted_at: DateTime<Utc>,
+    /// Whether the retry succeeded
+    pub succeeded: bool,
+    /// Error message if failed
+    pub error_message: Option<String>,
+    /// Gateway error code
+    pub error_code: Option<String>,
+    /// When the next retry is scheduled (if failed)
+    pub next_retry_at: Option<DateTime<Utc>>,
+    /// Payment method used for this attempt
+    pub payment_method_id: Option<String>,
+    /// Gateway transaction ID
+    pub gateway_transaction_id: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Dunning email sent to customer
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct DunningEmail {
+    pub id: Uuid,
+    pub subscription_id: Uuid,
+    pub invoice_id: Uuid,
+    /// Type of dunning email
+    pub email_type: DunningEmailType,
+    /// Email subject
+    pub subject: String,
+    /// Email body (HTML)
+    pub body_html: String,
+    /// Email body (text)
+    pub body_text: String,
+    /// When the email was sent
+    pub sent_at: DateTime<Utc>,
+    /// Whether email was opened
+    pub opened_at: Option<DateTime<Utc>>,
+    /// Whether customer clicked payment link
+    pub clicked_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Type of dunning email
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[sqlx(type_name = "dunning_email_type", rename_all = "snake_case")]
+pub enum DunningEmailType {
+    /// First payment failure notification
+    FirstFailure,
+    /// Subsequent retry failure
+    RetryFailure,
+    /// Final failure before cancellation
+    FinalNotice,
+    /// Subscription cancelled due to non-payment
+    CancellationNotice,
+    /// Payment recovered successfully
+    PaymentRecovered,
+}
+
+/// Payment recovery result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PaymentRecoveryResult {
+    /// Payment succeeded
+    Success,
+    /// Payment failed, will retry
+    RetryScheduled {
+        next_retry_at: DateTime<Utc>,
+        attempt_number: i32,
+        max_attempts: i32,
+    },
+    /// All retries exhausted, subscription cancelled
+    FailedPermanent {
+        cancelled_at: DateTime<Utc>,
+        reason: String,
+    },
 }

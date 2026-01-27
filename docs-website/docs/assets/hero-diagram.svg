@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:0.1"/>
+    </linearGradient>
+    <linearGradient id="box-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="box-gradient-2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="box-gradient-3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#db2777"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="400" rx="20" fill="url(#bg-gradient)"/>
+  
+  <!-- API Layer -->
+  <g transform="translate(300, 40)">
+    <rect width="200" height="70" rx="12" fill="url(#box-gradient)" filter="url(#shadow)"/>
+    <text x="100" y="30" font-family="system-ui" font-size="16" font-weight="600" fill="white" text-anchor="middle">REST API</text>
+    <text x="100" y="52" font-family="system-ui" font-size="12" fill="white" fill-opacity="0.8" text-anchor="middle">Axum Framework</text>
+  </g>
+  
+  <!-- WebSocket -->
+  <g transform="translate(100, 40)">
+    <rect width="150" height="70" rx="12" fill="url(#box-gradient-2)" filter="url(#shadow)"/>
+    <text x="75" y="30" font-family="system-ui" font-size="14" font-weight="600" fill="white" text-anchor="middle">WebSocket</text>
+    <text x="75" y="52" font-family="system-ui" font-size="11" fill="white" fill-opacity="0.8" text-anchor="middle">Real-time</text>
+  </g>
+  
+  <!-- GraphQL -->
+  <g transform="translate(550, 40)">
+    <rect width="150" height="70" rx="12" fill="url(#box-gradient-2)" filter="url(#shadow)"/>
+    <text x="75" y="30" font-family="system-ui" font-size="14" font-weight="600" fill="white" text-anchor="middle">GraphQL</text>
+    <text x="75" y="52" font-family="system-ui" font-size="11" fill="white" fill-opacity="0.8" text-anchor="middle">Query API</text>
+  </g>
+  
+  <!-- Service Layer -->
+  <g transform="translate(50, 160)">
+    <rect width="130" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="65" y="28" font-family="system-ui" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">Order</text>
+    <text x="65" y="46" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">Service</text>
+  </g>
+  
+  <g transform="translate(200, 160)">
+    <rect width="130" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="65" y="28" font-family="system-ui" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">Product</text>
+    <text x="65" y="46" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">Service</text>
+  </g>
+  
+  <g transform="translate(350, 160)">
+    <rect width="130" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="65" y="28" font-family="system-ui" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">Payment</text>
+    <text x="65" y="46" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">Service</text>
+  </g>
+  
+  <g transform="translate(500, 160)">
+    <rect width="130" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="65" y="28" font-family="system-ui" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">Shipping</text>
+    <text x="65" y="46" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">Service</text>
+  </g>
+  
+  <g transform="translate(650, 160)">
+    <rect width="100" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="50" y="28" font-family="system-ui" font-size="13" font-weight="600" fill="#334155" text-anchor="middle">Auth</text>
+    <text x="50" y="46" font-family="system-ui" font-size="11" fill="#64748b" text-anchor="middle">Service</text>
+  </g>
+  
+  <!-- Data Layer -->
+  <g transform="translate(150, 280)">
+    <rect width="200" height="80" rx="12" fill="url(#box-gradient-3)" filter="url(#shadow)"/>
+    <text x="100" y="35" font-family="system-ui" font-size="16" font-weight="600" fill="white" text-anchor="middle">PostgreSQL / MySQL</text>
+    <text x="100" y="58" font-family="system-ui" font-size="12" fill="white" fill-opacity="0.8" text-anchor="middle">Primary Database</text>
+  </g>
+  
+  <g transform="translate(450, 280)">
+    <rect width="200" height="80" rx="12" fill="#f59e0b" filter="url(#shadow)"/>
+    <text x="100" y="35" font-family="system-ui" font-size="16" font-weight="600" fill="white" text-anchor="middle">Redis</text>
+    <text x="100" y="58" font-family="system-ui" font-size="12" fill="white" fill-opacity="0.8" text-anchor="middle">Cache & Real-time</text>
+  </g>
+  
+  <!-- Connection Lines -->
+  <g stroke="#cbd5e1" stroke-width="2" fill="none" stroke-dasharray="5,5">
+    <!-- API to Services -->
+    <path d="M400 110 L400 130 L115 130 L115 160"/>
+    <path d="M400 110 L400 130 L265 130 L265 160"/>
+    <path d="M400 110 L400 130 L415 130 L415 160"/>
+    <path d="M400 110 L400 130 L565 130 L565 160"/>
+    <path d="M400 110 L400 130 L700 130 L700 160"/>
+    
+    <!-- Services to Data -->
+    <path d="M250 220 L250 250 L250 280"/>
+    <path d="M550 220 L550 250 L550 280"/>
+  </g>
+  
+  <!-- Labels -->
+  <text x="400" y="385" font-family="system-ui" font-size="12" fill="#64748b" text-anchor="middle">High-Performance Headless E-Commerce Platform</text>
+</svg>

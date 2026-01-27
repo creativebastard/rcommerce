@@ -1,0 +1,199 @@
+/* R Commerce Documentation Custom Styles */
+
+/* Custom color scheme */
+:root {
+  --rcommerce-primary: #6366f1;
+  --rcommerce-secondary: #8b5cf6;
+  --rcommerce-accent: #ec4899;
+}
+
+/* Hero section styling */
+.md-typeset h1 {
+  font-weight: 700;
+  font-size: 3em;
+  background: linear-gradient(135deg, var(--rcommerce-primary), var(--rcommerce-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Grid cards enhancement */
+.grid.cards {
+  gap: 1.5rem;
+}
+
+.grid.cards > ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grid.cards > ul > li {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  background: var(--md-default-bg-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.grid.cards > ul > li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--rcommerce-primary);
+}
+
+.grid.cards > ul > li > hr {
+  display: none;
+}
+
+.grid.cards > ul > li > p:first-child {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--md-primary-fg-color);
+}
+
+/* Code blocks */
+.md-typeset code {
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+}
+
+.md-typeset pre {
+  border-radius: 0.5rem;
+}
+
+/* Tables */
+.md-typeset table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.md-typeset table th {
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font-weight: 600;
+}
+
+/* Admonitions */
+.md-typeset .admonition {
+  border-radius: 0.5rem;
+  border-left-width: 4px;
+}
+
+.md-typeset .admonition-title {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Navigation */
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Search highlights */
+.md-search-result__highlight {
+  color: var(--rcommerce-primary);
+  font-weight: 600;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-default-bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-default-fg-color--lightest);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-default-fg-color--light);
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* Tabbed content */
+.md-typeset .tabbed-content {
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+/* Buttons */
+.md-button {
+  border-radius: 0.375rem;
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.md-button--primary {
+  background: linear-gradient(135deg, var(--rcommerce-primary), var(--rcommerce-secondary));
+  border: none;
+}
+
+.md-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Content tabs */
+.md-typeset .tabbed-set > input:checked + label {
+  color: var(--rcommerce-primary);
+  border-bottom-color: var(--rcommerce-primary);
+}
+
+/* Footer */
+.md-footer {
+  background: var(--md-primary-fg-color--dark);
+}
+
+/* Annotations */
+.md-annotation__index:after {
+  background-color: var(--rcommerce-accent);
+}
+
+/* Version banner */
+.md-version__current {
+  color: var(--rcommerce-primary);
+}
+
+/* Search input */
+.md-search__input {
+  border-radius: 0.375rem;
+}
+
+/* Header anchors */
+.md-typeset .headerlink {
+  color: var(--md-default-fg-color--lightest);
+  transition: color 0.2s ease;
+}
+
+.md-typeset .headerlink:hover {
+  color: var(--rcommerce-primary);
+}
+
+/* Print styles */
+@media print {
+  .md-typeset h1 {
+    background: none;
+    -webkit-text-fill-color: initial;
+    color: var(--md-default-fg-color);
+  }
+  
+  .grid.cards > ul > li {
+    break-inside: avoid;
+  }
+}

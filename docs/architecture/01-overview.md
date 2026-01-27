@@ -179,7 +179,7 @@ While headless requires frontend development, it reduces:
 
 Continue reading:
 - [02-data-modeling.md](02-data-modeling.md) - Core entities and relationships
-- [03-api-design.md](03-api-design.md) - REST/GraphQL API specifications
+- [API Design](../api/01-api-design.md) - REST/GraphQL API specifications
 - [04-database-abstraction.md](04-database-abstraction.md) - Multi-database support
 - [05-payment-architecture.md](05-payment-architecture.md) - Pluggable payment system
 - [06-shipping-integration.md](06-shipping-integration.md) - Shipping provider architecture

@@ -964,4 +964,4 @@ services:
 
 ---
 
-For Kubernetes deployment, see [02-kubernetes.md](02-kubernetes.md)
+*Kubernetes deployment documentation coming soon.*

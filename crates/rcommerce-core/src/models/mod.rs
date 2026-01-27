@@ -83,6 +83,22 @@ impl Default for Currency {
     }
 }
 
+impl std::fmt::Display for Currency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Currency::USD => write!(f, "USD"),
+            Currency::EUR => write!(f, "EUR"),
+            Currency::GBP => write!(f, "GBP"),
+            Currency::JPY => write!(f, "JPY"),
+            Currency::AUD => write!(f, "AUD"),
+            Currency::CAD => write!(f, "CAD"),
+            Currency::CNY => write!(f, "CNY"),
+            Currency::HKD => write!(f, "HKD"),
+            Currency::SGD => write!(f, "SGD"),
+        }
+    }
+}
+
 /// Weight units
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "weight_unit", rename_all = "snake_case")]

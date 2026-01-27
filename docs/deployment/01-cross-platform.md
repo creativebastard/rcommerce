@@ -895,4 +895,4 @@ sudo chmod 755 /var/log/rcommerce
 
 ---
 
-Next: [02-data-models.md](02-data-models.md) - Complete data model documentation
+Next: [Data Modeling](../architecture/02-data-modeling.md) - Complete data model documentation

@@ -52,7 +52,7 @@ impl NotificationTemplate {
         let mut rendered = self.body.clone();
         
         for (key, value) in variables.iter() {
-            let placeholder = format!("{{ {{ {} }} }}", key);
+            let placeholder = format!("{{{{ {} }}}}", key);
             rendered = rendered.replace(&placeholder, value);
         }
         
@@ -65,7 +65,7 @@ impl NotificationTemplate {
             let mut rendered = html_template.clone();
             
             for (key, value) in variables.iter() {
-                let placeholder = format!("{{ {{ {} }} }}", key);
+                let placeholder = format!("{{{{ {} }}}}", key);
                 rendered = rendered.replace(&placeholder, value);
             }
             

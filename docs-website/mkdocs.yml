@@ -1,0 +1,193 @@
+# R Commerce Documentation Site Configuration
+site_name: R Commerce
+site_description: High-Performance Headless E-Commerce Platform in Rust
+site_author: R Commerce Team
+site_url: https://rcommerce.dev
+
+# Repository
+repo_name: gitee.com/captainjez/gocart
+repo_url: https://gitee.com/captainjez/gocart
+edit_uri: blob/master/docs/
+
+# Copyright
+copyright: Copyright &copy; 2026 R Commerce
+
+# Theme Configuration
+theme:
+  name: material
+  custom_dir: overrides
+  
+  # Palette - Dark/Light mode toggle
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  # Font settings
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  # Logo and favicon
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+  
+  # Features
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+# Plugins
+plugins:
+  - search:
+      separator: '[\s\-]+'
+      lang:
+        - en
+  - redirects:
+      redirect_maps:
+        'index.md': 'architecture/01-overview.md'
+
+# Extra CSS and JavaScript
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: captainjez
+      repo: gocart
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abbreviations.md
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Extra settings
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://gitee.com/captainjez/gocart
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+  
+# Exclude patterns
+exclude_docs: |
+  development/DEPLOYMENT_READY.md
+  development/EMAIL_PREVIEW.md
+  development/HTML_TEMPLATE_SUMMARY.md
+  development/INVOICE_TEMPLATE_INTEGRATION.md
+  includes/abbreviations.md
+
+# Page tree
+nav:
+  - Home: index.md
+  
+  - Architecture:
+    - Overview: architecture/01-overview.md
+    - Data Modeling: architecture/02-data-modeling.md
+    - Database Abstraction: architecture/04-database-abstraction.md
+    - Payment Architecture: architecture/05-payment-architecture.md
+    - Shipping Integration: architecture/06-shipping-integration.md
+    - Order Management: architecture/07-order-management.md
+    - Compatibility Layer: architecture/08-compatibility-layer.md
+    - Product Types & Subscriptions: architecture/08-product-types-and-subscriptions.md
+    - Media Storage: architecture/09-media-storage.md
+    - Notifications: architecture/10-notifications.md
+    - Dunning & Payment Retry: architecture/11-dunning-payment-retry.md
+    - Redis Caching: architecture/12-redis-caching.md
+  
+  - API Reference:
+    - API Design: api/01-api-design.md
+    - Error Codes: api/02-error-codes.md
+  
+  - Deployment:
+    - Docker: deployment/01-docker.md
+    - Cross-Platform: deployment/01-cross-platform.md
+    - Redis Setup: deployment/redis-setup.md
+    - Security: deployment/04-security.md
+  
+  - Development:
+    - Developer Guide: development/developer-guide.md
+    - Configuration Reference: development/configuration-reference.md
+    - CLI Reference: development/cli-reference.md
+    - Development Roadmap: development/development-roadmap.md
+  
+  - Migration Guides:
+    - Overview: migration-guides/00-index.md
+    - Shopify: migration-guides/01-shopify.md
+    - WooCommerce: migration-guides/02-woocommerce.md
+    - Magento: migration-guides/03-magento.md
+    - Medusa.js: migration-guides/04-medusa.md
+  
+  - Features:
+    - Feature Suggestions: features/00-feature-suggestions.md
+
+# Validation
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn

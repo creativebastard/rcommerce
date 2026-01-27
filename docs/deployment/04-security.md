@@ -357,4 +357,4 @@ Before going live:
 
 ---
 
-**Next:** See [Monitoring & Observability](./05-monitoring.md) for setting up metrics and alerts.
+*Monitoring and observability documentation coming soon.*

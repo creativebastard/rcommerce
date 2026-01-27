@@ -665,4 +665,4 @@ Content-Type: application/json
 
 ---
 
-Next: [09-inventory-management.md](09-inventory-management.md) - Advanced inventory strategies
+*Inventory management strategies are documented in the Order Management section.*

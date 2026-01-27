@@ -1,7 +1,84 @@
 pub mod gateways;
+pub mod dunning;
 
 #[cfg(test)]
 mod tests;
+
+/// Mock payment gateway for testing
+#[derive(Debug, Clone)]
+pub struct MockPaymentGateway;
+
+impl MockPaymentGateway {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+#[async_trait]
+impl PaymentGateway for MockPaymentGateway {
+    fn id(&self) -> &'static str {
+        "mock"
+    }
+    
+    fn name(&self) -> &'static str {
+        "Mock Gateway"
+    }
+    
+    async fn create_payment(&self, _request: CreatePaymentRequest) -> Result<PaymentSession> {
+        Ok(PaymentSession {
+            id: "mock_payment_123".to_string(),
+            client_secret: "mock_secret".to_string(),
+            status: PaymentSessionStatus::Open,
+            amount: rust_decimal::Decimal::ONE,
+            currency: "USD".to_string(),
+            customer_id: None,
+        })
+    }
+    
+    async fn confirm_payment(&self, payment_id: &str) -> Result<Payment> {
+        Ok(Payment {
+            id: payment_id.to_string(),
+            gateway: "mock".to_string(),
+            amount: rust_decimal::Decimal::ONE,
+            currency: "USD".to_string(),
+            status: PaymentStatus::Succeeded,
+            order_id: Uuid::new_v4(),
+            customer_id: None,
+            payment_method: "card".to_string(),
+            transaction_id: "mock_txn_123".to_string(),
+            captured_at: Some(chrono::Utc::now()),
+            created_at: chrono::Utc::now(),
+        })
+    }
+    
+    async fn capture_payment(&self, payment_id: &str, _amount: Option<rust_decimal::Decimal>) -> Result<Payment> {
+        self.confirm_payment(payment_id).await
+    }
+    
+    async fn refund_payment(&self, _payment_id: &str, _amount: Option<rust_decimal::Decimal>, reason: &str) -> Result<Refund> {
+        Ok(Refund {
+            id: "mock_refund_123".to_string(),
+            payment_id: "mock_payment_123".to_string(),
+            amount: rust_decimal::Decimal::ONE,
+            currency: "USD".to_string(),
+            status: RefundStatus::Succeeded,
+            reason: reason.to_string(),
+            created_at: chrono::Utc::now(),
+        })
+    }
+    
+    async fn get_payment(&self, payment_id: &str) -> Result<Payment> {
+        self.confirm_payment(payment_id).await
+    }
+    
+    async fn handle_webhook(&self, _payload: &[u8], _signature: &str) -> Result<WebhookEvent> {
+        Ok(WebhookEvent {
+            event_type: WebhookEventType::PaymentSucceeded,
+            payment_id: "mock_payment_123".to_string(),
+            data: serde_json::json!({}),
+        })
+    }
+}
 
 use async_trait::async_trait;
 use uuid::Uuid;

@@ -567,6 +567,9 @@ mod tests {
     fn test_job_retry() {
         let mut job = Job::new("test", serde_json::json!({}), "default")
             .with_max_attempts(3);
+        
+        // Job must be started (which increments attempt) before it can fail
+        job.mark_started(Uuid::new_v4());
         job.mark_failed();
         
         assert!(job.can_retry());
