@@ -450,6 +450,7 @@ mod tests {
     
     #[test]
     fn test_map_status() {
+        use crate::payment::PaymentStatus;
         assert_eq!(AirwallexGateway::map_status("REQUIRES_ACTION"), PaymentStatus::Pending);
         assert_eq!(AirwallexGateway::map_status("PENDING"), PaymentStatus::Pending);
         assert_eq!(AirwallexGateway::map_status("PROCESSING"), PaymentStatus::Processing);

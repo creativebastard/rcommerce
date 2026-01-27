@@ -278,7 +278,7 @@ mod mock_tests {
 #[cfg(test)]
 mod webhook_tests {
     use super::super::stripe::StripeGateway;
-    use crate::payment::{PaymentGateway, WebhookEventType};
+    use crate::payment::PaymentGateway;
 
     #[test]
     fn test_stripe_webhook_parsing() {
@@ -329,10 +329,10 @@ mod gateway_comparison_tests {
 
     /// Test that verifies all gateways have consistent behavior
     async fn test_gateway_consistency<G: PaymentGateway>(gateway: &G) {
-        let request = CreatePaymentRequest {
-            amount: Decimal::new(1000, 2),
+        let _request = CreatePaymentRequest {
+            amount: rust_decimal::Decimal::new(1000, 2),
             currency: "USD".to_string(),
-            order_id: Uuid::new_v4(),
+            order_id: uuid::Uuid::new_v4(),
             customer_id: None,
             customer_email: "test@example.com".to_string(),
             payment_method: PaymentMethod::Card(CardDetails {

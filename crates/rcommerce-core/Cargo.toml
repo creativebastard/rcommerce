@@ -102,3 +102,7 @@ handlebars = { workspace = true }
 
 # LRU Cache support  
 lru = "0.12"
+
+[features]
+default = []
+integration-tests = []
