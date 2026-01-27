@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use reqwest;
 use serde::{Deserialize, Serialize};
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal_macros::dec;
 
 use crate::{Result, Error};
@@ -56,20 +57,21 @@ impl PaymentGateway for StripeGateway {
     }
     
     async fn create_payment(&self, request: CreatePaymentRequest) -> Result<PaymentSession> {
-        let amount_in_cents = (request.amount * dec!(100)).to_string();
+        let amount_in_cents = (request.amount * dec!(100)).to_i64()
+            .ok_or_else(|| Error::validation("Invalid amount"))?;
         
-        let mut params = serde_json::json!({
-            "amount": amount_in_cents,
-            "currency": request.currency,
-            "metadata": {
-                "order_id": request.order_id.to_string(),
-                "customer_id": request.customer_id.map(|id| id.to_string()),
-            },
-        });
+        let mut params = std::collections::HashMap::new();
+        params.insert("amount", amount_in_cents.to_string());
+        params.insert("currency", request.currency.to_lowercase());
+        params.insert("metadata[order_id]", request.order_id.to_string());
+        
+        if let Some(customer_id) = request.customer_id {
+            params.insert("metadata[customer_id]", customer_id.to_string());
+        }
         
         // Add customer email for receipt
         if !request.customer_email.is_empty() {
-            params["receipt_email"] = serde_json::json!(request.customer_email);
+            params.insert("receipt_email", request.customer_email);
         }
         
         let response = self.client
@@ -122,7 +124,7 @@ impl PaymentGateway for StripeGateway {
         Ok(Payment {
             id: format!("pay_{}", uuid::Uuid::new_v4()),
             gateway: self.id().to_string(),
-            amount: Decimal::from_str_exact(&stripe_payment.amount).unwrap() / dec!(100),
+            amount: Decimal::from(stripe_payment.amount) / dec!(100),
             currency: stripe_payment.currency,
             status: Self::map_stripe_status(&stripe_payment.status),
             order_id: uuid::Uuid::parse_str(stripe_payment.metadata.get("order_id").unwrap_or(&"".to_string())).unwrap_or_else(|_| uuid::Uuid::nil()),
@@ -192,7 +194,7 @@ impl PaymentGateway for StripeGateway {
         Ok(Refund {
             id: stripe_refund.id,
             payment_id: payment_id.to_string(),
-            amount: Decimal::from_str_exact(&stripe_refund.amount).unwrap() / dec!(100),
+            amount: Decimal::from(stripe_refund.amount) / dec!(100),
             currency: stripe_refund.currency,
             status: Self::map_stripe_refund_status(&stripe_refund.status),
             reason: reason.to_string(),
@@ -219,7 +221,7 @@ impl PaymentGateway for StripeGateway {
         Ok(Payment {
             id: format!("pay_{}", uuid::Uuid::new_v4()),
             gateway: self.id().to_string(),
-            amount: Decimal::from_str_exact(&stripe_payment.amount).unwrap() / dec!(100),
+            amount: Decimal::from(stripe_payment.amount) / dec!(100),
             currency: stripe_payment.currency,
             status: Self::map_stripe_status(&stripe_payment.status),
             order_id: uuid::Uuid::parse_str(stripe_payment.metadata.get("order_id").unwrap_or(&"".to_string())).unwrap_or_else(|_| uuid::Uuid::nil()),
@@ -260,7 +262,7 @@ impl PaymentGateway for StripeGateway {
 struct StripePaymentIntent {
     id: String,
     object: String,
-    amount: String,
+    amount: i64,
     currency: String,
     status: String,
     client_secret: String,
@@ -273,7 +275,7 @@ struct StripePaymentIntent {
 struct StripeRefund {
     id: String,
     object: String,
-    amount: String,
+    amount: i64,
     currency: String,
     status: String,
     payment_intent: String,
@@ -284,7 +286,7 @@ struct StripeRefund {
 struct StripeCharge {
     id: String,
     object: String,
-    amount: String,
+    amount: i64,
     currency: String,
     captured: bool,
     captured_at: Option<i64>,
