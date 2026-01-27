@@ -1,6 +1,7 @@
 //! Payment gateway implementations
 
 pub mod stripe;
+pub mod airwallex;
 pub mod wechatpay;
 pub mod alipay;
 
@@ -130,6 +131,9 @@ impl PaymentGateway for MockPaymentGateway {
         })
     }
 }
+
+#[cfg(test)]
+mod integration_tests;
 
 #[cfg(test)]
 mod tests {
