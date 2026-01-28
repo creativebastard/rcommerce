@@ -56,7 +56,7 @@
 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                                                                     │
-│  Questions? Contact our support team at support@rcommerce.com      │
+│  Questions? Contact our support team at support@rcommerce.app      │
 │                                                                     │
 │                  © 2026 PDG Global Limited                         │
 │                                                                     │
@@ -77,7 +77,7 @@ Format:
   └─ text/html (primary content)
 
 Headers:
-  From: R Commerce <noreply@rcommerce.com>
+  From: R Commerce <noreply@rcommerce.app>
   To: Alex Developer <customer@example.com>
   Subject: Order Confirmed: ORD-092-331
   Content-Type: multipart/alternative; boundary="boundary123"

@@ -14,7 +14,7 @@ and intellectual property are owned exclusively by:
 
 **PDG Global Limited**
 Incorporated in Hong Kong
-Email: legal@rcommerce.dev
+Email: legal@rcommerce.app
 
 ### License
 
@@ -27,7 +27,7 @@ This software is dual-licensed:
 2. **Commercial License**
    - For proprietary and commercial use
    - See LICENSE-COMMERCIAL for full terms
-   - Contact licensing@rcommerce.dev for pricing
+   - Contact licensing@rcommerce.app for pricing
 
 ### Third-Party Components
 
@@ -49,7 +49,7 @@ When using R Commerce, please include the following attribution:
 ```
 Powered by R Commerce
 Copyright © 2026 PDG Global Limited
-https://rcommerce.dev
+https://rcommerce.app
 ```
 
 ### No Warranty
@@ -61,8 +61,8 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
 ### Contact
 
 For copyright inquiries:
-- Email: legal@rcommerce.dev
-- Website: https://rcommerce.dev/legal
+- Email: legal@rcommerce.app
+- Website: https://rcommerce.app/legal
 
 ---
 

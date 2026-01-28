@@ -141,7 +141,7 @@ rsync -avz --delete site/ user@server:/var/www/html/
 ```nginx
 server {
     listen 80;
-    server_name docs.rcommerce.dev;
+    server_name docs.rcommerce.app;
     root /var/www/html;
     index index.html;
 
@@ -171,7 +171,7 @@ You can customize the build using environment variables:
 
 ```bash
 # Site URL (for sitemap and canonical links)
-export SITE_URL=https://docs.rcommerce.dev
+export SITE_URL=https://docs.rcommerce.app
 
 # Google Analytics
 export GOOGLE_ANALYTICS_KEY=G-XXXXXXXXXX
@@ -186,7 +186,7 @@ mkdocs build
 
 1. Add a `CNAME` file in the `docs/` directory:
    ```
-   docs.rcommerce.dev
+   docs.rcommerce.app
    ```
 
 2. Configure DNS:
@@ -266,7 +266,7 @@ Add to `mkdocs.yml`:
 extra:
   analytics:
     provider: plausible
-    domain: docs.rcommerce.dev
+    domain: docs.rcommerce.app
 ```
 
 ## Troubleshooting

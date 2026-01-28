@@ -128,7 +128,7 @@ Performance:            Sub-10ms API response target
 ```
 95c74c3 - test: Add API test script for Phase 1
 708caab - feat: Complete Phase 1 MVP - REST API with Product & Customer CRUD
-a8aa278 - fix: Update domain from rcommerce.com to rcommerce.app
+a8aa278 - fix: Update domain from rcommerce.app to rcommerce.app
 2e21878 - feat: Complete Phase 0 - Foundation Setup
 ```
 

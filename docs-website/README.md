@@ -167,7 +167,7 @@ Edit in `mkdocs.yml`:
 ```yaml
 site_name: R Commerce
 site_description: High-Performance Headless E-Commerce Platform
-site_url: https://rcommerce.dev
+site_url: https://rcommerce.app
 ```
 
 ### Analytics

@@ -120,7 +120,7 @@ fn main() {
     vars.add("order_total".to_string(), "99.99".to_string());
     vars.add("order_date".to_string(), "Jan 25, 2026".to_string());
     vars.add("company_name".to_string(), "R Commerce".to_string());
-    vars.add("support_email".to_string(), "support@rcommerce.com".to_string());
+    vars.add("support_email".to_string(), "support@rcommerce.app".to_string());
     
     // Render plain text
     let plain_text = template.render(&vars).unwrap();

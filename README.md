@@ -230,7 +230,7 @@ See [LICENSE.md](LICENSE.md) for details.
 | Enterprise with premium support | Commercial License |
 | White-label/OEM | Commercial License |
 
-Contact [sales@rcommerce.dev](mailto:sales@rcommerce.dev) for commercial licensing.
+Contact [sales@rcommerce.app](mailto:sales@rcommerce.app) for commercial licensing.
 
 ## 🆘 Support
 

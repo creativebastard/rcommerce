@@ -134,7 +134,7 @@ If you have a valid Commercial License, you may:
 
 If you see misuse of R Commerce trademarks, please report it:
 
-**Email:** trademark@rcommerce.dev
+**Email:** trademark@rcommerce.app
 **Subject:** Trademark Violation Report
 
 Include:
@@ -147,7 +147,7 @@ Include:
 
 To request permission for a use not covered here:
 
-**Email:** trademark@rcommerce.dev
+**Email:** trademark@rcommerce.app
 **Subject:** Trademark Usage Request
 
 Include:
@@ -171,7 +171,7 @@ result in:
 
 ## Questions?
 
-Contact us at: trademark@rcommerce.dev
+Contact us at: trademark@rcommerce.app
 
 ---
 

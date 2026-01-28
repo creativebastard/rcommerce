@@ -18,7 +18,7 @@ Commerce, please report it responsibly.
 
 Instead, please email us at:
 
-📧 **security@rcommerce.dev**
+📧 **security@rcommerce.app**
 
 Please include:
 - Description of the vulnerability
@@ -121,8 +121,8 @@ operational practices are required.
 
 ## Contact
 
-- **Security Issues**: security@rcommerce.dev
-- **General Questions**: dev@rcommerce.dev
+- **Security Issues**: security@rcommerce.app
+- **General Questions**: dev@rcommerce.app
 - **Emergency**: +1-XXX-XXX-XXXX (24/7 hotline)
 
 ---

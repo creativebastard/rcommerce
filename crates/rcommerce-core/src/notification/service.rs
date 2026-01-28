@@ -309,7 +309,7 @@ impl NotificationFactory {
         variables.add_addresses(shipping_address, billing_address);
         variables.add_order_items(order_items);
         variables.add_totals(order);
-        variables.add_company_info("PDG Global Limited", "support@rcommerce.com");
+        variables.add_company_info("PDG Global Limited", "support@rcommerce.app");
         
         // Render templates
         let body = template.render(&variables)

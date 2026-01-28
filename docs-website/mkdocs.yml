@@ -2,7 +2,7 @@
 site_name: R Commerce
 site_description: High-Performance Headless E-Commerce Platform in Rust
 site_author: R Commerce Team
-site_url: https://rcommerce.dev
+site_url: https://rcommerce.app
 
 # Repository
 repo_name: gitee.com/captainjez/gocart

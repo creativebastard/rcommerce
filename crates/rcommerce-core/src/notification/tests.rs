@@ -37,7 +37,7 @@ mod notification_integration_tests {
         variables.insert("order_total", "99.99");
         variables.insert("order_date", "Jan 25, 2026");
         variables.insert("company_name", "R Commerce");
-        variables.insert("support_email", "support@rcommerce.com");
+        variables.insert("support_email", "support@rcommerce.app");
         
         // Test plain text rendering
         let template = NotificationTemplate::load("order_confirmation").unwrap();

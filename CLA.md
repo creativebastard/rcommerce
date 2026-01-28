@@ -100,7 +100,7 @@ Agreement. If You do not agree, do not submit Contributions.
 ## Contact
 
 For questions about this CLA:
-- Email: legal@rcommerce.dev
+- Email: legal@rcommerce.app
 
 ---
 

@@ -157,7 +157,7 @@ same dual-license as the project (AGPL-3.0 and Commercial).
 
 ## Questions?
 
-- Email: dev@rcommerce.dev
+- Email: dev@rcommerce.app
 - GitHub Issues: [github.com/pdgglobal/rcommerce/issues](https://github.com/pdgglobal/rcommerce/issues)
 
 ---

@@ -215,4 +215,4 @@ please refer to `Cargo.lock` in the project root.
 ## Questions
 
 If you have questions about third-party licenses, please contact:
-- Email: legal@rcommerce.dev
+- Email: legal@rcommerce.app

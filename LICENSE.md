@@ -41,7 +41,7 @@ A paid license that allows you to:
 | **Business** | $2,499 | Unlimited revenue, priority support |
 | **Enterprise** | Custom | SLA, dedicated support, custom features |
 
-**Contact:** licensing@rcommerce.dev
+**Contact:** licensing@rcommerce.app
 
 **Read the full license:** [LICENSE-COMMERCIAL](./LICENSE-COMMERCIAL)
 
@@ -106,8 +106,8 @@ critical reviews and certain other noncommercial uses permitted by copyright law
 ## Contact
 
 **Licensing Inquiries:**
-- Email: licensing@rcommerce.dev
-- Website: https://rcommerce.dev/licensing
+- Email: licensing@rcommerce.app
+- Website: https://rcommerce.app/licensing
 
 **Company:**
 PDG Global Limited

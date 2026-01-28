@@ -136,7 +136,7 @@ mod tests {
             587,
             "user@example.com".to_string(),
             "password".to_string(),
-            "noreply@rcommerce.com".to_string(),
+            "noreply@rcommerce.app".to_string(),
             "R Commerce".to_string(),
         );
         
@@ -159,7 +159,7 @@ mod tests {
             587,
             "user@example.com".to_string(),
             "password".to_string(),
-            "noreply@rcommerce.com".to_string(),
+            "noreply@rcommerce.app".to_string(),
             "R Commerce".to_string(),
         );
         
@@ -173,7 +173,7 @@ mod tests {
         
         let message = channel.build_email_message(&notification);
         
-        assert_eq!(message.from, "R Commerce <noreply@rcommerce.com>");
+        assert_eq!(message.from, "R Commerce <noreply@rcommerce.app>");
         assert_eq!(message.to, "customer@example.com");
         assert_eq!(message.subject, "Test Email");
         assert_eq!(message.text_body, "Plain text body");

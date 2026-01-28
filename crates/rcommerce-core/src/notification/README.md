@@ -271,7 +271,7 @@ Content-Type: text/html; charset=utf-8
 ### Email Headers
 
 ```
-From: R Commerce <noreply@rcommerce.com>
+From: R Commerce <noreply@rcommerce.app>
 To: Customer Name <customer@example.com>
 Subject: Order Confirmed: ORD-12345
 Content-Type: multipart/alternative; boundary="..."
