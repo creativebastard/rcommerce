@@ -32,7 +32,7 @@ pub struct AirwallexGateway {
 #[derive(Debug, Clone)]
 struct AirwallexAccessToken {
     token: String,
-    expires_at: u64,
+    expires_at: u64, // Unix timestamp
 }
 
 impl AirwallexGateway {
@@ -111,9 +111,14 @@ impl AirwallexGateway {
         let auth_response: AirwallexAuthResponse = response.json().await
             .map_err(|e| Error::Network(format!("Failed to parse Airwallex auth response: {}", e)))?;
         
+        // Parse ISO 8601 expires_at to Unix timestamp
+        let expires_at = chrono::DateTime::parse_from_str(&auth_response.expires_at, "%Y-%m-%dT%H:%M:%S%z")
+            .map_err(|e| Error::validation(format!("Invalid expires_at format: {}", e)))?
+            .timestamp() as u64;
+        
         let token = AirwallexAccessToken {
             token: auth_response.token,
-            expires_at: auth_response.expires_at,
+            expires_at,
         };
         
         // Cache the token
@@ -413,7 +418,7 @@ impl PaymentGateway for AirwallexGateway {
 struct AirwallexAuthResponse {
     token: String,
     #[serde(rename = "expires_at")]
-    expires_at: u64,
+    expires_at: String, // ISO 8601 format: "2026-01-28T11:50:18+0000"
 }
 
 #[derive(Debug, Serialize, Deserialize)]
