@@ -14,6 +14,15 @@ use tokio::net::TcpListener;
 use tokio::time::sleep;
 use uuid::Uuid;
 
+// Import R Commerce payment systems
+use rcommerce_core::payment::{
+    PaymentGateway, CreatePaymentRequest, PaymentMethod, CardDetails
+};
+use rcommerce_core::payment::gateways::{
+    stripe::StripeGateway,
+    airwallex::AirwallexGateway,
+};
+
 // =============================================================================
 // Test Types
 // =============================================================================
@@ -641,116 +650,77 @@ CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, s
     }
     
     // =============================================================================
-    // Payment Gateway Tests
+    // Payment Gateway Tests - Using R Commerce Payment Systems
     // =============================================================================
     
-    /// Test Stripe payment gateway with test API key
+    /// Test Stripe payment gateway using R Commerce StripeGateway
     pub async fn test_stripe_payment(&self) -> Result<(String, String)> {
         let api_key = std::env::var("STRIPE_TEST_SECRET_KEY")
             .map_err(|_| anyhow::anyhow!("STRIPE_TEST_SECRET_KEY not set"))?;
+        let webhook_secret = std::env::var("STRIPE_TEST_WEBHOOK_SECRET").unwrap_or_default();
         
-        // Create a payment intent via Stripe API
-        let client = reqwest::Client::new();
-        let params = [
-            ("amount", "2000"), // $20.00 in cents
-            ("currency", "usd"),
-            ("payment_method_types[]", "card"),
-        ];
+        // Create Stripe gateway using R Commerce payment system
+        let gateway = StripeGateway::new(api_key, webhook_secret);
         
-        let resp = client
-            .post("https://api.stripe.com/v1/payment_intents")
-            .header("Authorization", format!("Bearer {}", api_key))
-            .form(&params)
-            .send()
-            .await?;
+        // Create payment request
+        let request = CreatePaymentRequest {
+            amount: Decimal::new(2000, 2), // $20.00
+            currency: "USD".to_string(),
+            order_id: Uuid::new_v4(),
+            customer_id: None,
+            customer_email: "test@example.com".to_string(),
+            payment_method: PaymentMethod::Card(CardDetails {
+                number: "4242424242424242".to_string(),
+                exp_month: 12,
+                exp_year: 2025,
+                cvc: "123".to_string(),
+                name: "Test User".to_string(),
+            }),
+            billing_address: None,
+            metadata: serde_json::json!({}),
+        };
         
-        if !resp.status().is_success() {
-            let err_text = resp.text().await?;
-            return Err(anyhow::anyhow!("Stripe API error: {}", err_text));
-        }
+        // Create payment intent through R Commerce gateway
+        let session = gateway.create_payment(request).await?;
         
-        let json: serde_json::Value = resp.json().await?;
-        let payment_intent_id = json["id"].as_str().ok_or_else(|| anyhow::anyhow!("No payment intent ID"))?.to_string();
-        let client_secret = json["client_secret"].as_str().ok_or_else(|| anyhow::anyhow!("No client secret"))?.to_string();
-        
-        Ok((payment_intent_id, client_secret))
+        Ok((session.id, session.client_secret))
     }
     
-    /// Test Airwallex payment gateway with test API key
-    /// Uses the demo environment: https://api-demo.airwallex.com
+    /// Test Airwallex payment gateway using R Commerce AirwallexGateway
     pub async fn test_airwallex_payment(&self) -> Result<(String, String)> {
         let client_id = std::env::var("AIRWALLEX_TEST_CLIENT_ID")
             .map_err(|_| anyhow::anyhow!("AIRWALLEX_TEST_CLIENT_ID not set"))?;
         let api_key = std::env::var("AIRWALLEX_TEST_API_KEY")
             .map_err(|_| anyhow::anyhow!("AIRWALLEX_TEST_API_KEY not set"))?;
+        let webhook_secret = std::env::var("AIRWALLEX_TEST_WEBHOOK_SECRET").unwrap_or_default();
         
-        // Use demo environment for testing
-        let base_url = "https://api-demo.airwallex.com/api/v1";
+        // Create Airwallex gateway using R Commerce payment system
+        let gateway = AirwallexGateway::new(client_id, api_key, webhook_secret);
         
-        // First authenticate - Airwallex requires an empty JSON body {}
-        let client = reqwest::Client::new();
-        let auth_resp = client
-            .post(format!("{}/authentication/login", base_url))
-            .header("Content-Type", "application/json")
-            .header("x-client-id", &client_id)
-            .header("x-api-key", &api_key)
-            .json(&serde_json::json!({})) // Empty JSON object as body
-            .send()
-            .await?;
+        // Create payment request
+        let request = CreatePaymentRequest {
+            amount: Decimal::new(2000, 2), // $20.00
+            currency: "USD".to_string(),
+            order_id: Uuid::new_v4(),
+            customer_id: None,
+            customer_email: "test@example.com".to_string(),
+            payment_method: PaymentMethod::Card(CardDetails {
+                number: "4111111111111111".to_string(),
+                exp_month: 12,
+                exp_year: 2025,
+                cvc: "123".to_string(),
+                name: "Test User".to_string(),
+            }),
+            billing_address: None,
+            metadata: serde_json::json!({
+                "merchant_order_id": format!("E2E-{}", Uuid::new_v4()),
+            }),
+        };
         
-        let auth_status = auth_resp.status();
-        let auth_text = auth_resp.text().await?;
+        // Create payment intent through R Commerce gateway
+        let session = gateway.create_payment(request).await?;
         
-        if !auth_status.is_success() {
-            return Err(anyhow::anyhow!("Airwallex auth error (HTTP {}): {}", auth_status, auth_text));
-        }
-        
-        // Check if response contains token
-        let auth_json: serde_json::Value = serde_json::from_str(&auth_text)
-            .map_err(|e| anyhow::anyhow!("Failed to parse auth response: {}. Raw: {}", e, auth_text))?;
-        
-        let token = auth_json["token"]
-            .as_str()
-            .ok_or_else(|| anyhow::anyhow!("No access token in response. Response: {}", auth_json))?;
-        
-        // Create payment intent - Airwallex requires merchant_order_id
-        let order_id = format!("E2E-{}", Uuid::new_v4());
-        let payload = serde_json::json!({
-            "request_id": Uuid::new_v4().to_string(),
-            "amount": 2000, // $20.00 in cents
-            "currency": "USD",
-            "descriptor": "E2E Test Payment",
-            "merchant_order_id": order_id,
-        });
-        
-        let resp = client
-            .post(format!("{}/pa/payment_intents/create", base_url))
-            .header("Authorization", format!("Bearer {}", token))
-            .header("Content-Type", "application/json")
-            .json(&payload)
-            .send()
-            .await?;
-        
-        let resp_status = resp.status();
-        let resp_text = resp.text().await?;
-        
-        if !resp_status.is_success() {
-            return Err(anyhow::anyhow!("Airwallex API error (HTTP {}): {}", resp_status, resp_text));
-        }
-        
-        let json: serde_json::Value = serde_json::from_str(&resp_text)
-            .map_err(|e| anyhow::anyhow!("Failed to parse payment intent response: {}. Raw: {}", e, resp_text))?;
-        
-        let payment_intent_id = json["id"]
-            .as_str()
-            .ok_or_else(|| anyhow::anyhow!("No payment intent ID in response. Response: {}", json))?
-            .to_string();
-        let client_secret = json["client_secret"]
-            .as_str()
-            .ok_or_else(|| anyhow::anyhow!("No client secret in response. Response: {}", json))?
-            .to_string();
-        
-        Ok((payment_intent_id, client_secret))
+        Ok((session.id, session.client_secret))
     }
     
     pub async fn cleanup(&self) -> Result<()> {

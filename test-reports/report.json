@@ -1,10 +1,10 @@
 {
   "summary": {
     "total": 14,
-    "passed": 14,
+    "passed": 8,
     "failed": 0,
-    "skipped": 0,
-    "duration_ms": 2528
+    "skipped": 6,
+    "duration_ms": 617
   },
   "tests": [
     {
@@ -98,7 +98,7 @@
     {
       "name": "Create Order",
       "status": "passed",
-      "duration_ms": 1,
+      "duration_ms": 2,
       "description": "Creates order via API",
       "steps": [
         {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:51330/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:51375/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -178,176 +178,87 @@
     },
     {
       "name": "Cache Write",
-      "status": "passed",
+      "status": "skipped",
       "duration_ms": 0,
-      "description": "Write to Redis",
+      "description": "Skipped",
       "steps": [
-        {
-          "step": 1,
-          "description": "SET",
-          "result": "OK"
-        }
       ],
       "created_items": [
-        {
-          "type": "Cache Entry",
-          "id": "test:key",
-          "details": "test_value"
-        }
       ],
       "assertions": [
       ],
-      "raw_request": "SET test:key test_value",
-      "raw_response": "OK"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Cache Read",
-      "status": "passed",
+      "status": "skipped",
       "duration_ms": 0,
-      "description": "Read from Redis",
+      "description": "Skipped",
       "steps": [
-        {
-          "step": 1,
-          "description": "GET",
-          "result": "test_value"
-        }
       ],
       "created_items": [
       ],
       "assertions": [
       ],
-      "raw_request": "GET test:key",
-      "raw_response": "test_value"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Cache Invalidation",
-      "status": "passed",
+      "status": "skipped",
       "duration_ms": 0,
-      "description": "Delete from Redis",
+      "description": "Skipped",
       "steps": [
-        {
-          "step": 1,
-          "description": "DEL",
-          "result": "Deleted"
-        }
       ],
       "created_items": [
       ],
       "assertions": [
       ],
-      "raw_request": "DEL test:key",
-      "raw_response": "1"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Product Caching",
-      "status": "passed",
+      "status": "skipped",
       "duration_ms": 0,
-      "description": "Cache products",
+      "description": "Skipped",
       "steps": [
-        {
-          "step": 1,
-          "description": "SETEX",
-          "result": "Cached"
-        }
       ],
       "created_items": [
-        {
-          "type": "Cache Entry",
-          "id": "test:products",
-          "details": "TTL: 3600s"
-        }
       ],
       "assertions": [
       ],
-      "raw_request": "SETEX test:products 3600 data",
-      "raw_response": "OK"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Stripe Payment",
-      "status": "passed",
-      "duration_ms": 857,
-      "description": "Create payment intent via Stripe API",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped - no API credentials",
       "steps": [
-        {
-          "step": 1,
-          "description": "POST /v1/payment_intents",
-          "result": "201 Created"
-        },
-        {
-          "step": 2,
-          "description": "Parse response",
-          "result": "Success"
-        }
       ],
       "created_items": [
-        {
-          "type": "PaymentIntent",
-          "id": "pi_3SuWKKH5ZJNK02uB1icsCZsR",
-          "details": "$20.00 USD"
-        }
       ],
       "assertions": [
-        {
-          "description": "Payment intent created",
-          "passed": true,
-          "expected": "valid ID",
-          "actual": "valid ID"
-        },
-        {
-          "description": "Client secret returned",
-          "passed": true,
-          "expected": "present",
-          "actual": "present"
-        }
       ],
-      "raw_request": "POST https://api.stripe.com/v1/payment_intents\nAuthorization: Bearer sk_test_***\nContent-Type: application/x-www-form-urlencoded\n\namount=2000&currency=usd&payment_method_types[]=card",
-      "raw_response": "{\"id\":\"pi_3SuWKKH5ZJNK02uB1icsCZsR\",\"client_secret\":\"pi_3SuWKKH5ZJNK02uB1icsCZsR_secret_ZKGm2MszW2MpmmQKTEPfNUEWy\",\"status\":\"requires_payment_method\"}"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Airwallex Payment",
-      "status": "passed",
-      "duration_ms": 1048,
-      "description": "Create payment intent via Airwallex API",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped - no API credentials",
       "steps": [
-        {
-          "step": 1,
-          "description": "POST /authentication/login",
-          "result": "200 OK"
-        },
-        {
-          "step": 2,
-          "description": "POST /pa/payment_intents/create",
-          "result": "201 Created"
-        },
-        {
-          "step": 3,
-          "description": "Parse response",
-          "result": "Success"
-        }
       ],
       "created_items": [
-        {
-          "type": "PaymentIntent",
-          "id": "int_hkdmcvsphhf9pu17mwy",
-          "details": "$20.00 USD"
-        }
       ],
       "assertions": [
-        {
-          "description": "Authenticated successfully",
-          "passed": true,
-          "expected": "token received",
-          "actual": "token received"
-        },
-        {
-          "description": "Payment intent created",
-          "passed": true,
-          "expected": "valid ID",
-          "actual": "valid ID"
-        }
       ],
-      "raw_request": "POST https://api-demo.airwallex.com/api/v1/pa/payment_intents/create\nAuthorization: Bearer eyJ***\nContent-Type: application/json\n\n{\"request_id\":\"uuid\",\"amount\":2000,\"currency\":\"USD\",\"descriptor\":\"E2E Test Payment\"}",
-      "raw_response": "{\"id\":\"int_hkdmcvsphhf9pu17mwy\",\"client_secret\":\"eyJraWQiOiJjNDRjODVkMDliMDc0NmNlYTIwZmI4NjZlYzI4YWY3ZSIsImFsZyI6IkhTMjU2In0.eyJ0eXBlIjoiY2xpZW50LXNlY3JldCIsImFjY291bnRfaWQiOiJkMzZmZmQ4NS1mYmRkLTQzMzYtODk1NC05YThiZGMyY2Y2ZTMiLCJpbnRlbnRfaWQiOiJpbnRfaGtkbWN2c3BoaGY5cHUxN213eSIsImJ1c2luZXNzX25hbWUiOiJkZW1vK1BER0dsb2JhbExpbWl0ZWQxIiwicGFkYyI6IkhLIiwiZXhwIjoxNzY5NjAxMDI1LCJpYXQiOjE3Njk1OTc0MjV9.U-ZlbTqmtk7XVfkZ8tGjZKkWB6LJvq_HrgKirYe4v-c\",\"status\":\"REQUIRES_ACTION\"}"
+      "raw_request": null,
+      "raw_response": null
     },
     {
       "name": "Self-Signed Certificate",
