@@ -169,11 +169,15 @@ impl PaymentGateway for AirwallexGateway {
         let amount_in_cents = (request.amount * dec!(100)).to_i64()
             .ok_or_else(|| Error::validation("Invalid amount"))?;
         
+        // Generate merchant_order_id (required by Airwallex)
+        let merchant_order_id = format!("ORD-{}", request.order_id.to_string().split('-').next().unwrap_or(""));
+        
         let payload = serde_json::json!({
             "request_id": uuid::Uuid::new_v4().to_string(),
             "amount": amount_in_cents,
             "currency": request.currency,
-            "descriptor": format!("Order {}", request.order_id),
+            "descriptor": "R Commerce Payment", // Max 32 chars
+            "merchant_order_id": merchant_order_id,
             "metadata": {
                 "order_id": request.order_id.to_string(),
                 "customer_id": request.customer_id.map(|id| id.to_string()),

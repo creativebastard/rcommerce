@@ -12,12 +12,12 @@
         </div>
         <div class="row mb-4">
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>14</h3><p class="text-muted">Total</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">13</h3><p class="text-muted">Passed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">8</h3><p class="text-muted">Passed</p></div></div></div>
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">1</h3><p class="text-muted">Failed</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">0</h3><p class="text-muted">Skipped</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">5</h3><p class="text-muted">Skipped</p></div></div></div>
         </div>
-        <h5>Pass Rate: 92.9%</h5>
-        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 92.85714285714286%">92.9%</div></div>
+        <h5>Pass Rate: 57.1%</h5>
+        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 57.14285714285714%">57.1%</div></div>
         <h5>Test Details</h5>
         
             <div class="card mb-3 border-success">
@@ -49,7 +49,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Data Generation</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(10ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(11ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Generates dummy data</p>
@@ -117,79 +117,70 @@
                 </div>
             </div>
 
-            <div class="card mb-3 border-success">
+            <div class="card mb-3 border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Write</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Write to Redis</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>Cache Entry:</strong> test:key <small class="text-muted">(test_value)</small></div>
-
-                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> SET <span class="text-muted">- OK</span></li>
-</ul>
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-success">
+            <div class="card mb-3 border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Read</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Read from Redis</p>
+                    <p class="text-muted">Skipped</p>
                     
-                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> GET <span class="text-muted">- test_value</span></li>
-</ul>
+                    <ul class="list-group list-group-flush mt-2"></ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-success">
+            <div class="card mb-3 border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Invalidation</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Delete from Redis</p>
+                    <p class="text-muted">Skipped</p>
                     
-                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> DEL <span class="text-muted">- Deleted</span></li>
-</ul>
+                    <ul class="list-group list-group-flush mt-2"></ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-success">
+            <div class="card mb-3 border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Product Caching</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Cache products</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>Cache Entry:</strong> test:products <small class="text-muted">(TTL: 3600s)</small></div>
-
-                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> SETEX <span class="text-muted">- Cached</span></li>
-</ul>
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-success">
+            <div class="card mb-3 border-secondary">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Stripe Payment</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(882ms)</span></div>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Create payment intent via Stripe API</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>PaymentIntent:</strong> pi_3SuWrVH5ZJNK02uB19CAAdIq <small class="text-muted">($20.00 USD)</small></div>
-
-                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /v1/payment_intents <span class="text-muted">- 201 Created</span></li>
-<li class="list-group-item py-1"><strong>Step 2:</strong> Parse response <span class="text-muted">- Success</span></li>
-</ul>
+                    <p class="text-muted">Skipped - no API credentials</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
                 </div>
             </div>
 
             <div class="card mb-3 border-danger">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Airwallex Payment</h5>
-                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(622ms)</span></div>
+                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(1088ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Airwallex API call failed</p>
@@ -213,7 +204,7 @@
                 </div>
             </div>
 
-        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 11:24:42 UTC</p></div>
+        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 11:28:04 UTC</p></div>
     </div>
 </body>
 </html>
