@@ -677,55 +677,78 @@ CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, s
     }
     
     /// Test Airwallex payment gateway with test API key
+    /// Uses the demo environment: https://api-demo.airwallex.com
     pub async fn test_airwallex_payment(&self) -> Result<(String, String)> {
         let client_id = std::env::var("AIRWALLEX_TEST_CLIENT_ID")
             .map_err(|_| anyhow::anyhow!("AIRWALLEX_TEST_CLIENT_ID not set"))?;
         let api_key = std::env::var("AIRWALLEX_TEST_API_KEY")
             .map_err(|_| anyhow::anyhow!("AIRWALLEX_TEST_API_KEY not set"))?;
         
-        // First authenticate
+        // Use demo environment for testing
+        let base_url = "https://api-demo.airwallex.com/api/v1";
+        
+        // First authenticate - Airwallex requires an empty JSON body {}
         let client = reqwest::Client::new();
         let auth_resp = client
-            .post("https://api.airwallex.com/api/v1/authentication/login")
+            .post(format!("{}/authentication/login", base_url))
             .header("Content-Type", "application/json")
             .header("x-client-id", &client_id)
             .header("x-api-key", &api_key)
-            .body("") // Empty body to ensure Content-Length is set
+            .json(&serde_json::json!({})) // Empty JSON object as body
             .send()
             .await?;
         
-        if !auth_resp.status().is_success() {
-            let err_text = auth_resp.text().await?;
-            return Err(anyhow::anyhow!("Airwallex auth error: {}", err_text));
+        let auth_status = auth_resp.status();
+        let auth_text = auth_resp.text().await?;
+        
+        if !auth_status.is_success() {
+            return Err(anyhow::anyhow!("Airwallex auth error (HTTP {}): {}", auth_status, auth_text));
         }
         
-        let auth_json: serde_json::Value = auth_resp.json().await?;
-        let token = auth_json["token"].as_str().ok_or_else(|| anyhow::anyhow!("No access token"))?.to_string();
+        // Check if response contains token
+        let auth_json: serde_json::Value = serde_json::from_str(&auth_text)
+            .map_err(|e| anyhow::anyhow!("Failed to parse auth response: {}. Raw: {}", e, auth_text))?;
         
-        // Create payment intent
+        let token = auth_json["token"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("No access token in response. Response: {}", auth_json))?;
+        
+        // Create payment intent - Airwallex requires merchant_order_id
+        let order_id = format!("E2E-{}", Uuid::new_v4());
         let payload = serde_json::json!({
             "request_id": Uuid::new_v4().to_string(),
             "amount": 2000, // $20.00 in cents
             "currency": "USD",
             "descriptor": "E2E Test Payment",
+            "merchant_order_id": order_id,
         });
         
         let resp = client
-            .post("https://api.airwallex.com/api/v1/pa/payment_intents/create")
+            .post(format!("{}/pa/payment_intents/create", base_url))
             .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
             .await?;
         
-        if !resp.status().is_success() {
-            let err_text = resp.text().await?;
-            return Err(anyhow::anyhow!("Airwallex API error: {}", err_text));
+        let resp_status = resp.status();
+        let resp_text = resp.text().await?;
+        
+        if !resp_status.is_success() {
+            return Err(anyhow::anyhow!("Airwallex API error (HTTP {}): {}", resp_status, resp_text));
         }
         
-        let json: serde_json::Value = resp.json().await?;
-        let payment_intent_id = json["id"].as_str().ok_or_else(|| anyhow::anyhow!("No payment intent ID"))?.to_string();
-        let client_secret = json["client_secret"].as_str().ok_or_else(|| anyhow::anyhow!("No client secret"))?.to_string();
+        let json: serde_json::Value = serde_json::from_str(&resp_text)
+            .map_err(|e| anyhow::anyhow!("Failed to parse payment intent response: {}. Raw: {}", e, resp_text))?;
+        
+        let payment_intent_id = json["id"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("No payment intent ID in response. Response: {}", json))?
+            .to_string();
+        let client_secret = json["client_secret"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("No client secret in response. Response: {}", json))?
+            .to_string();
         
         Ok((payment_intent_id, client_secret))
     }
@@ -1016,7 +1039,7 @@ async fn run_e2e_test_suite() {
                         TestStep { step: 2, description: "POST /pa/payment_intents/create".to_string(), result: "201 Created".to_string() },
                         TestStep { step: 3, description: "Parse response".to_string(), result: "Success".to_string() },
                     ],
-                    raw_request: Some("POST https://api.airwallex.com/api/v1/pa/payment_intents/create\nAuthorization: Bearer eyJ***\nContent-Type: application/json\n\n{\"request_id\":\"uuid\",\"amount\":2000,\"currency\":\"USD\",\"descriptor\":\"E2E Test Payment\"}".to_string()),
+                    raw_request: Some("POST https://api-demo.airwallex.com/api/v1/pa/payment_intents/create\nAuthorization: Bearer eyJ***\nContent-Type: application/json\n\n{\"request_id\":\"uuid\",\"amount\":2000,\"currency\":\"USD\",\"descriptor\":\"E2E Test Payment\"}".to_string()),
                     raw_response: Some(format!("{{\"id\":\"{}\",\"client_secret\":\"{}\",\"status\":\"REQUIRES_ACTION\"}}", payment_intent_id, client_secret)),
                     created_items: vec![CreatedItem { item_type: "PaymentIntent".to_string(), id: payment_intent_id, details: "$20.00 USD".to_string() }],
                     assertions: vec![
@@ -1031,7 +1054,7 @@ async fn run_e2e_test_suite() {
                     error: Some(e.to_string()),
                     description: "Airwallex API call failed".to_string(),
                     steps: vec![TestStep { step: 1, description: "Authenticate".to_string(), result: "Failed".to_string() }],
-                    raw_request: Some("POST https://api.airwallex.com/api/v1/authentication/login\nx-client-id: ***\nx-api-key: ***".to_string()),
+                    raw_request: Some("POST https://api-demo.airwallex.com/api/v1/authentication/login\nx-client-id: ***\nx-api-key: ***".to_string()),
                     raw_response: Some(format!("Error: {}", e)),
                     created_items: vec![],
                     assertions: vec![Assertion { description: "API call succeeded".to_string(), passed: false, expected: "200 OK".to_string(), actual: e.to_string() }],
