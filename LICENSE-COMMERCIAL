@@ -1,0 +1,186 @@
+R COMMERCE COMMERCIAL LICENSE AGREEMENT
+
+Version 1.0, Effective Date: January 28, 2026
+
+IMPORTANT: PLEASE READ THIS LICENSE CAREFULLY BEFORE USING THE SOFTWARE.
+
+This Commercial License Agreement ("Agreement") is a legal agreement between
+PDG Global Limited, a company incorporated in Hong Kong ("Licensor", "we", "us",
+or "our") and you (either an individual or a single entity) ("Licensee" or
+"you") for the software product known as R Commerce ("Software").
+
+BY PURCHASING, INSTALLING, OR USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE
+TERMS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, DO NOT INSTALL OR
+USE THE SOFTWARE.
+
+1. DEFINITIONS
+
+1.1 "Software" means the R Commerce headless e-commerce platform, including all
+    source code, object code, documentation, and related materials.
+
+1.2 "License Fee" means the fee paid by Licensee to Licensor for the Commercial
+    License.
+
+1.3 "Authorized User" means an employee, contractor, or agent of Licensee who
+    is authorized to access and use the Software.
+
+1.4 "Application" means any software application, service, or product developed
+    by Licensee that incorporates or uses the Software.
+
+2. GRANT OF LICENSE
+
+Subject to the terms and conditions of this Agreement and payment of the
+applicable License Fee, Licensor hereby grants to Licensee a non-exclusive,
+non-transferable, worldwide license to:
+
+2.1 Use, modify, and create derivative works of the Software;
+
+2.2 Distribute the Software as part of Licensee's Application;
+
+2.3 Deploy the Software on Licensee's infrastructure or cloud services;
+
+2.4 Provide commercial hosting services based on the Software;
+
+2.5 Offer support and maintenance services to third parties using the Software.
+
+3. LICENSE RESTRICTIONS
+
+Licensee shall NOT:
+
+3.1 Use the Software without paying the applicable License Fee;
+
+3.2 Sublicense, sell, rent, lease, or transfer the Software except as part of
+    Licensee's Application;
+
+3.3 Remove or alter any copyright, trademark, or proprietary notices;
+
+3.4 Use the R Commerce name, logo, or trademarks without prior written consent;
+
+3.5 Compete with Licensor's commercial offerings using the Software;
+
+3.6 Use the Software for any unlawful purpose.
+
+4. INTELLECTUAL PROPERTY RIGHTS
+
+4.1 Title and Ownership. All title, ownership rights, and intellectual property
+    rights in and to the Software shall remain with Licensor. This Agreement
+    does not convey to Licensee any ownership interest in the Software.
+
+4.2 Derivative Works. Licensee retains ownership of modifications and
+    derivative works created by Licensee, subject to Licensor's underlying
+    rights in the Software.
+
+4.3 Feedback. Licensee grants Licensor a perpetual, irrevocable, royalty-free,
+    worldwide license to use any feedback or suggestions provided by Licensee.
+
+5. TRADEMARKS
+
+5.1 Ownership. "R Commerce", the R Commerce logo, and related marks are
+    trademarks of PDG Global Limited. All rights reserved.
+
+5.2 Usage Restrictions. Licensee may not:
+    (a) Use the trademarks as part of Licensee's company name or product names;
+    (b) Register domain names containing the trademarks;
+    (c) Use the trademarks in a way that suggests endorsement by Licensor;
+    (d) Modify or create derivative versions of the trademarks.
+
+5.3 Attribution. Licensee must include the following attribution in all
+    Applications: "Powered by R Commerce" or similar approved attribution.
+
+6. SUPPORT AND MAINTENANCE
+
+6.1 Support Services. Licensor shall provide support services as specified in
+    the applicable Support Agreement or Service Level Agreement (SLA).
+
+6.2 Updates. Licensee is entitled to receive updates and bug fixes for the
+    Software during the subscription period.
+
+7. FEES AND PAYMENT
+
+7.1 License Fees. Licensee shall pay all applicable License Fees as specified
+    in the pricing schedule or quotation provided by Licensor.
+
+7.2 Payment Terms. All fees are due within thirty (30) days of invoice date.
+
+7.3 Taxes. All fees are exclusive of taxes. Licensee is responsible for all
+    applicable taxes.
+
+8. TERM AND TERMINATION
+
+8.1 Term. This Agreement commences on the Effective Date and continues for the
+    subscription period specified in the purchase order, unless earlier
+    terminated.
+
+8.2 Termination for Breach. Either party may terminate this Agreement if the
+    other party materially breaches any provision and fails to cure within
+    thirty (30) days of written notice.
+
+8.3 Effect of Termination. Upon termination:
+    (a) All licenses granted hereunder shall immediately terminate;
+    (b) Licensee shall cease all use of the Software;
+    (c) Licensee shall destroy all copies of the Software;
+    (d) Sections 4, 5, 9, 10, and 11 shall survive termination.
+
+9. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+
+10. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF
+PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF OR
+RELATED TO THIS AGREEMENT OR THE USE OF THE SOFTWARE.
+
+LICENSOR'S TOTAL LIABILITY SHALL NOT EXCEED THE TOTAL AMOUNT PAID BY LICENSEE
+TO LICENSOR UNDER THIS AGREEMENT IN THE TWELVE (12) MONTHS PRIOR TO THE EVENT
+GIVING RISE TO LIABILITY.
+
+11. INDEMNIFICATION
+
+Licensee agrees to indemnify, defend, and hold harmless Licensor and its
+officers, directors, employees, and agents from and against any claims,
+liabilities, damages, losses, and expenses arising out of or in connection
+with Licensee's use of the Software or breach of this Agreement.
+
+12. GOVERNING LAW AND JURISDICTION
+
+12.1 Governing Law. This Agreement shall be governed by and construed in
+    accordance with the laws of Hong Kong Special Administrative Region,
+    without regard to its conflict of law principles.
+
+12.2 Jurisdiction. Any disputes arising under this Agreement shall be subject
+    to the exclusive jurisdiction of the courts of Hong Kong.
+
+13. GENERAL PROVISIONS
+
+13.1 Entire Agreement. This Agreement constitutes the entire agreement between
+    the parties concerning the subject matter hereof.
+
+13.2 Amendment. This Agreement may only be amended by a written instrument
+    signed by both parties.
+
+13.3 Severability. If any provision of this Agreement is held invalid or
+    unenforceable, the remaining provisions shall continue in full force.
+
+13.4 Waiver. No waiver of any provision shall be effective unless in writing.
+
+13.5 Assignment. Licensee may not assign this Agreement without Licensor's
+    prior written consent.
+
+13.6 Notices. All notices shall be in writing and delivered to the addresses
+    specified by the parties.
+
+14. CONTACT INFORMATION
+
+For licensing inquiries:
+PDG Global Limited
+Email: licensing@rcommerce.dev
+Website: https://rcommerce.dev
+
+---
+
+BY USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT,
+UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS AND CONDITIONS.

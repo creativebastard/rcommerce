@@ -201,15 +201,36 @@ cargo tarpaulin --workspace
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+Quick start:
+1. Read the [CLA](CLA.md) - all contributors must sign
+2. Fork the repository
+3. Create feature branch (`git checkout -b feature/amazing-feature`)
+4. Commit changes (`git commit -m 'Add amazing feature'`)
+5. Push to branch (`git push origin feature/amazing-feature`)
+6. Open Pull Request
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file
+R Commerce is dual-licensed:
+
+- **[AGPL-3.0](LICENSE-AGPL)** - Free for open source and non-commercial use
+- **[Commercial License](LICENSE-COMMERCIAL)** - For proprietary use, premium support, and white-label rights
+
+See [LICENSE.md](LICENSE.md) for details.
+
+### Quick License Guide
+
+| Use Case | License Required |
+|----------|-----------------|
+| Personal projects | AGPL-3.0 (free) |
+| Open source SaaS | AGPL-3.0 (free) |
+| Commercial SaaS with modifications kept private | Commercial License |
+| Enterprise with premium support | Commercial License |
+| White-label/OEM | Commercial License |
+
+Contact [sales@rcommerce.dev](mailto:sales@rcommerce.dev) for commercial licensing.
 
 ## 🆘 Support
 
