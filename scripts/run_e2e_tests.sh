@@ -84,6 +84,30 @@ check_prerequisites() {
         print_info "Removing existing test database"
         rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
     fi
+    
+    # Check payment gateway credentials
+    print_section "Payment Gateway Configuration"
+    local payment_gateways=""
+    
+    if [ -n "$STRIPE_TEST_SECRET_KEY" ]; then
+        payment_gateways="$payment_gateways Stripe"
+        print_success "Stripe: configured"
+    else
+        print_info "Stripe: not configured (set STRIPE_TEST_SECRET_KEY to enable)"
+    fi
+    
+    if [ -n "$AIRWALLEX_TEST_CLIENT_ID" ] && [ -n "$AIRWALLEX_TEST_API_KEY" ]; then
+        payment_gateways="$payment_gateways Airwallex"
+        print_success "Airwallex: configured"
+    else
+        print_info "Airwallex: not configured (set AIRWALLEX_TEST_CLIENT_ID and AIRWALLEX_TEST_API_KEY to enable)"
+    fi
+    
+    if [ -z "$payment_gateways" ]; then
+        print_info "No payment gateways configured - payment tests will be skipped"
+    else
+        print_info "Active payment gateways:$payment_gateways"
+    fi
 }
 
 build_tests() {
@@ -127,6 +151,8 @@ run_tests() {
     print_info "Database: $DB_PATH"
     print_info "Redis: ${REDIS_URL:-disabled}"
     print_info "SSL Tests: $([ "$RUN_SSL_TESTS" = "1" ] && echo "enabled" || echo "disabled")"
+    print_info "Stripe: $([ -n "$STRIPE_TEST_SECRET_KEY" ] && echo "enabled" || echo "disabled")"
+    print_info "Airwallex: $([ -n "$AIRWALLEX_TEST_CLIENT_ID" ] && [ -n "$AIRWALLEX_TEST_API_KEY" ] && echo "enabled" || echo "disabled")"
     echo
     
     # Run tests
@@ -197,10 +223,17 @@ OPTIONS:
     --no-redis          Skip Redis cache tests
 
 ENVIRONMENT VARIABLES:
-    REDIS_URL           Redis connection URL (default: redis://127.0.0.1:6379)
-    RUN_SSL_TESTS       Set to 1 to enable SSL tests
-    KEEP_DATA           Set to 1 to preserve test database
-    OUTPUT_DIR          Directory for test reports
+    REDIS_URL                   Redis connection URL (default: redis://127.0.0.1:6379)
+    RUN_SSL_TESTS               Set to 1 to enable SSL tests
+    KEEP_DATA                   Set to 1 to preserve test database
+    OUTPUT_DIR                  Directory for test reports
+    
+    # Payment Gateway Tests (optional - tests skipped if not set)
+    STRIPE_TEST_SECRET_KEY      Stripe test API key (sk_test_...)
+    STRIPE_TEST_WEBHOOK_SECRET  Stripe webhook secret (optional)
+    AIRWALLEX_TEST_CLIENT_ID    Airwallex test client ID
+    AIRWALLEX_TEST_API_KEY      Airwallex test API key
+    AIRWALLEX_TEST_WEBHOOK_SECRET  Airwallex webhook secret (optional)
 
 EXAMPLES:
     # Run all tests
