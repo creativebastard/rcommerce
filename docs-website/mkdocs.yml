@@ -163,6 +163,8 @@ nav:
   - API Reference:
     - API Design: api/01-api-design.md
     - Error Codes: api/02-error-codes.md
+    - Cart API: api/03-cart-api.md
+    - Coupon API: api/04-coupon-api.md
   
   - Deployment:
     - Docker: deployment/01-docker.md

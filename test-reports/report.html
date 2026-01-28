@@ -12,18 +12,18 @@
         </div>
         <div class="row mb-4">
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>18</h3><p class="text-muted">Total</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">12</h3><p class="text-muted">Passed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">18</h3><p class="text-muted">Passed</p></div></div></div>
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">0</h3><p class="text-muted">Failed</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">6</h3><p class="text-muted">Skipped</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">0</h3><p class="text-muted">Skipped</p></div></div></div>
         </div>
-        <h5>Pass Rate: 66.7%</h5>
-        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 66.66666666666666%">66.7%</div></div>
+        <h5>Pass Rate: 100.0%</h5>
+        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 100%">100.0%</div></div>
         <h5>Test Details</h5>
         
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Database Connection</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(6ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Establishes connection to SQLite</p>
@@ -36,7 +36,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Schema Verification</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Verifies tables exist</p>
@@ -49,7 +49,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Data Generation</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(10ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(14ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Generates dummy data</p>
@@ -67,7 +67,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Create Order</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(7ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Creates order via API</p>
@@ -117,87 +117,100 @@
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Write</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Write to Redis</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Cache Entry:</strong> test:key <small class="text-muted">(test_value)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> SET <span class="text-muted">- OK</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Read</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped</p>
+                    <p class="text-muted">Read from Redis</p>
                     
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> GET <span class="text-muted">- test_value</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cache Invalidation</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped</p>
+                    <p class="text-muted">Delete from Redis</p>
                     
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> DEL <span class="text-muted">- Deleted</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Product Caching</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Cache products</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Cache Entry:</strong> test:products <small class="text-muted">(TTL: 3600s)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> SETEX <span class="text-muted">- Cached</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Stripe Payment</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1051ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped - no API credentials</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Create payment intent via Stripe API</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>PaymentIntent:</strong> pi_3SuY6kH5ZJNK02uB0ejnrz5D <small class="text-muted">($20.00 USD)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /v1/payment_intents <span class="text-muted">- 201 Created</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> Parse response <span class="text-muted">- Success</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Airwallex Payment</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1010ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped - no API credentials</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Create payment intent via Airwallex API</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>PaymentIntent:</strong> int_hkdmmpvg4hf9sz9628e <small class="text-muted">($20.00 USD)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /authentication/login <span class="text-muted">- 200 OK</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> POST /pa/payment_intents/create <span class="text-muted">- 201 Created</span></li>
+<li class="list-group-item py-1"><strong>Step 3:</strong> Parse response <span class="text-muted">- Success</span></li>
+</ul>
                 </div>
             </div>
 
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Guest Cart Creation</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(6ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Create cart for guest user</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>Cart:</strong> ac1bc760-7abe-4a28-8d7c-fa78be446b40 <small class="text-muted">(Guest cart)</small></div>
-<div class="alert alert-info py-1 mb-1"><strong>SessionToken:</strong> sess_d13a85ad31f747ad979a2c358e2f9e37 <small class="text-muted">(For guest identification)</small></div>
+                    <div class="alert alert-info py-1 mb-1"><strong>Cart:</strong> 038edb50-1571-4485-b118-37aad07f9443 <small class="text-muted">(Guest cart)</small></div>
+<div class="alert alert-info py-1 mb-1"><strong>SessionToken:</strong> sess_6d94006b084346bb9f8df924fc201311 <small class="text-muted">(For guest identification)</small></div>
 
                     <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /api/v1/carts/guest <span class="text-muted">- 201 Created</span></li>
 <li class="list-group-item py-1"><strong>Step 2:</strong> Generate session token <span class="text-muted">- Success</span></li>
@@ -208,11 +221,11 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Add Item to Cart</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Add product to cart</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>CartItem:</strong> a07810f2-ed1c-4616-80f9-fd9f74bf7846 <small class="text-muted">(Quantity: 2)</small></div>
+                    <div class="alert alert-info py-1 mb-1"><strong>CartItem:</strong> e99a523c-ca2e-4317-83ac-1933b231b831 <small class="text-muted">(Quantity: 2)</small></div>
 
                     <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /api/v1/carts/{id}/items <span class="text-muted">- 201 Created</span></li>
 <li class="list-group-item py-1"><strong>Step 2:</strong> Verify item added <span class="text-muted">- Qty: 2</span></li>
@@ -227,7 +240,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Merge guest cart into customer cart</p>
-                    <div class="alert alert-info py-1 mb-1"><strong>MergedCart:</strong> 671eb9d3-20b5-43f1-96db-8acfcdfc7ef1 <small class="text-muted">(2 items after merge)</small></div>
+                    <div class="alert alert-info py-1 mb-1"><strong>MergedCart:</strong> 789f56b6-a143-45d0-bf78-0484ed0d5a61 <small class="text-muted">(2 items after merge)</small></div>
 
                     <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Create guest cart with items <span class="text-muted">- Success</span></li>
 <li class="list-group-item py-1"><strong>Step 2:</strong> Create customer cart <span class="text-muted">- Success</span></li>
@@ -256,7 +269,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Self-Signed Certificate</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(3ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Generate TLS cert</p>
@@ -267,7 +280,7 @@
                 </div>
             </div>
 
-        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 12:36:10 UTC</p></div>
+        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 12:44:31 UTC</p></div>
     </div>
 </body>
 </html>
