@@ -70,12 +70,13 @@ impl AirwallexGateway {
             }
         }
         
-        // Request new token
+        // Request new token - Airwallex requires an empty JSON body {}
         let response = self.client
             .post(format!("{}/authentication/login", AIRWALLEX_API_BASE))
             .header("Content-Type", "application/json")
             .header("x-client-id", &self.client_id)
             .header("x-api-key", &self.api_key)
+            .json(&serde_json::json!({})) // Empty JSON object as body
             .send()
             .await
             .map_err(|e| Error::network(format!("Airwallex auth error: {}", e)))?;

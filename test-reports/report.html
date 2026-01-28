@@ -7,14 +7,14 @@
 </head>
 <body>
     <div class="container mt-5">
-        <div class="alert alert-success text-center">
-            <h1>Test Suite PASSED</h1>
+        <div class="alert alert-danger text-center">
+            <h1>Test Suite FAILED</h1>
         </div>
         <div class="row mb-4">
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>14</h3><p class="text-muted">Total</p></div></div></div>
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">8</h3><p class="text-muted">Passed</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">0</h3><p class="text-muted">Failed</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">6</h3><p class="text-muted">Skipped</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">1</h3><p class="text-muted">Failed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">5</h3><p class="text-muted">Skipped</p></div></div></div>
         </div>
         <h5>Pass Rate: 57.1%</h5>
         <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 57.14285714285714%">57.1%</div></div>
@@ -49,7 +49,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Data Generation</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(13ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(9ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Generates dummy data</p>
@@ -67,7 +67,7 @@
             <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Create Order</h5>
-                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(2ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
                 </div>
                 <div class="card-body">
                     <p class="text-muted">Creates order via API</p>
@@ -177,15 +177,16 @@
                 </div>
             </div>
 
-            <div class="card mb-3 border-secondary">
+            <div class="card mb-3 border-danger">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Airwallex Payment</h5>
-                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(540ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Skipped - no API credentials</p>
+                    <p class="text-muted">Airwallex API call failed</p>
                     
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Authenticate <span class="text-muted">- Failed</span></li>
+</ul>
                 </div>
             </div>
 
@@ -203,7 +204,7 @@
                 </div>
             </div>
 
-        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 10:55:57 UTC</p></div>
+        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 11:03:41 UTC</p></div>
     </div>
 </body>
 </html>
