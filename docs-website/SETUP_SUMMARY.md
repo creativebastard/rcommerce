@@ -1,6 +1,6 @@
-# 📚 R Commerce Documentation Website - Setup Summary
+#  R Commerce Documentation Website - Setup Summary
 
-## ✅ What's Been Created
+##  What's Been Created
 
 ### Core Files
 
@@ -33,10 +33,10 @@ docs/
 
 | Platform | File | Status |
 |----------|------|--------|
-| GitHub Pages | `.github/workflows/deploy.yml` | ✅ Ready |
-| Netlify | `netlify.toml` | ✅ Ready |
-| Vercel | `vercel.json` | ✅ Ready |
-| Docker | `Dockerfile` + `docker-compose.yml` | ✅ Ready |
+| GitHub Pages | `.github/workflows/deploy.yml` |  Ready |
+| Netlify | `netlify.toml` |  Ready |
+| Vercel | `vercel.json` |  Ready |
+| Docker | `Dockerfile` + `docker-compose.yml` |  Ready |
 
 ### Helper Scripts
 
@@ -48,43 +48,43 @@ docs/
 ## 🎨 Features Included
 
 ### Design & UX
-- ✅ Material Design with dark/light mode toggle
-- ✅ Responsive layout (mobile, tablet, desktop)
-- ✅ Custom color scheme (indigo/purple gradient)
-- ✅ Smooth animations and transitions
-- ✅ Clean typography (Roboto font family)
+-  Material Design with dark/light mode toggle
+-  Responsive layout (mobile, tablet, desktop)
+-  Custom color scheme (indigo/purple gradient)
+-  Smooth animations and transitions
+-  Clean typography (Roboto font family)
 
 ### Navigation
-- ✅ Tabbed top navigation
-- ✅ Expandable sidebar sections
-- ✅ Table of contents on each page
-- ✅ Breadcrumb navigation
-- ✅ "Back to top" button
+-  Tabbed top navigation
+-  Expandable sidebar sections
+-  Table of contents on each page
+-  Breadcrumb navigation
+-  "Back to top" button
 
 ### Search
-- ✅ Full-text search across all content
-- ✅ Search suggestions while typing
-- ✅ Highlighted search results
-- ✅ Keyboard shortcut (Ctrl+K / Cmd+K)
+-  Full-text search across all content
+-  Search suggestions while typing
+-  Highlighted search results
+-  Keyboard shortcut (Ctrl+K / Cmd+K)
 
 ### Content Features
-- ✅ Code syntax highlighting (all languages)
-- ✅ Copy-to-clipboard for code blocks
-- ✅ Mermaid diagrams support
-- ✅ Admonitions (notes, warnings, tips)
-- ✅ Tabbed content
-- ✅ Tables with styling
-- ✅ Auto-expanding abbreviations
+-  Code syntax highlighting (all languages)
+-  Copy-to-clipboard for code blocks
+-  Mermaid diagrams support
+-  Admonitions (notes, warnings, tips)
+-  Tabbed content
+-  Tables with styling
+-  Auto-expanding abbreviations
 
 ### SEO & Performance
-- ✅ Sitemap generation
-- ✅ robots.txt
-- ✅ Meta tags (Open Graph, Twitter Cards)
-- ✅ Structured data (JSON-LD)
-- ✅ Gzip compression
-- ✅ Static asset caching
+-  Sitemap generation
+-  robots.txt
+-  Meta tags (Open Graph, Twitter Cards)
+-  Structured data (JSON-LD)
+-  Gzip compression
+-  Static asset caching
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### 1. Install Dependencies
 
@@ -122,7 +122,7 @@ mkdocs build
 
 Output: `site/` directory
 
-## 📦 Deployment Options
+##  Deployment Options
 
 ### Option 1: GitHub Pages (Easiest)
 
@@ -163,7 +163,7 @@ docker-compose up -d
 # Access at http://localhost:8080
 ```
 
-## 📝 Content Structure
+##  Content Structure
 
 The navigation is organized in `mkdocs.yml`:
 
@@ -222,7 +222,7 @@ Replace these files:
 2. Add entry to `mkdocs.yml` navigation
 3. Restart development server
 
-## 🔧 Maintenance
+##  Maintenance
 
 ### Update Dependencies
 
@@ -242,7 +242,7 @@ mkdocs build --strict
 ./build.sh
 ```
 
-## 📊 Build Output
+##  Build Output
 
 The `site/` directory contains:
 
@@ -258,7 +258,7 @@ site/
 └── [mirrored structure]     # All documentation pages
 ```
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
@@ -268,23 +268,23 @@ site/
 | Search not working | Ensure `plugins.search` is enabled |
 | Slow build | Exclude large files in `.gitignore` |
 
-## 📚 Resources
+##  Resources
 
 - [MkDocs Documentation](https://www.mkdocs.org/)
 - [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)
 - [PyMdown Extensions](https://facelessuser.github.io/pymdown-extensions/)
 
-## ✨ Next Steps
+##  Next Steps
 
-1. ✅ Review the home page (`docs/index.md`)
-2. ✅ Customize colors/logo to match your brand
-3. ✅ Set up analytics (Google Analytics or Plausible)
-4. ✅ Deploy to your preferred platform
-5. ✅ Set up custom domain
-6. ✅ Submit sitemap to Google Search Console
+1.  Review the home page (`docs/index.md`)
+2.  Customize colors/logo to match your brand
+3.  Set up analytics (Google Analytics or Plausible)
+4.  Deploy to your preferred platform
+5.  Set up custom domain
+6.  Submit sitemap to Google Search Console
 
 ---
 
-**Ready to deploy!** 🚀
+**Ready to deploy!** 
 
 Run `./start.sh` to begin.

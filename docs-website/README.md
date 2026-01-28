@@ -4,7 +4,7 @@ A beautiful, fast, and searchable documentation website for the R Commerce headl
 
 ![R Commerce](docs/assets/logo.svg)
 
-## 🚀 Features
+##  Features
 
 - **Beautiful Design** - Material Design with dark/light mode
 - **Fast Search** - Instant full-text search across all docs
@@ -14,12 +14,12 @@ A beautiful, fast, and searchable documentation website for the R Commerce headl
 - **Code Highlighting** - Syntax highlighting for all languages
 - **SEO Optimized** - Meta tags, sitemap, structured data
 
-## 📦 Prerequisites
+##  Prerequisites
 
 - Python 3.8+
 - pip
 
-## 🛠️ Installation
+## ️ Installation
 
 ### Option 1: Using pip
 
@@ -47,7 +47,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 💻 Development
+##  Development
 
 ### Serve Locally
 
@@ -135,7 +135,7 @@ nav:
     # ...
 ```
 
-## 🚀 Deployment
+##  Deployment
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
 
@@ -158,7 +158,7 @@ npm install -g vercel
 vercel --prod
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Site Metadata
 
@@ -190,7 +190,7 @@ extra:
       link: https://gitee.com/captainjez/gocart
 ```
 
-## 📝 Writing Documentation
+##  Writing Documentation
 
 ### Markdown Extensions
 
@@ -247,7 +247,7 @@ Add abbreviations to `docs/includes/abbreviations.md`:
 
 They will be automatically expanded throughout the documentation.
 
-## 🔍 Search
+##  Search
 
 The built-in search indexes:
 - Page titles and content
@@ -257,7 +257,7 @@ The built-in search indexes:
 
 Search is available in the top navigation bar (or press `Ctrl+K` / `Cmd+K`).
 
-## 📱 Mobile Support
+##  Mobile Support
 
 The documentation is fully responsive:
 - Collapsible navigation on mobile
@@ -295,14 +295,14 @@ pip install -r requirements.txt --force-reinstall
 2. Hard refresh: `Ctrl+Shift+R` (or `Cmd+Shift+R` on Mac)
 3. Clear site data in browser DevTools
 
-## 📚 Resources
+##  Resources
 
 - [MkDocs Documentation](https://www.mkdocs.org/)
 - [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)
 - [PyMdown Extensions](https://facelessuser.github.io/pymdown-extensions/)
 - [Mermaid Documentation](https://mermaid-js.github.io/)
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -310,7 +310,7 @@ pip install -r requirements.txt --force-reinstall
 4. Test locally with `mkdocs serve`
 5. Submit a pull request
 
-## 📄 License
+##  License
 
 MIT License - see the main repository for details.
 

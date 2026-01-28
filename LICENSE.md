@@ -14,11 +14,11 @@ The Software is free to use, modify, and distribute under the terms of the
 GNU Affero General Public License v3.0 (AGPL-3.0).
 
 **Key requirements:**
-- ✅ Free for personal and non-commercial use
-- ✅ Must share source code of modifications
-- ✅ Must share source code of network use (SaaS)
-- ✅ Must preserve copyright notices
-- ✅ Must use same license for derivative works
+-  Free for personal and non-commercial use
+-  Must share source code of modifications
+-  Must share source code of network use (SaaS)
+-  Must preserve copyright notices
+-  Must use same license for derivative works
 
 **Read the full license:** [LICENSE-AGPL](./LICENSE-AGPL)
 
@@ -27,11 +27,11 @@ GNU Affero General Public License v3.0 (AGPL-3.0).
 **For commercial use without open source obligations.**
 
 A paid license that allows you to:
-- ✅ Use in proprietary/closed-source applications
-- ✅ Modify without sharing source code
-- ✅ Offer commercial hosting services
-- ✅ White-label and rebrand
-- ✅ Get premium support and SLA
+-  Use in proprietary/closed-source applications
+-  Modify without sharing source code
+-  Offer commercial hosting services
+-  White-label and rebrand
+-  Get premium support and SLA
 
 **Pricing:**
 

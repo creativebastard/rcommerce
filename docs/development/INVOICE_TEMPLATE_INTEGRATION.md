@@ -144,12 +144,12 @@ Professional invoice layout with:
 
 ## Benefits
 
-✅ **Professional Appearance**: High-quality invoice emails
-✅ **Responsive Design**: Works on desktop and mobile
-✅ **Dual Format**: Both plain text and HTML for compatibility
-✅ **Maintainable**: Separate template file, easy to update
-✅ **Type Safe**: Rust compile-time checks for placeholders
-✅ **Tested**: Integration tests ensure reliability
+ **Professional Appearance**: High-quality invoice emails
+ **Responsive Design**: Works on desktop and mobile
+ **Dual Format**: Both plain text and HTML for compatibility
+ **Maintainable**: Separate template file, easy to update
+ **Type Safe**: Rust compile-time checks for placeholders
+ **Tested**: Integration tests ensure reliability
 
 ## File Structure
 

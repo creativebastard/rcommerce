@@ -46,8 +46,8 @@ If you fork R Commerce under AGPL-3.0:
 - You MAY NOT use our trademarks in your project name
 
 **Suggested naming:**
-- ✅ "CommercePro - based on R Commerce"
-- ✅ "OpenCart Plus (R Commerce fork)"
+-  "CommercePro - based on R Commerce"
+-  "OpenCart Plus (R Commerce fork)"
 - ❌ "R Commerce Pro"
 - ❌ "R Commerce Enterprise"
 
@@ -97,7 +97,7 @@ The R Commerce logo consists of:
 
 ### Correct Usage
 
-✅ **Do:**
+ **Do:**
 - Use the official logo files from our brand kit
 - Maintain clear space around the logo
 - Use on contrasting backgrounds
@@ -121,11 +121,11 @@ The R Commerce logo consists of:
 
 If you have a valid Commercial License, you may:
 
-✅ **With Business Tier:**
+ **With Business Tier:**
 - Use "Powered by R Commerce" attribution
 - Include small logo in footer
 
-✅ **With Enterprise Tier:**
+ **With Enterprise Tier:**
 - White-label (remove all R Commerce branding)
 - Use custom branding
 - No attribution required

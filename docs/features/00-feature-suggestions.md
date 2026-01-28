@@ -4,7 +4,7 @@ This document outlines additional features beyond the initial requirements to ma
 
 ## Core Features (Already Planned)
 
-✅ **Initial Requirements:**
+ **Initial Requirements:**
 1. Lightweight and performant
 2. Choice of database backends (PostgreSQL, MySQL, SQLite)
 3. Payment integration (Stripe, Airwallex + extensible system)

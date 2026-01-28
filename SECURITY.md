@@ -18,7 +18,7 @@ Commerce, please report it responsibly.
 
 Instead, please email us at:
 
-📧 **security@rcommerce.app**
+ **security@rcommerce.app**
 
 Please include:
 - Description of the vulnerability

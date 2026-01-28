@@ -126,7 +126,7 @@ class MedusaExporter {
       JSON.stringify(allProducts, null, 2)
     );
     
-    console.log(`✓ Exported ${allProducts.length} products`);
+    console.log(` Exported ${allProducts.length} products`);
   }
   
   async exportCustomers() {
@@ -154,7 +154,7 @@ class MedusaExporter {
       JSON.stringify(allCustomers, null, 2)
     );
     
-    console.log(`✓ Exported ${allCustomers.length} customers`);
+    console.log(` Exported ${allCustomers.length} customers`);
   }
   
   async exportOrders() {
@@ -182,7 +182,7 @@ class MedusaExporter {
       JSON.stringify(allOrders, null, 2)
     );
     
-    console.log(`✓ Exported ${allOrders.length} orders`);
+    console.log(` Exported ${allOrders.length} orders`);
   }
   
   async exportRegions() {
@@ -195,7 +195,7 @@ class MedusaExporter {
       JSON.stringify(regions, null, 2)
     );
     
-    console.log(`✓ Exported ${regions.length} regions`);
+    console.log(` Exported ${regions.length} regions`);
   }
   
   async exportDiscounts() {
@@ -221,7 +221,7 @@ class MedusaExporter {
       JSON.stringify(allDiscounts, null, 2)
     );
     
-    console.log(`✓ Exported ${allDiscounts.length} discounts`);
+    console.log(` Exported ${allDiscounts.length} discounts`);
   }
   
   async exportPriceLists() {
@@ -247,7 +247,7 @@ class MedusaExporter {
       JSON.stringify(allPriceLists, null, 2)
     );
     
-    console.log(`✓ Exported ${allPriceLists.length} price lists`);
+    console.log(` Exported ${allPriceLists.length} price lists`);
   }
 }
 
@@ -505,10 +505,10 @@ class DirectMedusaMigrator {
         
         // Create in R commerce
         const response = await this.rcommerceClient.post('/v1/products', rcommerceProduct);
-        console.log(`✓ Migrated product: ${rcommerceProduct.name}`);
+        console.log(` Migrated product: ${rcommerceProduct.name}`);
         
       } catch (error) {
-        console.error(`✗ Failed to migrate product: ${product.title}`, error.message);
+        console.error(` Failed to migrate product: ${product.title}`, error.message);
       }
     }
   }
@@ -554,10 +554,10 @@ class DirectMedusaMigrator {
         };
         
         // Store region config (would need to be applied to R commerce system config)
-        console.log(`✓ Mapped region: ${region.name} (${region.currency_code})`);
+        console.log(` Mapped region: ${region.name} (${region.currency_code})`);
         
       } catch (error) {
-        console.error(`✗ Failed to migrate region: ${region.name}`, error.message);
+        console.error(` Failed to migrate region: ${region.name}`, error.message);
       }
     }
   }

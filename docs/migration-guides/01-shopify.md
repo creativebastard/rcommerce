@@ -240,9 +240,9 @@ class ShopifyToRCommerce
       begin
         rcommerce_product = transform_product(shopify_product)
         create_rcommerce_product(rcommerce_product)
-        puts "✓ Migrated product: #{shopify_product['title']}"
+        puts " Migrated product: #{shopify_product['title']}"
       rescue => e
-        puts "✗ Failed to migrate product: #{shopify_product['title']} - #{e.message}"
+        puts " Failed to migrate product: #{shopify_product['title']} - #{e.message}"
       end
     end
   end
@@ -402,9 +402,9 @@ class ShopifyCustomerMigrator {
       for (const [index, customer] of customers.entries()) {
         try {
           await this.migrateCustomer(customer);
-          console.log(`✓ Migrated ${index + 1}/${customers.length}: ${customer.email}`);
+          console.log(` Migrated ${index + 1}/${customers.length}: ${customer.email}`);
         } catch (error) {
-          console.error(`✗ Failed to migrate ${customer.email}:`, error.message);
+          console.error(` Failed to migrate ${customer.email}:`, error.message);
           this.migrationLog.push({
             customer: customer.email,
             status: 'failed',
@@ -866,7 +866,7 @@ migration.on('error', (error) => {
 
 migration.on('complete', (stats) => {
   console.log('Migration completed successfully!', stats);
-  sendSlackNotification(`✅ Migration complete: ${JSON.stringify(stats)}`);
+  sendSlackNotification(` Migration complete: ${JSON.stringify(stats)}`);
 });
 
 migration.run().catch(console.error);

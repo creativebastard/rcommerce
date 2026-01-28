@@ -647,9 +647,9 @@ while IFS=',' read -r name price sku category; do
     --status active
     
   if [ $? -eq 0 ]; then
-    echo "✓ Created $name"
+    echo " Created $name"
   else
-    echo "✗ Failed to create $name"
+    echo " Failed to create $name"
   fi
 done < "$INPUT_FILE"
 
@@ -701,9 +701,9 @@ process_pending_orders() {
           --capture
       fi
       
-      echo "✓ Order $order_id processed successfully"
+      echo " Order $order_id processed successfully"
     else
-      echo "✗ Order $order_id: insufficient inventory, setting on hold"
+      echo " Order $order_id: insufficient inventory, setting on hold"
       rcommerce --api-key "$API_KEY" order update "$order_id" \
         --status on_hold \
         --add-note "Auto: insufficient inventory"
@@ -766,9 +766,9 @@ def update_product_prices(min_profit_margin=0.3):
         ])
         
         if update_result.returncode == 0:
-            print(f"✓ Updated {product['name']}")
+            print(f" Updated {product['name']}")
         else:
-            print(f"✗ Failed to update {product['name']}")
+            print(f" Failed to update {product['name']}")
 
 if __name__ == "__main__":
     update_product_prices(min_profit_margin=0.4)

@@ -15,14 +15,14 @@ R commerce is designed to run on multiple operating systems including **FreeBSD*
 
 | Feature | Linux (x86_64) | Linux (ARM64) | FreeBSD (x86_64) | FreeBSD (ARM64) | macOS (x86_64) | macOS (ARM64) |
 |---------|----------------|---------------|------------------|-----------------|----------------|---------------|
-| **Tier 1** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Binary Releases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Systemd Service | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| rc.d Script | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| LaunchDaemon | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| kqueue Support | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| epoll Support | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Jemalloc | ⚠️ Opt | ⚠️ Opt | ✅ Default | ✅ Default | ⚠️ Opt | ⚠️ Opt |
+| **Tier 1** |  |  |  |  |  |  |
+| Binary Releases |  |  |  |  |  |  |
+| Systemd Service |  |  | ❌ | ❌ | ❌ | ❌ |
+| rc.d Script | ❌ | ❌ |  |  | ❌ | ❌ |
+| LaunchDaemon | ❌ | ❌ | ❌ | ❌ |  |  |
+| kqueue Support | ❌ | ❌ |  |  |  |  |
+| epoll Support |  |  | ❌ | ❌ | ❌ | ❌ |
+| Jemalloc | ⚠️ Opt | ⚠️ Opt |  Default |  Default | ⚠️ Opt | ⚠️ Opt |
 
 **Platform Tiers:**
 - **Tier 1**: Fully supported with automated CI/CD testing

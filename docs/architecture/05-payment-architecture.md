@@ -1025,11 +1025,11 @@ async fn test_payment_fails_with_insufficient_funds() {
 
 | Gateway | Status | Features | Test Coverage |
 |---------|--------|----------|---------------|
-| **Stripe** | ✅ Production Ready | Cards, wallets, subscriptions, webhooks | 7/7 integration tests passing |
-| **Airwallex** | ✅ Production Ready | Multi-currency, global payments, webhooks | 7/7 integration tests passing |
-| **WeChat Pay** | ✅ Implemented | Native/JSAPI/H5 payments, refunds | Unit tests passing, integration ready |
-| **AliPay** | ✅ Stubbed | Basic structure ready | Unit tests only |
-| **Mock** | ✅ Complete | Development & testing | Full test coverage |
+| **Stripe** |  Production Ready | Cards, wallets, subscriptions, webhooks | 7/7 integration tests passing |
+| **Airwallex** |  Production Ready | Multi-currency, global payments, webhooks | 7/7 integration tests passing |
+| **WeChat Pay** |  Implemented | Native/JSAPI/H5 payments, refunds | Unit tests passing, integration ready |
+| **AliPay** |  Stubbed | Basic structure ready | Unit tests only |
+| **Mock** |  Complete | Development & testing | Full test coverage |
 
 ### Test Results
 

@@ -227,13 +227,13 @@ mike deploy --push 1.0 latest
 
 The documentation includes:
 
-- ✅ Sitemap generation (`sitemap.xml`)
-- ✅ robots.txt
-- ✅ Structured data (JSON-LD)
-- ✅ Open Graph meta tags
-- ✅ Twitter Card meta tags
-- ✅ Canonical URLs
-- ✅ Clean URLs (no `.html` extension)
+-  Sitemap generation (`sitemap.xml`)
+-  robots.txt
+-  Structured data (JSON-LD)
+-  Open Graph meta tags
+-  Twitter Card meta tags
+-  Canonical URLs
+-  Clean URLs (no `.html` extension)
 
 To submit to search engines:
 

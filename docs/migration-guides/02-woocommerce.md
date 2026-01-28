@@ -460,11 +460,11 @@ class WooCommerceMigrator:
                 print("\n=== Phase 4: Migrating Orders ===")
                 self.migrate_orders()
             
-            print("\n✓ Migration completed successfully!")
+            print("\n Migration completed successfully!")
             self.save_migration_log()
             
         except Exception as e:
-            print(f"\n✗ Migration failed: {e}")
+            print(f"\n Migration failed: {e}")
             sys.exit(1)
         
         finally:
@@ -514,7 +514,7 @@ class WooCommerceMigrator:
                 )
                 
                 if response.status_code == 201:
-                    print(f"✓ Migrated category: {category['name']}")
+                    print(f" Migrated category: {category['name']}")
                     self.migration_log.append({
                         'type': 'category',
                         'operation': 'create',
@@ -524,7 +524,7 @@ class WooCommerceMigrator:
                         'name': category['name']
                     })
                 else:
-                    print(f"✗ Failed to migrate category {category['name']}: {response.text}")
+                    print(f" Failed to migrate category {category['name']}: {response.text}")
                     self.migration_log.append({
                         'type': 'category',
                         'operation': 'create',
@@ -538,7 +538,7 @@ class WooCommerceMigrator:
                 time.sleep(0.5)
                 
             except Exception as e:
-                print(f"✗ Error migrating category {category['name']}: {e}")
+                print(f" Error migrating category {category['name']}: {e}")
                 self.migration_log.append({
                     'type': 'category',
                     'operation': 'create',
@@ -652,7 +652,7 @@ class WooCommerceMigrator:
                 )
                 
                 if response.status_code == 201:
-                    print(f"✓ Migrated product: {product['name']}")
+                    print(f" Migrated product: {product['name']}")
                     self.migration_log.append({
                         'type': 'product',
                         'operation': 'create',
@@ -662,7 +662,7 @@ class WooCommerceMigrator:
                         'name': product['name']
                     })
                 else:
-                    print(f"✗ Failed to migrate product {product['name']}: {response.text}")
+                    print(f" Failed to migrate product {product['name']}: {response.text}")
                     self.migration_log.append({
                         'type': 'product',
                         'operation': 'create',
@@ -676,7 +676,7 @@ class WooCommerceMigrator:
                 time.sleep(0.5)
                 
             except Exception as e:
-                print(f"✗ Error migrating product {product['name']}: {e}")
+                print(f" Error migrating product {product['name']}: {e}")
                 self.migration_log.append({
                     'type': 'product',
                     'operation': 'create',

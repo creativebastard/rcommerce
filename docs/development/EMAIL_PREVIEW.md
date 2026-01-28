@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════════════════╗
 ║                                                                      ║
-║              📧 HTML INVOICE EMAIL PREVIEW                           ║
+║               HTML INVOICE EMAIL PREVIEW                           ║
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
@@ -83,12 +83,12 @@ Headers:
   Content-Type: multipart/alternative; boundary="boundary123"
 
 Features:
-  ✓ Responsive design (works on mobile)
-  ✓ Web fonts (Inter & Martian Mono)
-  ✓ Professional color scheme
-  ✓ Itemized order details
-  ✓ Complete billing/shipping info
-  ✓ Company branding
-  ✓ Accessible layout
+   Responsive design (works on mobile)
+   Web fonts (Inter & Martian Mono)
+   Professional color scheme
+   Itemized order details
+   Complete billing/shipping info
+   Company branding
+   Accessible layout
 
 ═══════════════════════════════════════════════════════════════════════

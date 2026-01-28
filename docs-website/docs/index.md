@@ -13,7 +13,7 @@ hide:
   <img src="assets/hero-diagram.svg" alt="R Commerce Architecture" style="max-width: 800px; width: 100%;">
 </div>
 
-## 🚀 Why R Commerce?
+##  Why R Commerce?
 
 <div class="grid cards" markdown>
 
@@ -55,7 +55,7 @@ hide:
 
 </div>
 
-## 🏗️ Architecture Overview
+## ️ Architecture Overview
 
 ```mermaid
 graph TB
@@ -101,20 +101,20 @@ graph TB
     WS --> REDIS
 ```
 
-## 📦 Core Features
+##  Core Features
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products | ✅ Complete |
-| **Order Management** | Full lifecycle with editing capabilities | ✅ Complete |
-| **Payment Processing** | 6 gateways with fraud detection | ✅ Complete |
-| **Shipping** | Multi-carrier with real-time rates | ✅ Complete |
-| **Subscriptions** | Recurring billing with dunning management | ✅ Complete |
-| **Notifications** | Email, SMS, Push, Webhooks | ✅ Complete |
-| **Redis Caching** | Session, Rate Limit, Job Queue | ✅ Complete |
-| **WebSocket** | Real-time updates and pub/sub | ✅ Complete |
+| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products |  Complete |
+| **Order Management** | Full lifecycle with editing capabilities |  Complete |
+| **Payment Processing** | 6 gateways with fraud detection |  Complete |
+| **Shipping** | Multi-carrier with real-time rates |  Complete |
+| **Subscriptions** | Recurring billing with dunning management |  Complete |
+| **Notifications** | Email, SMS, Push, Webhooks |  Complete |
+| **Redis Caching** | Session, Rate Limit, Job Queue |  Complete |
+| **WebSocket** | Real-time updates and pub/sub |  Complete |
 
-## 🚦 Quick Start
+##  Quick Start
 
 ### Installation
 
@@ -142,7 +142,7 @@ docker-compose up -d
 # - Redis: port 6379
 ```
 
-## 📚 Documentation
+##  Documentation
 
 <div class="grid cards" markdown>
 
@@ -212,7 +212,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
   }'
 ```
 
-## 🤝 Supported Platforms
+##  Supported Platforms
 
 <div style="display: flex; gap: 2em; justify-content: center; flex-wrap: wrap; padding: 2em 0;">
 
@@ -224,7 +224,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 </div>
 
-## 📊 Performance Benchmarks
+##  Performance Benchmarks
 
 | Metric | Value |
 |--------|-------|
@@ -234,7 +234,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 | Concurrent Users | 10,000+ per instance |
 | Cold Start | < 1 second |
 
-## 🛣️ Roadmap
+## ️ Roadmap
 
 - [x] Phase 0: Project Foundation
 - [x] Phase 1: Core Infrastructure

@@ -453,11 +453,11 @@ class MagentoMigrator:
             # Save log
             self.save_migration_log()
             
-            print("\n✓ Migration completed!")
+            print("\n Migration completed!")
             self.print_summary()
             
         except Exception as e:
-            print(f"\n✗ Migration failed: {e}")
+            print(f"\n Migration failed: {e}")
             import traceback
             traceback.print_exc()
             sys.exit(1)
@@ -549,7 +549,7 @@ class MagentoMigrator:
                 'config': store_config
             })
             
-            print(f"✓ Mapped store: {store['store_name']} ({store['store_code']})")
+            print(f" Mapped store: {store['store_name']} ({store['store_code']})")
         
         cursor.close()
     
@@ -610,7 +610,7 @@ class MagentoMigrator:
                     )
                     
                     if response.status_code == 201:
-                        print(f"✓ Migrated category: {name}")
+                        print(f" Migrated category: {name}")
                         self.migration_log.append({
                             'type': 'category',
                             'operation': 'create',
@@ -620,7 +620,7 @@ class MagentoMigrator:
                             'name': name
                         })
                     else:
-                        print(f"✗ Failed to migrate category {name}: {response.text}")
+                        print(f" Failed to migrate category {name}: {response.text}")
                         self.migration_log.append({
                             'type': 'category',
                             'operation': 'create',
@@ -634,7 +634,7 @@ class MagentoMigrator:
                     time.sleep(0.5)
                     
                 except Exception as e:
-                    print(f"✗ Error migrating category {name}: {e}")
+                    print(f" Error migrating category {name}: {e}")
         
         cursor.close()
     
@@ -682,10 +682,10 @@ class MagentoMigrator:
                     'definition': attribute_definition
                 })
                 
-                print(f"✓ Mapped attribute: {attribute['attribute_code']}")
+                print(f" Mapped attribute: {attribute['attribute_code']}")
                 
             except Exception as e:
-                print(f"✗ Error mapping attribute {attribute['attribute_code']}: {e}")
+                print(f" Error mapping attribute {attribute['attribute_code']}: {e}")
         
         cursor.close()
     
@@ -732,7 +732,7 @@ class MagentoMigrator:
                 )
                 
                 if response.status_code == 201:
-                    print(f"✓ Migrated {product_type} product: {attributes.get('name', product['sku'])}")
+                    print(f" Migrated {product_type} product: {attributes.get('name', product['sku'])}")
                     self.migration_log.append({
                         'type': 'product',
                         'product_type': product_type,
@@ -744,7 +744,7 @@ class MagentoMigrator:
                         'name': attributes.get('name', product['sku'])
                     })
                 else:
-                    print(f"✗ Failed to migrate {product_type} product {product['sku']}: {response.text}")
+                    print(f" Failed to migrate {product_type} product {product['sku']}: {response.text}")
                     self.migration_log.append({
                         'type': 'product',
                         'product_type': product_type,
@@ -760,7 +760,7 @@ class MagentoMigrator:
                 time.sleep(0.5)
                 
             except Exception as e:
-                print(f"✗ Error migrating {product_type} product {product['sku']}: {e}")
+                print(f" Error migrating {product_type} product {product['sku']}: {e}")
         
         cursor.close()
     
@@ -1010,7 +1010,7 @@ class MagentoMigrator:
                 )
                 
                 if response.status_code == 201:
-                    print(f"✓ Migrated customer: {customer['email']}")
+                    print(f" Migrated customer: {customer['email']}")
                     self.migration_log.append({
                         'type': 'customer',
                         'operation': 'create',
@@ -1020,7 +1020,7 @@ class MagentoMigrator:
                         'email': customer['email']
                     })
                 else:
-                    print(f"✗ Failed to migrate customer {customer['email']}: {response.text}")
+                    print(f" Failed to migrate customer {customer['email']}: {response.text}")
                     self.migration_log.append({
                         'type': 'customer',
                         'operation': 'create',
@@ -1034,7 +1034,7 @@ class MagentoMigrator:
                 time.sleep(0.5)
                 
             except Exception as e:
-                print(f"✗ Error migrating customer {customer['email']}: {e}")
+                print(f" Error migrating customer {customer['email']}: {e}")
         
         cursor.close()
     
@@ -1158,7 +1158,7 @@ class MagentoMigrator:
                 )
                 
                 if response.status_code == 201:
-                    print(f"✓ Migrated order: {order['order_number']}")
+                    print(f" Migrated order: {order['order_number']}")
                     self.migration_log.append({
                         'type': 'order',
                         'operation': 'create',
@@ -1168,12 +1168,12 @@ class MagentoMigrator:
                         'order_number': order['order_number']
                     })
                 else:
-                    print(f"✗ Failed to migrate order {order['order_number']}: {response.text}")
+                    print(f" Failed to migrate order {order['order_number']}: {response.text}")
                 
                 time.sleep(0.5)
                 
             except Exception as e:
-                print(f"✗ Error migrating order {order['order_number']}: {e}")
+                print(f" Error migrating order {order['order_number']}: {e}")
         
         cursor.close()
     

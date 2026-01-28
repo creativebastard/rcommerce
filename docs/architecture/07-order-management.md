@@ -53,11 +53,11 @@ The Order Management System (OMS) is the core component that handles the entire 
 
 | Status | Description | Can Edit | Can Ship | Can Refund |
 |--------|-------------|----------|----------|------------|
-| **Pending** | Payment initiated, awaiting confirmation | ✅ Yes | ❌ No | ✅ Yes |
-| **Confirmed** | Payment successful, ready for fulfillment | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Processing** | Order being picked/packed | ⚠️ Limited | ⚠️ Partial | ✅ Yes |
-| **On Hold** | Manual review required | ✅ Yes | ❌ No | ✅ Yes |
-| **Completed** | Shipped and delivered | ❌ No | ❌ No | ✅ Yes |
+| **Pending** | Payment initiated, awaiting confirmation |  Yes | ❌ No |  Yes |
+| **Confirmed** | Payment successful, ready for fulfillment |  Yes |  Yes |  Yes |
+| **Processing** | Order being picked/packed | ⚠️ Limited | ⚠️ Partial |  Yes |
+| **On Hold** | Manual review required |  Yes | ❌ No |  Yes |
+| **Completed** | Shipped and delivered | ❌ No | ❌ No |  Yes |
 | **Cancelled** | Order cancelled | ❌ No | ❌ No | ❌ No |
 | **Refunded** | Fully refunded | ❌ No | ❌ No | ❌ No |
 

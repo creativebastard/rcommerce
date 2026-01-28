@@ -2,7 +2,7 @@
 
 This guide covers security best practices for deploying R Commerce in production, including automatic SSL certificate provisioning with Let's Encrypt, TLS 1.3 configuration, and HSTS.
 
-## 🔒 Overview
+##  Overview
 
 R Commerce implements comprehensive security features:
 
@@ -14,7 +14,7 @@ R Commerce implements comprehensive security features:
 - **Secure Cookie** configuration
 - **CORS** with strict origin policies
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Before configuring SSL/TLS, ensure:
 
@@ -23,7 +23,7 @@ Before configuring SSL/TLS, ensure:
 3. Server publicly accessible on ports 80/443
 4. Valid email address for Let's Encrypt
 
-## 🔐 SSL/TLS Configuration
+##  SSL/TLS Configuration
 
 ### Method 1: Automatic Let's Encrypt (Recommended)
 
@@ -87,7 +87,7 @@ preload = false
 - Ensure private key has `600` permissions: `chmod 600 /path/to/private.key`
 - Use strong 2048-bit or 4096-bit RSA keys or ECDSA keys
 
-## 🚀 Deployment
+##  Deployment
 
 ### 1. Configure Let's Encrypt
 
@@ -120,7 +120,7 @@ export RCOMMERCE_CONFIG=/etc/rcommerce/production.toml
   --enable-hsts
 ```
 
-## 🔔 HSTS (HTTP Strict Transport Security)
+##  HSTS (HTTP Strict Transport Security)
 
 HSTS tells browsers to always use HTTPS for your domain.
 
@@ -151,7 +151,7 @@ Setting `preload = true` submits your domain to browser preload lists:
 4. Submit at: https://hstspreload.org/
 5. Wait for approval (can take weeks)
 
-## 🔒 TLS Cipher Suites
+##  TLS Cipher Suites
 
 By default, R Commerce uses only TLS 1.3 cipher suites:
 
@@ -169,7 +169,7 @@ TLS_CHACHA20_POLY1305_SHA256
 
 If you absolutely must support TLS 1.2 (not recommended), modify cipher suites in configuration.
 
-## 🛡️ Security Headers
+## ️ Security Headers
 
 R Commerce automatically adds these security headers:
 
@@ -183,7 +183,7 @@ R Commerce automatically adds these security headers:
 | `Permissions-Policy` | `geolocation=(), microphone=(), camera=()` | Restrict features |
 | `Content-Security-Policy` | `default-src 'self'` | XSS/data injection |
 
-## 📊 Certificate Monitoring
+##  Certificate Monitoring
 
 Monitor your certificates:
 
@@ -211,7 +211,7 @@ Days until expiry: 89
 Auto-renew: Enabled
 ```
 
-## 🔍 SSL Labs Testing
+##  SSL Labs Testing
 
 Test your SSL configuration:
 
@@ -226,7 +226,7 @@ Test your SSL configuration:
 - Cipher Suites: Only TLS 1.3 suites
 - Grade: A+
 
-## 🚨 Troubleshooting
+##  Troubleshooting
 
 ### Certificate Issues
 
@@ -268,7 +268,7 @@ curl http://api.yourstore.com/.well-known/acme-challenge/test
 use_staging = true  # Switch to production only when ready
 ```
 
-## 📝 Security Best Practices
+##  Security Best Practices
 
 ### 1. Minimum TLS Version
 
@@ -332,7 +332,7 @@ chown rcommerce:rcommerce /var/lib/rcommerce/certs
 0 0 1 * * tar -czf /backup/rcommerce-certs-$(date +%Y%m%d).tar.gz /var/lib/rcommerce/certs
 ```
 
-## 🎯 Production Checklist
+##  Production Checklist
 
 Before going live:
 
@@ -348,7 +348,7 @@ Before going live:
 - [x] Staging tested first
 - [x] Backup strategy in place
 
-## 📚 Additional Resources
+##  Additional Resources
 
 - [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
 - [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/)

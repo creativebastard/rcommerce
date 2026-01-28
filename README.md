@@ -2,7 +2,7 @@
 
 A high-performance, Rust-based headless e-commerce platform designed for multi-platform deployment and enterprise-scale operations.
 
-## 🚀 Features
+##  Features
 
 - **Headless Architecture**: API-first design for maximum flexibility
 - **Multi-Platform Support**: FreeBSD (Jails), Linux (Systemd/Docker), macOS (LaunchDaemon)
@@ -11,7 +11,7 @@ A high-performance, Rust-based headless e-commerce platform designed for multi-p
 - **Extensible Plugin System**: Payment gateways, shipping providers, storage backends
 - **Enterprise Ready**: Audit logs, API key auth, rate limiting, comprehensive logging
 
-## 📦 Project Structure
+##  Project Structure
 
 ```
 crates/
@@ -28,7 +28,7 @@ crates/
 - **Repositories**: PostgreSQL repository implementations
 - **Error Handling**: Comprehensive error types with HTTP mapping
 
-## 🏗️ Architecture
+## ️ Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -44,7 +44,7 @@ crates/
                     └──────────────────┘
 ```
 
-## 🛠️ Development
+## ️ Development
 
 ### Prerequisites
 
@@ -102,7 +102,7 @@ export RCOMMERCE_CONFIG=./config.toml
 cargo run --bin rcommerce
 ```
 
-## 🗄️ Database Setup
+## ️ Database Setup
 
 ### PostgreSQL
 
@@ -124,7 +124,7 @@ Core tables:
 - `audit_logs`
 - `api_keys`
 
-## 🔌 Plugin System
+##  Plugin System
 
 ### Payment Gateways
 - Stripe
@@ -141,14 +141,14 @@ Core tables:
 - Google Cloud Storage
 - Azure Blob Storage
 
-## 📊 Performance Targets
+##  Performance Targets
 
 - **Binary Size**: ~20MB (release build)
 - **Memory Usage**: 10-50MB runtime
 - **API Response**: Sub-10ms average
 - **Concurrent Users**: 10,000+ per instance
 
-## 🧪 Testing
+##  Testing
 
 ```bash
 # Unit tests
@@ -161,15 +161,15 @@ cargo test --test 'integration'
 cargo tarpaulin --workspace
 ```
 
-## 🚦 Roadmap
+##  Roadmap
 
-### Phase 0: Foundation ✅
-- ✅ Core data models
-- ✅ Repository pattern
-- ✅ Configuration system
-- ✅ Error handling
-- ✅ Database migrations
-- ✅ Basic repositories
+### Phase 0: Foundation 
+-  Core data models
+-  Repository pattern
+-  Configuration system
+-  Error handling
+-  Database migrations
+-  Basic repositories
 
 ### Phase 1: MVP (Current)
 - API server setup (Axum)
@@ -192,7 +192,7 @@ cargo tarpaulin --workspace
 - Search (Meilisearch/Typesense)
 - Analytics
 
-## 📚 Documentation
+##  Documentation
 
 Full documentation is available at **[docs.rcommerce.app](https://docs.rcommerce.app)**
 
@@ -201,7 +201,7 @@ Full documentation is available at **[docs.rcommerce.app](https://docs.rcommerce
 - [Deployment](https://docs.rcommerce.app/deployment/)
 - [Plugins](https://docs.rcommerce.app/plugins/)
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -213,7 +213,7 @@ Quick start:
 5. Push to branch (`git push origin feature/amazing-feature`)
 6. Open Pull Request
 
-## 📄 License
+##  License
 
 R Commerce is dual-licensed:
 
@@ -234,7 +234,7 @@ See [LICENSE.md](LICENSE.md) for details.
 
 Contact [sales@rcommerce.app](mailto:sales@rcommerce.app) for commercial licensing.
 
-## 🆘 Support
+##  Support
 
 - GitHub Issues: [Issue Tracker](https://gitee.com/captainjez/gocart/issues)
 - Documentation: [docs.rcommerce.app](https://docs.rcommerce.app)

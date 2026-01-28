@@ -734,10 +734,10 @@ log_file = "/var/log/rcommerce/migration.log"
 | WordPress Integration | ❌ Limited | R commerce is standalone |
 | PHP Hooks/Filters | ❌ No | Use webhooks instead |
 | wp_users table | ❌ No | Separate customer system |
-| Post Meta | ✅ Yes | Mapped to meta_data |
-| Taxonomies | ✅ Yes | Mapped to collections |
-| Product Types | ✅ Partial | Simple, variable supported |
-| Downloadable Products | ✅ Yes | Digital product support |
+| Post Meta |  Yes | Mapped to meta_data |
+| Taxonomies |  Yes | Mapped to collections |
+| Product Types |  Partial | Simple, variable supported |
+| Downloadable Products |  Yes | Digital product support |
 | Bookings | ❌ No | Plugin not available |
 | Subscriptions | ⚠️ Partial | Core subscription support |
 | Multi-site | ❌ No | Single store |
@@ -746,17 +746,17 @@ log_file = "/var/log/rcommerce/migration.log"
 
 | Medusa.js Feature | R commerce Support | Notes |
 |-------------------|-------------------|-------|
-| Regions | ✅ Yes | Mapped to shipping zones |
-| Price Lists | ✅ Yes | Customer group pricing |
-| Sales Channels | ✅ Yes | Channel support |
-| Publishable API Keys | ✅ Yes | API key system |
-| Order Edits | ✅ Yes | Order editing |
-| Swaps/Returns | ✅ Yes | RMA system |
-| Claims | ✅ Yes | Support tickets |
-| Draft Orders | ✅ Yes | Manual orders |
-| Fulfillment Providers | ✅ Yes | Pluggable system |
-| Payment Providers | ✅ Yes | Pluggable system |
-| Inventory Management | ✅ Yes | Multi-location |
+| Regions |  Yes | Mapped to shipping zones |
+| Price Lists |  Yes | Customer group pricing |
+| Sales Channels |  Yes | Channel support |
+| Publishable API Keys |  Yes | API key system |
+| Order Edits |  Yes | Order editing |
+| Swaps/Returns |  Yes | RMA system |
+| Claims |  Yes | Support tickets |
+| Draft Orders |  Yes | Manual orders |
+| Fulfillment Providers |  Yes | Pluggable system |
+| Payment Providers |  Yes | Pluggable system |
+| Inventory Management |  Yes | Multi-location |
 | Analytics | ⚠️ Partial | Basic reports |
 | Plugin System | ⚠️ Planned | Coming soon |
 
