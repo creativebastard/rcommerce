@@ -8,6 +8,8 @@ pub mod order;
 pub mod product;
 pub mod address;
 pub mod subscription;
+pub mod cart;
+pub mod coupon;
 
 // Re-export common models
 pub use customer::*;
@@ -15,6 +17,8 @@ pub use order::*;
 pub use product::*;
 pub use address::*;
 pub use subscription::*;
+pub use cart::*;
+pub use coupon::*;
 
 /// Common trait for all entities
 pub trait Entity: Send + Sync {
@@ -95,6 +99,25 @@ impl std::fmt::Display for Currency {
             Currency::CNY => write!(f, "CNY"),
             Currency::HKD => write!(f, "HKD"),
             Currency::SGD => write!(f, "SGD"),
+        }
+    }
+}
+
+impl std::str::FromStr for Currency {
+    type Err = String;
+    
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "USD" => Ok(Currency::USD),
+            "EUR" => Ok(Currency::EUR),
+            "GBP" => Ok(Currency::GBP),
+            "JPY" => Ok(Currency::JPY),
+            "AUD" => Ok(Currency::AUD),
+            "CAD" => Ok(Currency::CAD),
+            "CNY" => Ok(Currency::CNY),
+            "HKD" => Ok(Currency::HKD),
+            "SGD" => Ok(Currency::SGD),
+            _ => Err(format!("Unknown currency: {}", s)),
         }
     }
 }

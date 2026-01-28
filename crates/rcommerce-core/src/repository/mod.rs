@@ -1,9 +1,13 @@
 pub mod product_repository;
 pub mod customer_repository;
 pub mod order_repository;
+pub mod cart_repository;
+pub mod coupon_repository;
 
 pub use product_repository::ProductRepository;
 pub use customer_repository::CustomerRepository;
+pub use cart_repository::CartRepository;
+pub use coupon_repository::CouponRepository;
 
 use sqlx::{Pool, Postgres};
 use crate::Result;

@@ -2,6 +2,8 @@ pub mod product_service;
 pub mod customer_service;
 pub mod order_service;
 pub mod auth_service;
+pub mod cart_service;
+pub mod coupon_service;
 
 pub use product_service::ProductService;
 pub use customer_service::CustomerService;
@@ -9,6 +11,8 @@ pub use order_service::OrderService;
 pub use auth_service::AuthService;
 pub use auth_service::ApiKey;
 pub use auth_service::JwtClaims;
+pub use cart_service::CartService;
+pub use coupon_service::CouponService;
 
 use crate::Result;
 
