@@ -1,0 +1,206 @@
+{
+  "summary": {
+    "total": 12,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 4,
+    "duration_ms": 629
+  },
+  "tests": [
+    {
+      "name": "Database Connection",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "Establishes connection to SQLite",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create pool",
+          "result": "Success"
+        }
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Schema Verification",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "Verifies tables exist",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Check tables",
+          "result": "Found"
+        }
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Data Generation",
+      "status": "passed",
+      "duration_ms": 12,
+      "description": "Generates dummy data",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Products",
+          "result": "20"
+        },
+        {
+          "step": 2,
+          "description": "Customers",
+          "result": "10"
+        },
+        {
+          "step": 3,
+          "description": "Orders",
+          "result": "15"
+        }
+      ],
+      "created_items": [
+        {
+          "type": "Product",
+          "id": "prod-001",
+          "details": "20 products"
+        },
+        {
+          "type": "Customer",
+          "id": "cust-001",
+          "details": "10 customers"
+        },
+        {
+          "type": "Order",
+          "id": "ord-001",
+          "details": "15 orders"
+        }
+      ]
+    },
+    {
+      "name": "Create Order",
+      "status": "passed",
+      "duration_ms": 2,
+      "description": "Creates order via API",
+      "steps": [
+        {
+          "step": 1,
+          "description": "POST /api/v1/orders",
+          "result": "200 OK"
+        }
+      ],
+      "created_items": [
+        {
+          "type": "Order",
+          "id": "order-123",
+          "details": "New order"
+        }
+      ]
+    },
+    {
+      "name": "Process Payment",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "Payment flow",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Process",
+          "result": "Success"
+        }
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Fulfill Order",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "Fulfillment flow",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Fulfill",
+          "result": "Success"
+        }
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "List Orders",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "List with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "description": "List",
+          "result": "2 orders"
+        }
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Cache Write",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped",
+      "steps": [
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Cache Read",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped",
+      "steps": [
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Cache Invalidation",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped",
+      "steps": [
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Product Caching",
+      "status": "skipped",
+      "duration_ms": 0,
+      "description": "Skipped",
+      "steps": [
+      ],
+      "created_items": [
+      ]
+    },
+    {
+      "name": "Self-Signed Certificate",
+      "status": "passed",
+      "duration_ms": 0,
+      "description": "Generate TLS cert",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Generate",
+          "result": "Success"
+        }
+      ],
+      "created_items": [
+        {
+          "type": "Certificate",
+          "id": "/tmp/cert.pem",
+          "details": "X.509"
+        }
+      ]
+    }
+  ]
+}

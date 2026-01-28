@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>R Commerce E2E Test Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="alert alert-success text-center">
+            <h1>Test Suite PASSED</h1>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>12</h3><p class="text-muted">Total</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">8</h3><p class="text-muted">Passed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">0</h3><p class="text-muted">Failed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">4</h3><p class="text-muted">Skipped</p></div></div></div>
+        </div>
+        <h5>Pass Rate: 66.7%</h5>
+        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 66.66666666666666%">66.7%</div></div>
+        <h5>Test Details</h5>
+        
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Database Connection</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Establishes connection to SQLite</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Create pool <span class="text-muted">- Success</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Schema Verification</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Verifies tables exist</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Check tables <span class="text-muted">- Found</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Data Generation</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(12ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Generates dummy data</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Product:</strong> prod-001 <small class="text-muted">(20 products)</small></div>
+<div class="alert alert-info py-1 mb-1"><strong>Customer:</strong> cust-001 <small class="text-muted">(10 customers)</small></div>
+<div class="alert alert-info py-1 mb-1"><strong>Order:</strong> ord-001 <small class="text-muted">(15 orders)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Products <span class="text-muted">- 20</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> Customers <span class="text-muted">- 10</span></li>
+<li class="list-group-item py-1"><strong>Step 3:</strong> Orders <span class="text-muted">- 15</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Create Order</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(2ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Creates order via API</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Order:</strong> order-123 <small class="text-muted">(New order)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /api/v1/orders <span class="text-muted">- 200 OK</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Process Payment</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Payment flow</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Process <span class="text-muted">- Success</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Fulfill Order</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Fulfillment flow</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Fulfill <span class="text-muted">- Success</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">List Orders</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">List with pagination</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> List <span class="text-muted">- 2 orders</span></li>
+</ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Cache Write</h5>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Cache Read</h5>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Cache Invalidation</h5>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Product Caching</h5>
+                    <div><span class="badge bg-secondary">SKIP</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Skipped</p>
+                    
+                    <ul class="list-group list-group-flush mt-2"></ul>
+                </div>
+            </div>
+
+            <div class="card mb-3 border-success">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Self-Signed Certificate</h5>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Generate TLS cert</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Certificate:</strong> /tmp/cert.pem <small class="text-muted">(X.509)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Generate <span class="text-muted">- Success</span></li>
+</ul>
+                </div>
+            </div>
+
+        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 09:48:07 UTC</p></div>
+    </div>
+</body>
+</html>
