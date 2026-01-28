@@ -4,7 +4,7 @@
     "passed": 14,
     "failed": 0,
     "skipped": 0,
-    "duration_ms": 2036
+    "duration_ms": 2248
   },
   "tests": [
     {
@@ -54,7 +54,7 @@
     {
       "name": "Data Generation",
       "status": "passed",
-      "duration_ms": 12,
+      "duration_ms": 14,
       "description": "Generates dummy data",
       "steps": [
         {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:51709/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:51739/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -265,7 +265,7 @@
     {
       "name": "Stripe Payment",
       "status": "passed",
-      "duration_ms": 702,
+      "duration_ms": 819,
       "description": "Create payment intent via Stripe API",
       "steps": [
         {
@@ -282,7 +282,7 @@
       "created_items": [
         {
           "type": "PaymentIntent",
-          "id": "pi_3SuWx8H5ZJNK02uB0sDD0upr",
+          "id": "pi_3SuX3IH5ZJNK02uB0mB0hj3z",
           "details": "$20.00 USD"
         }
       ],
@@ -301,12 +301,12 @@
         }
       ],
       "raw_request": "POST https://api.stripe.com/v1/payment_intents\nAuthorization: Bearer sk_test_***\nContent-Type: application/x-www-form-urlencoded\n\namount=2000&currency=usd&payment_method_types[]=card",
-      "raw_response": "{\"id\":\"pi_3SuWx8H5ZJNK02uB0sDD0upr\",\"client_secret\":\"pi_3SuWx8H5ZJNK02uB0sDD0upr_secret_WAbYkBIckOYLdX4NFc6e8qHDr\",\"status\":\"requires_payment_method\"}"
+      "raw_response": "{\"id\":\"pi_3SuX3IH5ZJNK02uB0mB0hj3z\",\"client_secret\":\"pi_3SuX3IH5ZJNK02uB0mB0hj3z_secret_oSquegmjH3pJZBFVWkEEEheCw\",\"status\":\"requires_payment_method\"}"
     },
     {
       "name": "Airwallex Payment",
       "status": "passed",
-      "duration_ms": 699,
+      "duration_ms": 778,
       "description": "Create payment intent via Airwallex API",
       "steps": [
         {
@@ -328,7 +328,7 @@
       "created_items": [
         {
           "type": "PaymentIntent",
-          "id": "int_hkdmmpvg4hf9qxtordj",
+          "id": "int_hkdmcvsphhf9r4581o3",
           "details": "$20.00 USD"
         }
       ],
@@ -347,7 +347,7 @@
         }
       ],
       "raw_request": "POST https://api-demo.airwallex.com/api/v1/pa/payment_intents/create\nAuthorization: Bearer eyJ***\nContent-Type: application/json\n\n{\"request_id\":\"uuid\",\"amount\":2000,\"currency\":\"USD\",\"descriptor\":\"E2E Test Payment\"}",
-      "raw_response": "{\"id\":\"int_hkdmmpvg4hf9qxtordj\",\"client_secret\":\"eyJraWQiOiJjNDRjODVkMDliMDc0NmNlYTIwZmI4NjZlYzI4YWY3ZSIsImFsZyI6IkhTMjU2In0.eyJ0eXBlIjoiY2xpZW50LXNlY3JldCIsImFjY291bnRfaWQiOiJkMzZmZmQ4NS1mYmRkLTQzMzYtODk1NC05YThiZGMyY2Y2ZTMiLCJpbnRlbnRfaWQiOiJpbnRfaGtkbW1wdmc0aGY5cXh0b3JkaiIsImJ1c2luZXNzX25hbWUiOiJkZW1vK1BER0dsb2JhbExpbWl0ZWQxIiwicGFkYyI6IkhLIiwiZXhwIjoxNzY5NjAzNDMxLCJpYXQiOjE3Njk1OTk4MzF9.2Azx8B1gKcrDyZ3mX-t8r8qrWExe9FNOBVxQFY8e3Vk\",\"status\":\"REQUIRES_ACTION\"}"
+      "raw_response": "{\"id\":\"int_hkdmcvsphhf9r4581o3\",\"client_secret\":\"eyJraWQiOiJjNDRjODVkMDliMDc0NmNlYTIwZmI4NjZlYzI4YWY3ZSIsImFsZyI6IkhTMjU2In0.eyJ0eXBlIjoiY2xpZW50LXNlY3JldCIsImFjY291bnRfaWQiOiJkMzZmZmQ4NS1mYmRkLTQzMzYtODk1NC05YThiZGMyY2Y2ZTMiLCJpbnRlbnRfaWQiOiJpbnRfaGtkbWN2c3BoaGY5cjQ1ODFvMyIsImJ1c2luZXNzX25hbWUiOiJkZW1vK1BER0dsb2JhbExpbWl0ZWQxIiwicGFkYyI6IkhLIiwiZXhwIjoxNzY5NjAzODEzLCJpYXQiOjE3Njk2MDAyMTN9.uJzQT1Hw4FbhhhBCiUqr2bsEl7E3tHCpTb5_q6B8Zxg\",\"status\":\"REQUIRES_ACTION\"}"
     },
     {
       "name": "Self-Signed Certificate",
