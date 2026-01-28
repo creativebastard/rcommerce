@@ -14,8 +14,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::{Result, Error};
 use crate::payment::{PaymentGateway, CreatePaymentRequest, PaymentSession, Payment, PaymentStatus, PaymentSessionStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType};
 
-/// Airwallex API base URL
-const AIRWALLEX_API_BASE: &str = "https://api.airwallex.com/api/v1";
+/// Airwallex API base URLs
+const AIRWALLEX_API_BASE_PROD: &str = "https://api.airwallex.com/api/v1";
+const AIRWALLEX_API_BASE_DEMO: &str = "https://api-demo.airwallex.com/api/v1";
 
 /// Airwallex payment gateway
 pub struct AirwallexGateway {
@@ -24,6 +25,7 @@ pub struct AirwallexGateway {
     webhook_secret: String,
     client: reqwest::Client,
     access_token: std::sync::Mutex<Option<AirwallexAccessToken>>,
+    base_url: String,
 }
 
 /// Airwallex access token for authentication
@@ -36,12 +38,20 @@ struct AirwallexAccessToken {
 impl AirwallexGateway {
     /// Create a new Airwallex gateway
     pub fn new(client_id: String, api_key: String, webhook_secret: String) -> Self {
+        // Check for demo environment via env var
+        let base_url = if std::env::var("AIRWALLEX_USE_DEMO").unwrap_or_default() == "1" {
+            AIRWALLEX_API_BASE_DEMO.to_string()
+        } else {
+            AIRWALLEX_API_BASE_PROD.to_string()
+        };
+        
         Self {
             client_id,
             api_key,
             webhook_secret,
             client: reqwest::Client::new(),
             access_token: std::sync::Mutex::new(None),
+            base_url,
         }
     }
     
@@ -52,6 +62,18 @@ impl AirwallexGateway {
             String::new(),
             String::new(),
         )
+    }
+    
+    /// Create a new Airwallex gateway with explicit demo mode
+    pub fn with_demo(client_id: String, api_key: String, webhook_secret: String) -> Self {
+        Self {
+            client_id,
+            api_key,
+            webhook_secret,
+            client: reqwest::Client::new(),
+            access_token: std::sync::Mutex::new(None),
+            base_url: AIRWALLEX_API_BASE_DEMO.to_string(),
+        }
     }
     
     /// Get access token for API authentication
@@ -72,7 +94,7 @@ impl AirwallexGateway {
         
         // Request new token - Airwallex requires an empty JSON body {}
         let response = self.client
-            .post(format!("{}/authentication/login", AIRWALLEX_API_BASE))
+            .post(format!("{}/authentication/login", self.base_url))
             .header("Content-Type", "application/json")
             .header("x-client-id", &self.client_id)
             .header("x-api-key", &self.api_key)
@@ -154,7 +176,7 @@ impl PaymentGateway for AirwallexGateway {
         });
         
         let response = self.client
-            .post(format!("{}/pa/payment_intents/create", AIRWALLEX_API_BASE))
+            .post(format!("{}/pa/payment_intents/create", self.base_url))
             .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&payload)
@@ -189,7 +211,7 @@ impl PaymentGateway for AirwallexGateway {
         
         // First, check the payment intent status
         let response = self.client
-            .get(format!("{}/pa/payment_intents/{}", AIRWALLEX_API_BASE, payment_id))
+            .get(format!("{}/pa/payment_intents/{}", self.base_url, payment_id))
             .header("Authorization", format!("Bearer {}", token))
             .send()
             .await
@@ -213,7 +235,7 @@ impl PaymentGateway for AirwallexGateway {
             });
             
             let _confirm_response = self.client
-                .post(format!("{}/pa/payment_intents/{}/confirm", AIRWALLEX_API_BASE, payment_id))
+                .post(format!("{}/pa/payment_intents/{}/confirm", self.base_url, payment_id))
                 .header("Authorization", format!("Bearer {}", token))
                 .header("Content-Type", "application/json")
                 .json(&confirm_payload)
@@ -242,7 +264,7 @@ impl PaymentGateway for AirwallexGateway {
         }
         
         let response = self.client
-            .post(format!("{}/pa/payment_intents/{}/capture", AIRWALLEX_API_BASE, payment_id))
+            .post(format!("{}/pa/payment_intents/{}/capture", self.base_url, payment_id))
             .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&payload)
@@ -278,7 +300,7 @@ impl PaymentGateway for AirwallexGateway {
         });
         
         let response = self.client
-            .post(format!("{}/pa/refunds", AIRWALLEX_API_BASE))
+            .post(format!("{}/pa/refunds", self.base_url))
             .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&payload)
@@ -309,7 +331,7 @@ impl PaymentGateway for AirwallexGateway {
         let token = self.get_access_token().await?;
         
         let response = self.client
-            .get(format!("{}/pa/payment_intents/{}", AIRWALLEX_API_BASE, payment_id))
+            .get(format!("{}/pa/payment_intents/{}", self.base_url, payment_id))
             .header("Authorization", format!("Bearer {}", token))
             .send()
             .await

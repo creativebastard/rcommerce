@@ -4,7 +4,7 @@
     "passed": 8,
     "failed": 1,
     "skipped": 5,
-    "duration_ms": 1162
+    "duration_ms": 1370
   },
   "tests": [
     {
@@ -54,7 +54,7 @@
     {
       "name": "Data Generation",
       "status": "passed",
-      "duration_ms": 9,
+      "duration_ms": 12,
       "description": "Generates dummy data",
       "steps": [
         {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:51433/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:51508/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -249,7 +249,7 @@
     {
       "name": "Airwallex Payment",
       "status": "failed",
-      "duration_ms": 540,
+      "duration_ms": 751,
       "description": "Airwallex API call failed",
       "steps": [
         {
