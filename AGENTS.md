@@ -12,9 +12,10 @@ This file provides essential information for AI coding agents working on the R C
 
 - **Language**: Rust (edition 2021, minimum version 1.70.0)
 - **Architecture**: Headless/API-first (REST with WebSocket support)
-- **Database**: Multi-database support (PostgreSQL, MySQL, SQLite)
-- **Cache**: In-memory or Redis
-- **License**: MIT
+- **Database**: Multi-database support (PostgreSQL, MySQL, SQLite via SQLx)
+- **Cache**: In-memory (DashMap/LRU) or Redis
+- **License**: Dual-licensed under AGPL-3.0 and Commercial License
+- **Repository**: https://gitee.com/captainjez/gocart
 
 ### Performance Targets
 
@@ -35,35 +36,46 @@ gokart/
 ├── Cargo.toml              # Workspace manifest
 ├── Cargo.lock              # Dependency lock file
 ├── crates/
-│   ├── rcommerce-core/     # Core library - models, traits, repositories
+│   ├── rcommerce-core/     # Core library - models, traits, repositories, services
 │   │   └── src/
 │   │       ├── lib.rs          # Public exports
-│   │       ├── config.rs       # Configuration structure
+│   │       ├── config.rs       # Configuration structure (TOML-based)
 │   │       ├── error.rs        # Error types and handling
 │   │       ├── common.rs       # Common utilities
 │   │       ├── db.rs           # Database connection pooling
-│   │       ├── traits.rs       # Core traits (Entity, Repository, etc.)
+│   │       ├── traits.rs       # Core traits (Repository, Service)
 │   │       ├── models/         # Data models
 │   │       │   ├── mod.rs
 │   │       │   ├── product.rs
 │   │       │   ├── customer.rs
 │   │       │   ├── order.rs
-│   │       │   └── address.rs
+│   │       │   ├── address.rs
+│   │       │   ├── cart.rs
+│   │       │   ├── coupon.rs
+│   │       │   └── subscription.rs
 │   │       ├── repository/     # Database repositories
 │   │       │   ├── mod.rs
 │   │       │   ├── product_repository.rs
 │   │       │   ├── customer_repository.rs
-│   │       │   └── order_repository.rs
+│   │       │   ├── order_repository.rs
+│   │       │   ├── cart_repository.rs
+│   │       │   └── coupon_repository.rs
 │   │       ├── services/       # Business logic services
 │   │       │   ├── mod.rs
 │   │       │   ├── product_service.rs
 │   │       │   ├── customer_service.rs
 │   │       │   ├── order_service.rs
-│   │       │   └── auth_service.rs
+│   │       │   ├── auth_service.rs
+│   │       │   ├── cart_service.rs
+│   │       │   └── coupon_service.rs
 │   │       ├── payment/        # Payment gateway integrations
 │   │       │   ├── mod.rs
 │   │       │   ├── gateways/
-│   │       │   └── tests.rs
+│   │       │   │   ├── stripe.rs
+│   │       │   │   ├── airwallex.rs
+│   │       │   │   ├── alipay.rs
+│   │       │   │   └── wechatpay.rs
+│   │       │   └── dunning.rs
 │   │       ├── order/          # Order lifecycle management
 │   │       ├── inventory/      # Inventory tracking & reservations
 │   │       ├── notification/   # Email/SMS/webhook system
@@ -82,21 +94,22 @@ gokart/
 │   │       │   ├── product.rs
 │   │       │   ├── customer.rs
 │   │       │   ├── order.rs
-│   │       │   └── auth.rs
+│   │       │   ├── auth.rs
+│   │       │   ├── cart.rs
+│   │       │   └── coupon.rs
 │   │       ├── middleware/     # API middleware
 │   │       └── tls/            # TLS certificate management
 │   └── rcommerce-cli/      # Command-line management tool
 │       └── src/
 │           └── main.rs         # CLI entry point
 ├── crates/rcommerce-core/migrations/
-│   └── 001_initial_schema.sql  # Database schema
-├── docs/                   # Documentation
-│   ├── architecture/       # Architecture documentation
-│   ├── api/                # API design docs
-│   ├── deployment/         # Deployment guides
-│   ├── development/        # Developer guides
-│   └── project/            # Project status docs
-└── test_api.sh             # API testing script
+│   ├── 001_initial_schema.sql  # Database schema
+│   └── 002_carts_and_coupons.sql
+├── scripts/                # Utility scripts
+│   ├── test_api.sh
+│   ├── run_e2e_tests.sh
+│   └── test_complete_system.sh
+└── test_config.toml        # Test configuration
 ```
 
 ---
@@ -107,24 +120,25 @@ gokart/
 
 | Component | Crate | Purpose |
 |-----------|-------|---------|
-| Async Runtime | `tokio` | Async runtime with full features |
-| HTTP Server | `axum` | Web framework with macros |
-| Database | `sqlx` | Async SQL with compile-time checking |
-| Serialization | `serde` | JSON serialization |
-| Validation | `validator` | Input validation |
+| Async Runtime | `tokio` (1.35) | Async runtime with full features |
+| HTTP Server | `axum` (0.7) | Web framework with macros |
+| Database | `sqlx` (0.8) | Async SQL with compile-time checking |
+| Serialization | `serde` (1.0) | JSON serialization |
+| Validation | `validator` (0.16) | Input validation |
 
 ### Additional Dependencies
 
 | Category | Crates |
 |----------|--------|
-| Cache | `redis` (1.0), `dashmap`, `lru` |
-| WebSocket | `tokio-tungstenite`, `futures` |
-| Authentication | `jsonwebtoken`, `jwt-simple` |
-| Email | `lettre`, `handlebars` (templating) |
-| HTTP Client | `reqwest` |
-| Decimal | `rust_decimal` (financial precision) |
-| Testing | `tokio-test`, `mockall`, `wiremock` |
-| CLI | `clap` (derive features) |
+| Cache | `redis` (1.0), `dashmap` (5.5), `lru` (0.12) |
+| WebSocket | `tokio-tungstenite` (0.21), `futures` (0.3) |
+| Authentication | `jsonwebtoken` (9.2), `jwt-simple` (0.12) |
+| Email | `lettre` (0.11), `handlebars` (5.1) |
+| HTTP Client | `reqwest` (0.11) |
+| Decimal | `rust_decimal` (1.33) - financial precision |
+| Testing | `tokio-test` (0.4), `mockall` (0.12), `wiremock` (0.6) |
+| CLI | `clap` (4.4) with derive features |
+| Crypto | `sha2`, `hmac`, `rsa`, `bcrypt` |
 
 ---
 
@@ -182,6 +196,19 @@ cargo clippy --fix
 
 # Check dependencies for vulnerabilities
 cargo audit
+```
+
+### Running the Application
+
+```bash
+# Run with default config
+cargo run --bin rcommerce -- server
+
+# Run with specific config file
+cargo run --bin rcommerce -- -c ./config.toml server
+
+# Run API tests
+./scripts/test_api.sh
 ```
 
 ---
@@ -290,12 +317,12 @@ fn do_something() -> Result<Thing> {
 
 ```rust
 #[async_trait]
-pub trait ProductRepository: Send + Sync {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Product>>;
-    async fn create(&self, product: &Product) -> Result<Product>;
-    async fn update(&self, product: &Product) -> Result<Product>;
-    async fn delete(&self, id: Uuid) -> Result<bool>;
-    async fn list(&self, pagination: Pagination) -> Result<Vec<Product>>;
+pub trait Repository<T, ID>: Send + Sync {
+    async fn find_by_id(&self, id: ID) -> Result<Option<T>>;
+    async fn create(&self, entity: T) -> Result<T>;
+    async fn update(&self, entity: T) -> Result<T>;
+    async fn delete(&self, id: ID) -> Result<bool>;
+    async fn list(&self) -> Result<Vec<T>>;
 }
 ```
 
@@ -327,13 +354,13 @@ impl<R: ProductRepository> ProductService<R> {
 
 ### Integration Tests
 
-- Located in `src/*/tests.rs` or `tests/` directories
+- Located in `crates/*/tests/` directories
 - Test complete workflows
 - Require test database
 
 ### API Testing
 
-- Use the `test_api.sh` script for endpoint testing
+- Use the `scripts/test_api.sh` script for endpoint testing
 - Tests against a running server instance
 - Uses SQLite for test database
 
@@ -364,6 +391,9 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_test TO rcommerc
 - `addresses` - Customer addresses
 - `orders` - Order headers
 - `order_items` - Order line items
+- `carts` - Shopping carts
+- `cart_items` - Cart line items
+- `coupons` - Discount coupons
 - `fulfillments` - Shipping fulfillments
 - `payments` - Payment records
 - `audit_logs` - Audit trail
@@ -410,36 +440,6 @@ payment_status - ENUM ('pending', 'authorized', 'paid', 'failed', 'cancelled', '
 - [ ] Use TLS/SSL certificates
 - [ ] Set secure database passwords
 - [ ] Disable debug API in production
-
----
-
-## Deployment
-
-### Docker Deployment
-
-```bash
-# Build Docker image
-docker build -t rcommerce:latest .
-
-# Run with docker-compose
-docker-compose up -d
-```
-
-Supported orchestrators:
-- Docker Compose (single node)
-- Kubernetes (multi-node)
-- FreeBSD Jails
-- Linux systemd
-
-### Production Build
-
-```bash
-# Optimize for production
-cargo build --release
-
-# Binary location
-target/release/rcommerce
-```
 
 ---
 
@@ -523,11 +523,11 @@ log_slow_queries = 1000  # ms
 
 ## Documentation
 
-- `docs/architecture/` - Design patterns and decisions
-- `docs/api/` - API specifications
-- `docs/deployment/` - Deployment guides
-- `docs/development/` - Development guides
+- `docs/` - General documentation
+- `docs-website/` - Documentation website source
 - `README.md` - Quick start guide
+- `CONTRIBUTING.md` - Contribution guidelines
+- `SECURITY.md` - Security policy
 
 ---
 
@@ -535,7 +535,7 @@ log_slow_queries = 1000  # ms
 
 - **URL**: https://gitee.com/captainjez/gocart
 - **Primary Branch**: `master`
-- **License**: MIT
+- **License**: Dual-licensed (AGPL-3.0 / Commercial)
 
 ---
 

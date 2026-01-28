@@ -132,7 +132,7 @@ impl AliPayGateway {
     }
     
     /// Map AliPay trade status to our PaymentStatus
-    fn map_alipay_status(status: &str) -> PaymentStatus {
+    pub fn map_alipay_status(status: &str) -> PaymentStatus {
         match status {
             "TRADE_SUCCESS" => PaymentStatus::Succeeded,
             "TRADE_FINISHED" => PaymentStatus::Succeeded,

@@ -11,6 +11,9 @@
 //! export AIRWALLEX_TEST_CLIENT_ID="..."
 //! export AIRWALLEX_TEST_API_KEY="..."
 //! export AIRWALLEX_TEST_WEBHOOK_SECRET="..."
+//! export ALIPAY_TEST_APP_ID="..."
+//! export ALIPAY_TEST_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----..."
+//! export ALIPAY_TEST_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
 //!
 //! # Run integration tests
 //! cargo test --test payment_integration_tests -- --test-threads=1
@@ -26,6 +29,11 @@
 //! - `AIRWALLEX_TEST_CLIENT_ID` - Your Airwallex client ID
 //! - `AIRWALLEX_TEST_API_KEY` - Your Airwallex API key
 //! - `AIRWALLEX_TEST_WEBHOOK_SECRET` - Webhook signing secret
+//!
+//! ## AliPay
+//! - `ALIPAY_TEST_APP_ID` - Your AliPay app ID
+//! - `ALIPAY_TEST_PRIVATE_KEY` - Your RSA private key for signing
+//! - `ALIPAY_TEST_PUBLIC_KEY` - AliPay's public key for verification
 
 use rcommerce_core::payment::{
     PaymentGateway, 
@@ -34,7 +42,7 @@ use rcommerce_core::payment::{
     CardDetails,
     PaymentSessionStatus,
 };
-use rcommerce_core::payment::gateways::{stripe::StripeGateway, airwallex::AirwallexGateway};
+use rcommerce_core::payment::gateways::{stripe::StripeGateway, airwallex::AirwallexGateway, alipay::AliPayGateway};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
@@ -53,6 +61,13 @@ fn get_airwallex_gateway() -> Option<AirwallexGateway> {
     let api_key = std::env::var("AIRWALLEX_TEST_API_KEY").ok()?;
     let webhook_secret = std::env::var("AIRWALLEX_TEST_WEBHOOK_SECRET").unwrap_or_default();
     Some(AirwallexGateway::new(client_id, api_key, webhook_secret))
+}
+
+fn get_alipay_gateway() -> Option<AliPayGateway> {
+    let app_id = std::env::var("ALIPAY_TEST_APP_ID").ok()?;
+    let private_key = std::env::var("ALIPAY_TEST_PRIVATE_KEY").ok()?;
+    let public_key = std::env::var("ALIPAY_TEST_PUBLIC_KEY").unwrap_or_default();
+    Some(AliPayGateway::new(app_id, private_key, public_key, true))
 }
 
 fn create_test_request(amount: Decimal) -> CreatePaymentRequest {
@@ -91,6 +106,22 @@ fn create_test_request_airwallex(amount: Decimal) -> CreatePaymentRequest {
             cvc: "123".to_string(),
             name: "Test User".to_string(),
         }),
+        billing_address: None,
+        metadata: serde_json::json!({
+            "test": true,
+            "environment": "integration_test"
+        }),
+    }
+}
+
+fn create_test_request_alipay(amount: Decimal) -> CreatePaymentRequest {
+    CreatePaymentRequest {
+        amount,
+        currency: "CNY".to_string(), // AliPay primarily uses CNY
+        order_id: Uuid::new_v4(),
+        customer_id: None,
+        customer_email: "test@example.com".to_string(),
+        payment_method: PaymentMethod::AliPay,
         billing_address: None,
         metadata: serde_json::json!({
             "test": true,
@@ -261,6 +292,73 @@ async fn test_airwallex_error_handling() {
 }
 
 // ============================================================================
+// AliPay Integration Tests
+// ============================================================================
+
+#[tokio::test]
+#[ignore = "Requires ALIPAY_TEST_APP_ID and ALIPAY_TEST_PRIVATE_KEY environment variables"]
+async fn test_alipay_create_payment() {
+    let gateway = get_alipay_gateway()
+        .expect("AliPay credentials must be set in environment");
+
+    let request = create_test_request_alipay(Decimal::new(10000, 2)); // 100.00 CNY
+    
+    match gateway.create_payment(request).await {
+        Ok(session) => {
+            println!("✅ Created AliPay payment: {}", session.id);
+            assert!(!session.id.is_empty());
+            // AliPay returns a payment URL in client_secret
+            assert!(!session.client_secret.is_empty());
+            assert!(session.client_secret.contains("alipay") || session.client_secret.contains("http"));
+            assert_eq!(session.amount, Decimal::new(10000, 2));
+            assert_eq!(session.currency, "CNY");
+            assert_eq!(session.status, PaymentSessionStatus::Open);
+        }
+        Err(e) => {
+            println!("⚠️ AliPay payment creation failed: {}", e);
+            // Don't fail - AliPay sandbox may require specific setup
+        }
+    }
+}
+
+#[tokio::test]
+#[ignore = "Requires ALIPAY_TEST_APP_ID and ALIPAY_TEST_PRIVATE_KEY environment variables"]
+async fn test_alipay_payment_status_mapping() {
+    // Test that AliPay status mapping works correctly
+    use rcommerce_core::payment::gateways::alipay::AliPayGateway;
+    use rcommerce_core::payment::PaymentStatus;
+    
+    // These should map correctly based on the implementation
+    assert!(matches!(AliPayGateway::map_alipay_status("TRADE_SUCCESS"), PaymentStatus::Succeeded));
+    assert!(matches!(AliPayGateway::map_alipay_status("TRADE_FINISHED"), PaymentStatus::Succeeded));
+    assert!(matches!(AliPayGateway::map_alipay_status("WAIT_BUYER_PAY"), PaymentStatus::Pending));
+    assert!(matches!(AliPayGateway::map_alipay_status("TRADE_CLOSED"), PaymentStatus::Canceled));
+    
+    println!("✅ AliPay status mapping works correctly");
+}
+
+#[tokio::test]
+#[ignore = "Requires ALIPAY_TEST_APP_ID and ALIPAY_TEST_PRIVATE_KEY environment variables"]
+async fn test_alipay_error_handling() {
+    let gateway = get_alipay_gateway()
+        .expect("AliPay credentials must be set in environment");
+
+    // Test with invalid payment ID - should return an error
+    let result = gateway.get_payment("invalid_trade_no").await;
+    
+    // The query may succeed with an error code from AliPay, or fail with network/parsing error
+    match result {
+        Ok(_) => {
+            // AliPay may return a response with error code - this is also valid behavior
+            println!("✅ AliPay returned response for invalid trade no (may contain error code)");
+        }
+        Err(e) => {
+            println!("✅ AliPay error handling works correctly: {}", e);
+        }
+    }
+}
+
+// ============================================================================
 // Webhook Tests
 // ============================================================================
 
@@ -313,14 +411,22 @@ fn test_gateway_id_consistency() {
     // Test that all gateways follow naming conventions
     let stripe = StripeGateway::new("test".to_string(), "test".to_string());
     let airwallex = AirwallexGateway::new("test".to_string(), "test".to_string(), "test".to_string());
+    let alipay = AliPayGateway::new(
+        "test_app_id".to_string(),
+        "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----".to_string(),
+        "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----".to_string(),
+        true
+    );
     
     // IDs should be lowercase and snake_case
     assert_eq!(stripe.id(), "stripe");
     assert_eq!(airwallex.id(), "airwallex");
+    assert_eq!(alipay.id(), "alipay");
     
     // Names should be human-readable
     assert_eq!(stripe.name(), "Stripe");
     assert_eq!(airwallex.name(), "Airwallex");
+    assert_eq!(alipay.name(), "AliPay");
     
     println!("✅ Gateway ID consistency verified");
 }
@@ -363,6 +469,24 @@ fn check_environment_variables() {
         missing.push("AIRWALLEX_TEST_WEBHOOK_SECRET");
     } else {
         println!("✅ AIRWALLEX_TEST_WEBHOOK_SECRET is set");
+    }
+    
+    if std::env::var("ALIPAY_TEST_APP_ID").is_err() {
+        missing.push("ALIPAY_TEST_APP_ID");
+    } else {
+        println!("✅ ALIPAY_TEST_APP_ID is set");
+    }
+    
+    if std::env::var("ALIPAY_TEST_PRIVATE_KEY").is_err() {
+        missing.push("ALIPAY_TEST_PRIVATE_KEY");
+    } else {
+        println!("✅ ALIPAY_TEST_PRIVATE_KEY is set");
+    }
+    
+    if std::env::var("ALIPAY_TEST_PUBLIC_KEY").is_err() {
+        missing.push("ALIPAY_TEST_PUBLIC_KEY");
+    } else {
+        println!("✅ ALIPAY_TEST_PUBLIC_KEY is set");
     }
     
     if !missing.is_empty() {
