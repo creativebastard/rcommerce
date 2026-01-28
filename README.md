@@ -194,10 +194,12 @@ cargo tarpaulin --workspace
 
 ## 📚 Documentation
 
-- [API Reference](docs/api/README.md)
-- [Architecture](docs/architecture/README.md)
-- [Deployment](docs/deployment/README.md)
-- [Plugins](docs/plugins/README.md)
+Full documentation is available at **[docs.rcommerce.app](https://docs.rcommerce.app)**
+
+- [API Reference](https://docs.rcommerce.app/api/)
+- [Architecture](https://docs.rcommerce.app/architecture/)
+- [Deployment](https://docs.rcommerce.app/deployment/)
+- [Plugins](https://docs.rcommerce.app/plugins/)
 
 ## 🤝 Contributing
 
@@ -235,7 +237,7 @@ Contact [sales@rcommerce.app](mailto:sales@rcommerce.app) for commercial licensi
 ## 🆘 Support
 
 - GitHub Issues: [Issue Tracker](https://gitee.com/captainjez/gocart/issues)
-- Documentation: [Wiki](https://gitee.com/captainjez/gocart/wiki)
+- Documentation: [docs.rcommerce.app](https://docs.rcommerce.app)
 - Email: support@rcommerce.app
 
 ---
