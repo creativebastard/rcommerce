@@ -1,10 +1,10 @@
 {
   "summary": {
     "total": 12,
-    "passed": 8,
+    "passed": 12,
     "failed": 0,
-    "skipped": 4,
-    "duration_ms": 629
+    "skipped": 0,
+    "duration_ms": 609
   },
   "tests": [
     {
@@ -40,7 +40,7 @@
     {
       "name": "Data Generation",
       "status": "passed",
-      "duration_ms": 12,
+      "duration_ms": 15,
       "description": "Generates dummy data",
       "steps": [
         {
@@ -80,7 +80,7 @@
     {
       "name": "Create Order",
       "status": "passed",
-      "duration_ms": 2,
+      "duration_ms": 1,
       "description": "Creates order via API",
       "steps": [
         {
@@ -144,42 +144,72 @@
     },
     {
       "name": "Cache Write",
-      "status": "skipped",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Skipped",
+      "description": "Write to Redis",
       "steps": [
+        {
+          "step": 1,
+          "description": "SET",
+          "result": "OK"
+        }
       ],
       "created_items": [
+        {
+          "type": "Cache Entry",
+          "id": "test:key",
+          "details": "test_value"
+        }
       ]
     },
     {
       "name": "Cache Read",
-      "status": "skipped",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Skipped",
+      "description": "Read from Redis",
       "steps": [
+        {
+          "step": 1,
+          "description": "GET",
+          "result": "test_value"
+        }
       ],
       "created_items": [
       ]
     },
     {
       "name": "Cache Invalidation",
-      "status": "skipped",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Skipped",
+      "description": "Delete from Redis",
       "steps": [
+        {
+          "step": 1,
+          "description": "DEL",
+          "result": "Deleted"
+        }
       ],
       "created_items": [
       ]
     },
     {
       "name": "Product Caching",
-      "status": "skipped",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Skipped",
+      "description": "Cache products",
       "steps": [
+        {
+          "step": 1,
+          "description": "SETEX",
+          "result": "Cached"
+        }
       ],
       "created_items": [
+        {
+          "type": "Cache Entry",
+          "id": "test:products",
+          "details": "TTL: 3600s"
+        }
       ]
     },
     {

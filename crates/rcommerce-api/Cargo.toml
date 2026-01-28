@@ -79,6 +79,11 @@ tokio-rustls = "0.24"
 # Let's Encrypt
 acme-lib = "0.8"
 
-# Certificate management
-x509-parser = "0.15"
+# Certificate generation
 rcgen = "0.11"
+
+# For E2E tests
+[dev-dependencies]
+# Additional test dependencies
+redis = { workspace = true }
+rand = { workspace = true }

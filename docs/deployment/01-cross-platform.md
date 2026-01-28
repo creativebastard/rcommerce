@@ -283,6 +283,73 @@ cargo rustc --release -- \
   -C link-arg=-lthr
 ```
 
+#### Running on Low Ports (80/443) without Reverse Proxy
+
+By default, non-root users cannot bind to ports below 1024 on FreeBSD. When running R Commerce directly on ports 80/443 without a reverse proxy, you have several options:
+
+**Option 1: Use `mac_portacl` Module (Recommended)**
+
+The `mac_portacl` kernel module allows specific users to bind to privileged ports:
+
+```bash
+# Load the mac_portacl module
+kldload mac_portacl
+
+# Add to /boot/loader.conf for persistence
+echo 'mac_portacl_load="YES"' >> /boot/loader.conf
+
+# Configure port ACL for rcommerce user (UID 1001)
+sysctl net.inet.ip.portacl.port_high=1023
+sysctl net.inet.ip.portacl.suser_exempt=1
+sysctl net.inet.ip.portacl.autoport_exempt=1
+
+# Allow rcommerce user (UID 1001) to bind ports 80 and 443
+sysctl net.inet.ip.portacl.rule="uid:1001:tcp:80,uid:1001:tcp:443"
+
+# Make persistent
+echo 'net.inet.ip.portacl.port_high=1023' >> /etc/sysctl.conf
+echo 'net.inet.ip.portacl.suser_exempt=1' >> /etc/sysctl.conf
+echo 'net.inet.ip.portacl.rule="uid:1001:tcp:80,uid:1001:tcp:443"' >> /etc/sysctl.conf
+```
+
+**Option 2: Use `ipfw` Port Redirection**
+
+Redirect traffic from port 80/443 to unprivileged ports:
+
+```bash
+# Enable IPFW
+echo 'firewall_enable="YES"' >> /etc/rc.conf
+echo 'firewall_type="workstation"' >> /etc/rc.conf
+
+# Add port redirection rules (add to /etc/rc.firewall or run manually)
+ipfw add 100 fwd 127.0.0.1,8080 tcp from any to any 80 in
+ipfw add 101 fwd 127.0.0.1,8443 tcp from any to any 443 in
+
+# Start IPFW
+service ipfw start
+```
+
+**Option 3: Use `setcap` (if available)**
+
+Grant capability to bind privileged ports (requires package):
+
+```bash
+# Install libcap
+pkg install libcap
+
+# Grant capability to binary
+setcap cap_bind_service=+ep /usr/local/bin/rcommerce
+```
+
+**Option 4: Run as Root (Not Recommended)**
+
+```bash
+# In rc.d script, run as root (not recommended for production)
+# Change -u rcommerce to -u root (not recommended)
+```
+
+> **Recommendation:** Use Option 1 (`mac_portacl`) for production deployments without a reverse proxy. For most deployments, using a reverse proxy (Nginx, Caddy, HAProxy) is preferred as it provides additional features like SSL termination, caching, and load balancing.
+
 ### Linux Optimization
 
 #### Systemd Service (Modern Linux)
@@ -340,6 +407,111 @@ CPUSchedulingPriority=50
 [Install]
 WantedBy=multi-user.target
 ```
+
+#### Running on Low Ports (80/443) without Reverse Proxy
+
+Linux provides several options for allowing non-root users to bind to privileged ports:
+
+**Option 1: Use `setcap` (Recommended)**
+
+Grant the binary capability to bind to privileged ports:
+
+```bash
+# Grant capability to the rcommerce binary
+sudo setcap cap_net_bind_service=+ep /usr/local/bin/rcommerce
+
+# Verify
+capsh --print | grep cap_net_bind_service
+```
+
+> **Note:** This capability is preserved across system reboots but must be re-applied after upgrading the binary.
+
+**Option 2: Use `sysctl` (Linux 4.11+)**
+
+Starting with Linux 4.11, you can modify the privileged port range:
+
+```bash
+# Allow all users to bind ports >= 80
+sudo sysctl net.ipv4.ip_unprivileged_port_start=80
+
+# Make persistent
+echo 'net.ipv4.ip_unprivileged_port_start=80' | sudo tee /etc/sysctl.d/99-rcommerce.conf
+sudo sysctl --system
+```
+
+> **Warning:** This affects all applications system-wide. Use with caution.
+
+**Option 3: Use `authbind`**
+
+The `authbind` utility allows specific users to bind to specific ports:
+
+```bash
+# Install authbind
+sudo apt-get install authbind  # Debian/Ubuntu
+sudo yum install authbind      # RHEL/CentOS (EPEL)
+
+# Create authbind configuration
+sudo touch /etc/authbind/byport/80
+sudo touch /etc/authbind/byport/443
+sudo chown rcommerce:rcommerce /etc/authbind/byport/80 /etc/authbind/byport/443
+sudo chmod 500 /etc/authbind/byport/80 /etc/authbind/byport/443
+
+# Run with authbind
+authbind --deep /usr/local/bin/rcommerce
+```
+
+**Option 4: Systemd Socket Activation**
+
+Systemd can bind ports on behalf of the service:
+
+```bash
+# Create socket unit /etc/systemd/system/rcommerce.socket:
+[Unit]
+Description=R Commerce Socket
+
+[Socket]
+ListenStream=80
+ListenStream=443
+NoDelay=true
+ReusePort=true
+
+[Install]
+WantedBy=sockets.target
+```
+
+```bash
+# Modify service to use socket activation
+# In rcommerce.service [Unit] section:
+Requires=rcommerce.socket
+After=rcommerce.socket
+
+# Enable and start socket
+sudo systemctl enable rcommerce.socket
+sudo systemctl start rcommerce.socket
+```
+
+**Option 5: `iptables` Port Redirection**
+
+Redirect traffic from port 80/443 to unprivileged ports:
+
+```bash
+# Redirect port 80 to 8080
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+sudo iptables -t nat -A OUTPUT -p tcp --dport 80 -j REDIRECT --to-port 8080
+
+# Redirect port 443 to 8443
+sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 8443
+sudo iptables -t nat -A OUTPUT -p tcp --dport 443 -j REDIRECT --to-port 8443
+
+# Save rules (Debian/Ubuntu)
+sudo apt-get install iptables-persistent
+sudo netfilter-persistent save
+
+# Save rules (RHEL/CentOS)
+sudo service iptables save
+```
+
+> **Recommendation:** Use `setcap` (Option 1) for production deployments without a reverse proxy. It's simple, secure, and doesn't require modifying system-wide settings.
 
 #### Linux Kernel Parameters
 
@@ -563,6 +735,94 @@ sudo launchctl start com.rcommerce.rcommerce
 # Check status
 sudo launchctl list | grep rcommerce
 ```
+
+#### Running on Low Ports (80/443) without Reverse Proxy
+
+macOS provides limited options for allowing non-root users to bind to privileged ports compared to Linux:
+
+**Option 1: Run with Root Privileges (Not Recommended)**
+
+The LaunchDaemon can run as root:
+
+```xml
+<!-- Change these keys in the plist -->
+<key>UserName</key>
+<string>root</string>
+<key>GroupName</key>
+<string>wheel</string>
+```
+
+> **Warning:** Running as root is not recommended for production. Consider using a reverse proxy instead.
+
+**Option 2: Use `pfctl` Port Forwarding**
+
+macOS uses Packet Filter (PF) for port forwarding:
+
+```bash
+# Create anchor file
+sudo tee /etc/pf.anchors/rcommerce << 'EOF'
+rdr pass on lo0 inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080
+rdr pass on lo0 inet proto tcp from any to any port 443 -> 127.0.0.1 port 8443
+rdr pass on en0 inet proto tcp from any to any port 80 -> 127.0.0.1 port 8080
+rdr pass on en0 inet proto tcp from any to any port 443 -> 127.0.0.1 port 8443
+EOF
+
+# Enable PF
+sudo pfctl -e
+
+# Load anchor
+sudo pfctl -a rcommerce -f /etc/pf.anchors/rcommerce
+
+# Make persistent (add to /etc/pf.conf)
+echo 'rdr-anchor "rcommerce"' | sudo tee -a /etc/pf.conf
+echo 'load anchor "rcommerce" from "/etc/pf.anchors/rcommerce"' | sudo tee -a /etc/pf.conf
+```
+
+**Option 3: Use `socat` as a Bridge**
+
+Run a privileged helper that forwards to the unprivileged service:
+
+```bash
+# Install socat
+brew install socat
+
+# Run port forwarder (requires root)
+sudo socat TCP-LISTEN:80,fork TCP:localhost:8080 &
+sudo socat TCP-LISTEN:443,fork TCP:localhost:8443 &
+```
+
+**Option 4: LaunchDaemon with Socket Activation**
+
+macOS LaunchDaemons support socket activation:
+
+```xml
+<!-- Add these keys to the plist -->
+<key>Sockets</key>
+<dict>
+    <key>Listeners</key>
+    <dict>
+        <key>SockServiceName</key>
+        <string>80</string>
+        <key>SockType</key>
+        <string>stream</string>
+        <key>SockFamily</key>
+        <string>IPv4</string>
+    </dict>
+    <key>ListenersSSL</key>
+    <dict>
+        <key>SockServiceName</key>
+        <string>443</string>
+        <key>SockType</key>
+        <string>stream</string>
+        <key>SockFamily</key>
+        <string>IPv4</string>
+    </dict>
+</dict>
+```
+
+> **Note:** Your application must be modified to support socket activation via the `launch_activate_socket()` API.
+
+> **Recommendation:** Use a reverse proxy (Nginx, Caddy) on macOS for production deployments requiring ports 80/443. The `pfctl` option (Option 2) is the best alternative if you must run without a reverse proxy.
 
 #### macOS Performance Tuning
 
