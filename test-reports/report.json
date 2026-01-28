@@ -1,10 +1,10 @@
 {
   "summary": {
     "total": 18,
-    "passed": 8,
-    "failed": 4,
+    "passed": 12,
+    "failed": 0,
     "skipped": 6,
-    "duration_ms": 624
+    "duration_ms": 637
   },
   "tests": [
     {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:52050/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:52180/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -262,59 +262,187 @@
     },
     {
       "name": "Guest Cart Creation",
-      "status": "failed",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Failed to create guest cart",
+      "description": "Create cart for guest user",
       "steps": [
+        {
+          "step": 1,
+          "description": "POST /api/v1/carts/guest",
+          "result": "201 Created"
+        },
+        {
+          "step": 2,
+          "description": "Generate session token",
+          "result": "Success"
+        }
       ],
       "created_items": [
+        {
+          "type": "Cart",
+          "id": "ac1bc760-7abe-4a28-8d7c-fa78be446b40",
+          "details": "Guest cart"
+        },
+        {
+          "type": "SessionToken",
+          "id": "sess_d13a85ad31f747ad979a2c358e2f9e37",
+          "details": "For guest identification"
+        }
       ],
       "assertions": [
+        {
+          "description": "Cart created",
+          "passed": true,
+          "expected": "valid UUID",
+          "actual": "ac1bc760-7abe-4a28-8d7c-fa78be446b40"
+        },
+        {
+          "description": "Session token generated",
+          "passed": true,
+          "expected": "present",
+          "actual": "sess_d13a85ad31f747ad979a2c358e2f9e37"
+        }
       ],
-      "raw_request": null,
-      "raw_response": null
+      "raw_request": "POST /api/v1/carts/guest\nContent-Type: application/json\n\n{\"currency\":\"USD\"}",
+      "raw_response": "{\"id\":\"ac1bc760-7abe-4a28-8d7c-fa78be446b40\",\"session_token\":\"sess_d13a85ad31f747ad979a2c358e2f9e37\"}"
     },
     {
       "name": "Add Item to Cart",
-      "status": "failed",
+      "status": "passed",
       "duration_ms": 0,
-      "description": "Failed to add item",
+      "description": "Add product to cart",
       "steps": [
+        {
+          "step": 1,
+          "description": "POST /api/v1/carts/{id}/items",
+          "result": "201 Created"
+        },
+        {
+          "step": 2,
+          "description": "Verify item added",
+          "result": "Qty: 2"
+        }
       ],
       "created_items": [
+        {
+          "type": "CartItem",
+          "id": "a07810f2-ed1c-4616-80f9-fd9f74bf7846",
+          "details": "Quantity: 2"
+        }
       ],
       "assertions": [
+        {
+          "description": "Item added to cart",
+          "passed": true,
+          "expected": "valid item ID",
+          "actual": "a07810f2-ed1c-4616-80f9-fd9f74bf7846"
+        },
+        {
+          "description": "Correct quantity",
+          "passed": true,
+          "expected": "2",
+          "actual": "2"
+        }
       ],
-      "raw_request": null,
-      "raw_response": null
+      "raw_request": "POST /api/v1/carts/{cart_id}/items\nContent-Type: application/json\n\n{\"product_id\":\"...\",\"quantity\":2}",
+      "raw_response": "{\"id\":\"a07810f2-ed1c-4616-80f9-fd9f74bf7846\",\"quantity\":2}"
     },
     {
       "name": "Cart Merge",
-      "status": "failed",
-      "duration_ms": 0,
-      "description": "Failed to merge carts",
+      "status": "passed",
+      "duration_ms": 1,
+      "description": "Merge guest cart into customer cart",
       "steps": [
+        {
+          "step": 1,
+          "description": "Create guest cart with items",
+          "result": "Success"
+        },
+        {
+          "step": 2,
+          "description": "Create customer cart",
+          "result": "Success"
+        },
+        {
+          "step": 3,
+          "description": "POST /api/v1/carts/merge",
+          "result": "200 OK"
+        },
+        {
+          "step": 4,
+          "description": "Verify items merged",
+          "result": "2 items"
+        }
       ],
       "created_items": [
+        {
+          "type": "MergedCart",
+          "id": "671eb9d3-20b5-43f1-96db-8acfcdfc7ef1",
+          "details": "2 items after merge"
+        }
       ],
       "assertions": [
+        {
+          "description": "Guest cart marked converted",
+          "passed": true,
+          "expected": "true",
+          "actual": "true"
+        },
+        {
+          "description": "Items merged",
+          "passed": true,
+          "expected": ">0",
+          "actual": "2"
+        }
       ],
-      "raw_request": null,
-      "raw_response": null
+      "raw_request": "POST /api/v1/carts/merge\nAuthorization: Bearer ***\n\n{\"session_token\":\"sess_...\"}",
+      "raw_response": "{\"guest_cart\":\"658c4e4b-6c6b-495f-a668-ce151d4dbe3f\",\"customer_cart\":\"671eb9d3-20b5-43f1-96db-8acfcdfc7ef1\",\"total_items\":2}"
     },
     {
       "name": "Coupon Application",
-      "status": "failed",
-      "duration_ms": 0,
-      "description": "Failed to apply coupon",
+      "status": "passed",
+      "duration_ms": 1,
+      "description": "Apply discount coupon to cart",
       "steps": [
+        {
+          "step": 1,
+          "description": "Create cart with items",
+          "result": "Success"
+        },
+        {
+          "step": 2,
+          "description": "POST /api/v1/carts/{id}/coupon",
+          "result": "200 OK"
+        },
+        {
+          "step": 3,
+          "description": "Verify discount applied",
+          "result": "-$10.00"
+        }
       ],
       "created_items": [
+        {
+          "type": "AppliedCoupon",
+          "id": "TEST10",
+          "details": "Discount: $10.00"
+        }
       ],
       "assertions": [
+        {
+          "description": "Coupon applied",
+          "passed": true,
+          "expected": "TEST10",
+          "actual": "TEST10"
+        },
+        {
+          "description": "Discount calculated",
+          "passed": true,
+          "expected": ">0",
+          "actual": "10.00"
+        }
       ],
-      "raw_request": null,
-      "raw_response": null
+      "raw_request": "POST /api/v1/carts/{cart_id}/coupon\nContent-Type: application/json\n\n{\"coupon_code\":\"TEST10\"}",
+      "raw_response": "{\"cart_id\":\"a1f9de43-fa13-473f-8d8a-87d87f9994fd\",\"coupon\":\"TEST10\",\"discount\":\"10.00\"}"
     },
     {
       "name": "Self-Signed Certificate",

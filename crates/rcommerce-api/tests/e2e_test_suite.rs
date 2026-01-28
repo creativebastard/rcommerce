@@ -23,6 +23,9 @@ use rcommerce_core::payment::gateways::{
     airwallex::AirwallexGateway,
 };
 
+// Import API routes for test server
+use rcommerce_api::routes::{cart_router, coupon_router};
+
 // =============================================================================
 // Test Types
 // =============================================================================
@@ -520,11 +523,16 @@ CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, s
         self.server_addr = Some(addr);
         println!("  ✓ Test server starting on http://{}", addr);
         
+        let api_v1 = Router::new()
+            .route("/orders", axum::routing::get(|| async { "Orders" }))
+            .route("/products", axum::routing::get(|| async { "Products" }))
+            .merge(cart_router())
+            .merge(coupon_router());
+        
         let app = Router::new()
             .route("/health", axum::routing::get(|| async { "OK" }))
             .route("/", axum::routing::get(|| async { "R Commerce API" }))
-            .route("/api/v1/orders", axum::routing::get(|| async { "Orders" }))
-            .route("/api/v1/products", axum::routing::get(|| async { "Products" }));
+            .nest("/api/v1", api_v1);
         
         let server = axum::serve(listener, app);
         tokio::spawn(async move { if let Err(e) = server.await { eprintln!("Server error: {}", e); } });

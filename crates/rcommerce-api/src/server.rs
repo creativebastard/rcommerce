@@ -16,7 +16,9 @@ pub async fn run(config: Config) -> Result<()> {
         .merge(crate::routes::product_router())
         .merge(crate::routes::customer_router())
         .merge(crate::routes::order_router())
-        .merge(crate::routes::auth_router());
+        .merge(crate::routes::auth_router())
+        .merge(crate::routes::cart_router())
+        .merge(crate::routes::coupon_router());
     
     // Build main router with simplified Phase 1 routes
     let app = Router::new()
@@ -36,6 +38,11 @@ pub async fn run(config: Config) -> Result<()> {
     info!("  GET  /api/v1/orders/:id          - Get order");
     info!("  POST /api/v1/auth/login          - Login");
     info!("  POST /api/v1/auth/register       - Register");
+    info!("  POST /api/v1/carts/guest         - Create guest cart");
+    info!("  GET  /api/v1/carts/me            - Get customer cart");
+    info!("  POST /api/v1/carts/merge         - Merge carts");
+    info!("  GET  /api/v1/coupons             - List coupons");
+    info!("  POST /api/v1/coupons             - Create coupon");
     
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)

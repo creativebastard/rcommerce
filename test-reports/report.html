@@ -7,17 +7,17 @@
 </head>
 <body>
     <div class="container mt-5">
-        <div class="alert alert-danger text-center">
-            <h1>Test Suite FAILED</h1>
+        <div class="alert alert-success text-center">
+            <h1>Test Suite PASSED</h1>
         </div>
         <div class="row mb-4">
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>18</h3><p class="text-muted">Total</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">8</h3><p class="text-muted">Passed</p></div></div></div>
-            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">4</h3><p class="text-muted">Failed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-success">12</h3><p class="text-muted">Passed</p></div></div></div>
+            <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-danger">0</h3><p class="text-muted">Failed</p></div></div></div>
             <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3 class="text-secondary">6</h3><p class="text-muted">Skipped</p></div></div></div>
         </div>
-        <h5>Pass Rate: 44.4%</h5>
-        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 44.44444444444444%">44.4%</div></div>
+        <h5>Pass Rate: 66.7%</h5>
+        <div class="progress mb-4"><div class="progress-bar bg-success" style="width: 66.66666666666666%">66.7%</div></div>
         <h5>Test Details</h5>
         
             <div class="card mb-3 border-success">
@@ -189,51 +189,67 @@
                 </div>
             </div>
 
-            <div class="card mb-3 border-danger">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Guest Cart Creation</h5>
-                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Failed to create guest cart</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Create cart for guest user</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>Cart:</strong> ac1bc760-7abe-4a28-8d7c-fa78be446b40 <small class="text-muted">(Guest cart)</small></div>
+<div class="alert alert-info py-1 mb-1"><strong>SessionToken:</strong> sess_d13a85ad31f747ad979a2c358e2f9e37 <small class="text-muted">(For guest identification)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /api/v1/carts/guest <span class="text-muted">- 201 Created</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> Generate session token <span class="text-muted">- Success</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-danger">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Add Item to Cart</h5>
-                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(0ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Failed to add item</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Add product to cart</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>CartItem:</strong> a07810f2-ed1c-4616-80f9-fd9f74bf7846 <small class="text-muted">(Quantity: 2)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> POST /api/v1/carts/{id}/items <span class="text-muted">- 201 Created</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> Verify item added <span class="text-muted">- Qty: 2</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-danger">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Cart Merge</h5>
-                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Failed to merge carts</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Merge guest cart into customer cart</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>MergedCart:</strong> 671eb9d3-20b5-43f1-96db-8acfcdfc7ef1 <small class="text-muted">(2 items after merge)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Create guest cart with items <span class="text-muted">- Success</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> Create customer cart <span class="text-muted">- Success</span></li>
+<li class="list-group-item py-1"><strong>Step 3:</strong> POST /api/v1/carts/merge <span class="text-muted">- 200 OK</span></li>
+<li class="list-group-item py-1"><strong>Step 4:</strong> Verify items merged <span class="text-muted">- 2 items</span></li>
+</ul>
                 </div>
             </div>
 
-            <div class="card mb-3 border-danger">
+            <div class="card mb-3 border-success">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Coupon Application</h5>
-                    <div><span class="badge bg-danger">FAIL</span> <span class="text-muted small">(0ms)</span></div>
+                    <div><span class="badge bg-success">PASS</span> <span class="text-muted small">(1ms)</span></div>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Failed to apply coupon</p>
-                    
-                    <ul class="list-group list-group-flush mt-2"></ul>
+                    <p class="text-muted">Apply discount coupon to cart</p>
+                    <div class="alert alert-info py-1 mb-1"><strong>AppliedCoupon:</strong> TEST10 <small class="text-muted">(Discount: $10.00)</small></div>
+
+                    <ul class="list-group list-group-flush mt-2"><li class="list-group-item py-1"><strong>Step 1:</strong> Create cart with items <span class="text-muted">- Success</span></li>
+<li class="list-group-item py-1"><strong>Step 2:</strong> POST /api/v1/carts/{id}/coupon <span class="text-muted">- 200 OK</span></li>
+<li class="list-group-item py-1"><strong>Step 3:</strong> Verify discount applied <span class="text-muted">- -$10.00</span></li>
+</ul>
                 </div>
             </div>
 
@@ -251,7 +267,7 @@
                 </div>
             </div>
 
-        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 12:18:59 UTC</p></div>
+        <div class="text-muted small mt-4"><p>Generated: 2026-01-28 12:36:10 UTC</p></div>
     </div>
 </body>
 </html>
