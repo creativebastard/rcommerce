@@ -13,41 +13,41 @@ hide:
   <img src="assets/hero-diagram.svg" alt="R Commerce Architecture" style="max-width: 800px; width: 100%;">
 </div>
 
-## 🚀 Why R Commerce?
+## Why R Commerce?
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch:{ .lg .middle } __Blazing Fast__
+- **Blazing Fast**
 
   ---
 
   Sub-10ms API responses with Rust's zero-cost abstractions. Handle 10,000+ concurrent users per instance.
 
-- :material-shield-check:{ .lg .middle } __Memory Safe__
+- **Memory Safe**
 
   ---
 
   Rust's ownership model eliminates entire classes of bugs. No garbage collection pauses, no memory leaks.
 
-- :material-code-json:{ .lg .middle } __Headless Architecture__
+- **Headless Architecture**
 
   ---
 
   API-first design powers any frontend. React, Vue, mobile apps, IoT devices - use what you love.
 
-- :material-database:{ .lg .middle } __Multi-Database__
+- **Multi-Database**
 
   ---
 
   PostgreSQL, MySQL, or SQLite. Choose the right database for each deployment scenario.
 
-- :material-credit-card:{ .lg .middle } __6 Payment Gateways__
+- **6 Payment Gateways**
 
   ---
 
   Stripe, PayPal, WeChat Pay, AliPay, Airwallex, Braintree included. Easy to add more.
 
-- :material-truck-delivery:{ .lg .middle } __Global Shipping__
+- **Global Shipping**
 
   ---
 
@@ -55,7 +55,7 @@ hide:
 
 </div>
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```mermaid
 graph TB
@@ -101,27 +101,27 @@ graph TB
     WS --> REDIS
 ```
 
-## ✨ Core Features
+## Core Features
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products | ✅ Complete |
-| **Order Management** | Full lifecycle with editing capabilities | ✅ Complete |
-| **Payment Processing** | 6 gateways with fraud detection | ✅ Complete |
-| **Shipping** | Multi-carrier with real-time rates | ✅ Complete |
-| **Subscriptions** | Recurring billing with dunning management | ✅ Complete |
-| **Notifications** | Email, SMS, Push, Webhooks | ✅ Complete |
-| **Redis Caching** | Session, Rate Limit, Job Queue | ✅ Complete |
-| **WebSocket** | Real-time updates and pub/sub | ✅ Complete |
+| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products | Complete |
+| **Order Management** | Full lifecycle with editing capabilities | Complete |
+| **Payment Processing** | 6 gateways with fraud detection | Complete |
+| **Shipping** | Multi-carrier with real-time rates | Complete |
+| **Subscriptions** | Recurring billing with dunning management | Complete |
+| **Notifications** | Email, SMS, Push, Webhooks | Complete |
+| **Redis Caching** | Session, Rate Limit, Job Queue | Complete |
+| **WebSocket** | Real-time updates and pub/sub | Complete |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://gitee.com/captainjez/gocart.git
-cd gocart
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
 
 # Build the project
 cargo build --release
@@ -142,77 +142,77 @@ docker-compose up -d
 # - Redis: port 6379
 ```
 
-## 📚 Documentation
+## Documentation
 
 <div class="grid cards" markdown>
 
-- :material-book-open-variant:{ .lg .middle } __Getting Started__
+- **Getting Started**
 
   ---
 
   Quick start guide, installation instructions, and initial configuration.
 
-  [:octicons-arrow-right-24: Get Started](getting-started/quickstart.md)
+  [Get Started](getting-started/quickstart.md)
 
-- :material-api:{ .lg .middle } __API Reference__
+- **API Reference**
 
   ---
 
   Complete REST API documentation with examples and error codes.
 
-  [:octicons-arrow-right-24: View API](api-reference/index.md)
+  [View API](api-reference/index.md)
 
-- :material-credit-card:{ .lg .middle } __Payment Gateways__
+- **Payment Gateways**
 
   ---
 
   Configure Stripe, Airwallex, WeChat Pay, AliPay, and more.
 
-  [:octicons-arrow-right-24: Configure Payments](payment-gateways/index.md)
+  [Configure Payments](payment-gateways/index.md)
 
-- :material-rocket-launch:{ .lg .middle } __Deployment__
+- **Deployment**
 
   ---
 
   Production deployment guides for Docker, Kubernetes, and bare metal.
 
-  [:octicons-arrow-right-24: Deploy](deployment/index.md)
+  [Deploy](deployment/index.md)
 
-- :material-server:{ .lg .middle } __Operations__
+- **Operations**
 
   ---
 
   Scaling, monitoring, backups, reverse proxies, and security.
 
-  [:octicons-arrow-right-24: Operations](operations/index.md)
+  [Operations](operations/index.md)
 
-- :material-code-braces:{ .lg .middle } __Development__
+- **Development**
 
   ---
 
   Developer guide, CLI reference, and configuration options.
 
-  [:octicons-arrow-right-24: Develop](development/index.md)
+  [Develop](development/index.md)
 
-- :material-swap-horizontal:{ .lg .middle } __Migration__
+- **Migration**
 
   ---
 
   Migrate from Shopify, WooCommerce, Magento, or Medusa.
 
-  [:octicons-arrow-right-24: Migrate](migration/index.md)
+  [Migrate](migration/index.md)
 
-- :material-architecture:{ .lg .middle } __Architecture__
+- **Architecture**
 
   ---
 
   Deep dive into system design, data models, and integration patterns.
 
-  [:octicons-arrow-right-24: Architecture](architecture/overview.md)
+  [Architecture](architecture/overview.md)
 
 </div>
 
-## 💡 Example API Usage
+## Example API Usage
 
 ### Create a Product
 
@@ -244,19 +244,17 @@ curl -X POST http://localhost:8080/api/v1/orders \
   }'
 ```
 
-## 🖥️ Supported Platforms
+## Supported Platforms
 
-<div style="display: flex; gap: 2em; justify-content: center; flex-wrap: wrap; padding: 2em 0;">
+| Platform | Deployment Method |
+|----------|-------------------|
+| Linux | systemd, Docker, Kubernetes |
+| macOS | launchd, Docker |
+| FreeBSD | rc.d, iocage jails |
+| Docker | Docker Compose, Swarm |
+| Kubernetes | Helm charts, Operators |
 
-<span style="font-size: 2em;" title="Linux">🐧</span>
-<span style="font-size: 2em;" title="macOS">🍎</span>
-<span style="font-size: 2em;" title="FreeBSD">🦅</span>
-<span style="font-size: 2em;" title="Docker">🐳</span>
-<span style="font-size: 2em;" title="Kubernetes">☸️</span>
-
-</div>
-
-## 📊 Performance Benchmarks
+## Performance Benchmarks
 
 | Metric | Value |
 |--------|-------|
@@ -266,7 +264,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 | Concurrent Users | 10,000+ per instance |
 | Cold Start | < 1 second |
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Phase 0: Project Foundation
 - [x] Phase 1: Core Infrastructure
@@ -279,13 +277,13 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 <div style="text-align: center; padding: 2em 0;">
 
-**Ready to build?** [Get Started](getting-started/quickstart.md){ .md-button .md-button--primary }
+**Ready to build?** [Get Started](getting-started/quickstart.md)
 
 </div>
 
 ---
 
-<p style="text-align: center; color: var(--md-default-fg-color--light);">
-Built with ❤️ in Rust • MIT License • 
-<a href="https://gitee.com/captainjez/gocart">GitHub</a>
+<p style="text-align: center;">
+Built with care in Rust • Dual Licensed (AGPL-3.0 / Commercial) • 
+<a href="https://github.com/creativebastard/rcommerce">GitHub</a>
 </p>
