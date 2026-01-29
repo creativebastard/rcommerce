@@ -17,7 +17,14 @@ pub async fn run(config: Config) -> Result<()> {
     
     // Initialize database connection
     info!("Connecting to database...");
-    let pool = create_pool(&config.database).await?;
+    let pool = create_pool(
+        &config.database.host,
+        config.database.port,
+        &config.database.database,
+        &config.database.username,
+        &config.database.password,
+        config.database.pool_size,
+    ).await?;
     let db = Database::new(pool);
     
     // Initialize repositories

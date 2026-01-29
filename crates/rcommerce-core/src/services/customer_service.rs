@@ -8,6 +8,7 @@ use crate::{
         CreateCustomerRequest, UpdateCustomerRequest, CreateAddressRequest
     },
     repository::CustomerRepository,
+    repository::traits::CustomerRepositoryTrait,
     traits::Repository,
     services::{Service, PaginationParams},
 };
