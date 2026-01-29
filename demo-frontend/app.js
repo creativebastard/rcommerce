@@ -1,171 +1,145 @@
 // R Commerce Demo Frontend - Main App
+// Reads all data from the R Commerce API
 
-// API Configuration
 const API_BASE_URL = 'http://localhost:8080/api/v1';
-
-// Demo Products (fallback if API is not available)
-const DEMO_PRODUCTS = [
-    {
-        id: 'prod-1',
-        name: 'Premium Wireless Headphones',
-        description: 'High-quality wireless headphones with noise cancellation and 30-hour battery life. Perfect for music lovers and professionals.',
-        price: 299.99,
-        emoji: '🎧'
-    },
-    {
-        id: 'prod-2',
-        name: 'Smart Watch Pro',
-        description: 'Advanced fitness tracking, heart rate monitoring, and smartphone notifications. Water-resistant up to 50 meters.',
-        price: 399.99,
-        emoji: '⌚'
-    },
-    {
-        id: 'prod-3',
-        name: 'Portable Bluetooth Speaker',
-        description: '360-degree sound, 20-hour battery, waterproof design. Take your music anywhere with this compact powerhouse.',
-        price: 149.99,
-        emoji: '🔊'
-    }
-];
-
-// Cart State
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-// Initialize App
 document.addEventListener('DOMContentLoaded', () => {
     initCart();
     loadProducts();
 });
 
-// Initialize Cart Count
 function initCart() {
     updateCartCount();
 }
 
-// Update Cart Count in Header
 function updateCartCount() {
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const countElement = document.getElementById('cartCount');
-    if (countElement) {
-        countElement.textContent = count;
-    }
+    const el = document.getElementById('cartCount');
+    if (el) el.textContent = count;
 }
 
-// Load Products
 async function loadProducts() {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
 
+    grid.innerHTML = '<p class="loading">Loading products...</p>';
+
     try {
-        // Try to fetch from API
         const response = await fetch(`${API_BASE_URL}/products`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        if (response.ok) {
-            const data = await response.json();
-            renderProducts(data.data || data);
-        } else {
-            // Use demo products if API fails
-            renderProducts(DEMO_PRODUCTS);
+        const data = await response.json();
+        const products = data.data || data;
+        
+        if (products.length === 0) {
+            grid.innerHTML = '<p class="empty">No products available.</p>';
+            return;
         }
+        
+        renderProducts(products);
     } catch (error) {
-        console.log('API not available, using demo products');
-        renderProducts(DEMO_PRODUCTS);
+        grid.innerHTML = `
+            <div class="error-message">
+                <p>Unable to load products from API.</p>
+                <p>Make sure R Commerce backend is running at ${API_BASE_URL}</p>
+            </div>`;
     }
 }
 
-// Render Products Grid
 function renderProducts(products) {
     const grid = document.getElementById('productsGrid');
-    if (!grid) return;
-
-    grid.innerHTML = products.map(product => `
+    grid.innerHTML = products.map(p => `
         <div class="product-card">
-            <div class="product-image">${product.emoji || '📦'}</div>
+            <div class="product-image">${getEmoji(p.title)}</div>
             <div class="product-info">
-                <h3 class="product-name">${product.name || product.title}</h3>
-                <p class="product-description">${product.description}</p>
+                <h3 class="product-name">${escape(p.title)}</h3>
+                <p class="product-description">${truncate(p.description, 100)}</p>
                 <div class="product-footer">
-                    <span class="product-price">$${product.price}</span>
-                    <a href="product.html?id=${product.id}" class="btn btn-primary">View</a>
+                    <span class="product-price">$${parseFloat(p.price).toFixed(2)}</span>
+                    <a href="product.html?id=${p.id}" class="btn btn-primary">View</a>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
-// Add to Cart
-function addToCart(productId, name, price, quantity = 1) {
-    const existingItem = cart.find(item => item.productId === productId);
-    
-    if (existingItem) {
-        existingItem.quantity += quantity;
-    } else {
-        cart.push({
-            productId,
-            name,
-            price,
-            quantity
-        });
-    }
-    
+function getEmoji(title) {
+    const t = (title || '').toLowerCase();
+    if (t.includes('headphone')) return '🎧';
+    if (t.includes('watch')) return '⌚';
+    if (t.includes('speaker')) return '🔊';
+    return '📦';
+}
+
+function escape(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function truncate(text, len) {
+    if (!text) return '';
+    return text.length > len ? text.substring(0, len) + '...' : text;
+}
+
+function addToCart(id, name, price, qty = 1) {
+    const item = cart.find(i => i.productId === id);
+    if (item) item.quantity += qty;
+    else cart.push({ productId: id, name, price: parseFloat(price), quantity: qty });
     saveCart();
     updateCartCount();
     showMessage('Added to cart!', 'success');
 }
 
-// Remove from Cart
-function removeFromCart(productId) {
-    cart = cart.filter(item => item.productId !== productId);
+function removeFromCart(id) {
+    cart = cart.filter(i => i.productId !== id);
     saveCart();
     updateCartCount();
     renderCart();
 }
 
-// Update Cart Quantity
-function updateQuantity(productId, quantity) {
-    const item = cart.find(item => item.productId === productId);
-    if (item) {
-        if (quantity <= 0) {
-            removeFromCart(productId);
-        } else {
-            item.quantity = quantity;
-            saveCart();
-            updateCartCount();
-            renderCart();
-        }
+function updateQuantity(id, qty) {
+    const item = cart.find(i => i.productId === id);
+    if (!item) return;
+    if (qty <= 0) removeFromCart(id);
+    else {
+        item.quantity = qty;
+        saveCart();
+        updateCartCount();
+        renderCart();
     }
 }
 
-// Save Cart to LocalStorage
 function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// Render Cart Page
 function renderCart() {
-    const cartItems = document.getElementById('cartItems');
-    const cartEmpty = document.getElementById('cartEmpty');
-    const cartSummary = document.getElementById('cartSummary');
+    const items = document.getElementById('cartItems');
+    const empty = document.getElementById('cartEmpty');
+    const summary = document.getElementById('cartSummary');
     
-    if (!cartItems) return;
+    if (!items) return;
 
     if (cart.length === 0) {
-        cartItems.style.display = 'none';
-        if (cartSummary) cartSummary.style.display = 'none';
-        if (cartEmpty) cartEmpty.style.display = 'block';
+        items.style.display = 'none';
+        if (summary) summary.style.display = 'none';
+        if (empty) empty.style.display = 'block';
         return;
     }
 
-    cartItems.style.display = 'block';
-    if (cartSummary) cartSummary.style.display = 'block';
-    if (cartEmpty) cartEmpty.style.display = 'none';
+    items.style.display = 'block';
+    if (summary) summary.style.display = 'block';
+    if (empty) empty.style.display = 'none';
 
-    cartItems.innerHTML = cart.map(item => `
+    items.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <div class="cart-item-image">📦</div>
+            <div class="cart-item-image">${getEmoji(item.name)}</div>
             <div class="cart-item-info">
-                <h3>${item.name}</h3>
-                <p>$${item.price} each</p>
+                <h3>${escape(item.name)}</h3>
+                <p>$${item.price.toFixed(2)} each</p>
             </div>
             <div class="quantity-selector">
                 <button class="quantity-btn" onclick="updateQuantity('${item.productId}', ${item.quantity - 1})">-</button>
@@ -176,28 +150,50 @@ function renderCart() {
         </div>
     `).join('');
 
-    // Update summary
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalElement = document.getElementById('cartTotal');
-    if (totalElement) {
-        totalElement.textContent = `$${subtotal.toFixed(2)}`;
-    }
+    const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    const totalEl = document.getElementById('cartTotal');
+    if (totalEl) totalEl.textContent = `$${subtotal.toFixed(2)}`;
 }
 
-// Show Message
 function showMessage(text, type = 'success') {
-    const message = document.createElement('div');
-    message.className = `message message-${type}`;
-    message.textContent = text;
-    
+    const msg = document.createElement('div');
+    msg.className = `message message-${type}`;
+    msg.textContent = text;
     const main = document.querySelector('.main');
     if (main) {
-        main.insertBefore(message, main.firstChild);
-        setTimeout(() => message.remove(), 3000);
+        main.insertBefore(msg, main.firstChild);
+        setTimeout(() => msg.remove(), 3000);
     }
 }
 
-// Format Price
-function formatPrice(price) {
-    return `$${parseFloat(price).toFixed(2)}`;
+async function checkout() {
+    if (cart.length === 0) {
+        showMessage('Your cart is empty!', 'error');
+        return;
+    }
+    
+    try {
+        const orderData = {
+            items: cart.map(i => ({ product_id: i.productId, quantity: i.quantity, price: i.price })),
+            total: cart.reduce((sum, i) => sum + (i.price * i.quantity), 0)
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        if (response.ok) {
+            showMessage('Order placed successfully!', 'success');
+            cart = [];
+            saveCart();
+            updateCartCount();
+            renderCart();
+        } else {
+            throw new Error('Order failed');
+        }
+    } catch (error) {
+        showMessage('Order failed. Please try again.', 'error');
+    }
 }

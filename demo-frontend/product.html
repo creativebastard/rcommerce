@@ -28,8 +28,8 @@
     <main class="main">
         <section class="product-detail">
             <div class="container">
-                <div class="product-detail-grid" id="productDetail">
-                    <!-- Product will be loaded here -->
+                <div id="productDetail">
+                    <p class="loading">Loading product...</p>
                 </div>
             </div>
         </section>
@@ -43,8 +43,7 @@
 
     <script src="app.js"></script>
     <script>
-        // Load product detail
-        document.addEventListener('DOMContentLoaded', async () => {
+        async function loadProduct() {
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
             
@@ -53,49 +52,67 @@
                 return;
             }
 
-            // Find product (from API or demo data)
-            const product = DEMO_PRODUCTS.find(p => p.id === productId) || DEMO_PRODUCTS[0];
+            const container = document.getElementById('productDetail');
             
-            const detailContainer = document.getElementById('productDetail');
-            detailContainer.innerHTML = `
-                <div class="product-detail-image">${product.emoji}</div>
-                <div class="product-detail-info">
-                    <h1>${product.name}</h1>
-                    <p class="product-detail-price">$${product.price}</p>
-                    <p class="product-detail-description">${product.description}</p>
-                    
-                    <div class="quantity-selector">
-                        <button class="quantity-btn" onclick="changeQuantity(-1)">-</button>
-                        <input type="number" class="quantity-input" id="quantity" value="1" min="1">
-                        <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Product not found');
+                }
+                
+                const data = await response.json();
+                const product = data.data || data;
+                
+                container.innerHTML = `
+                    <div class="product-detail-grid">
+                        <div class="product-detail-image">${getEmoji(product.title)}</div>
+                        <div class="product-detail-info">
+                            <h1>${escape(product.title)}</h1>
+                            <p class="product-detail-price">$${parseFloat(product.price).toFixed(2)}</p>
+                            <p class="product-detail-description">${escape(product.description)}</p>
+                            
+                            <div class="quantity-selector">
+                                <button class="quantity-btn" onclick="changeQty(-1)">-</button>
+                                <input type="number" class="quantity-input" id="qty" value="1" min="1">
+                                <button class="quantity-btn" onclick="changeQty(1)">+</button>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="addCurrentProduct()" style="width: 100%;">
+                                Add to Cart
+                            </button>
+                            
+                            <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                                Back to Products
+                            </a>
+                        </div>
                     </div>
-                    
-                    <button class="btn btn-primary" onclick="addProductToCart()" style="width: 100%;">
-                        Add to Cart
-                    </button>
-                    
-                    <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
-                        Back to Products
-                    </a>
-                </div>
-            `;
-            
-            window.currentProduct = product;
-        });
-        
-        function changeQuantity(delta) {
-            const input = document.getElementById('quantity');
-            const newValue = parseInt(input.value) + delta;
-            if (newValue >= 1) {
-                input.value = newValue;
+                `;
+                
+                window.currentProduct = product;
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <p>Product not found.</p>
+                        <a href="index.html" class="btn btn-primary">Back to Products</a>
+                    </div>
+                `;
             }
         }
         
-        function addProductToCart() {
-            const quantity = parseInt(document.getElementById('quantity').value);
-            const product = window.currentProduct;
-            addToCart(product.id, product.name, product.price, quantity);
+        function changeQty(delta) {
+            const input = document.getElementById('qty');
+            const newVal = parseInt(input.value) + delta;
+            if (newVal >= 1) input.value = newVal;
         }
+        
+        function addCurrentProduct() {
+            const qty = parseInt(document.getElementById('qty').value);
+            const p = window.currentProduct;
+            addToCart(p.id, p.title, p.price, qty);
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadProduct);
     </script>
 </body>
 </html>
