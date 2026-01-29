@@ -32,7 +32,7 @@ plugins:
   - redirects:
       redirect_maps:
         'getting-started/index.md': 'getting-started/quickstart.md'
-        'api-reference/index.md': 'api-reference/overview.md'
+        'api-reference/overview.md': 'api-reference/index.md'
         'deployment/index.md': 'deployment/docker.md'
         'operations/index.md': 'operations/reverse-proxies/nginx.md'
         'architecture/index.md': 'architecture/overview.md'
