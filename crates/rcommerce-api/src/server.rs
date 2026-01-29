@@ -1,5 +1,6 @@
 use axum::{Router, routing::get};
 use std::net::SocketAddr;
+use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
 use rcommerce_core::{Result, Config};
@@ -20,11 +21,18 @@ pub async fn run(config: Config) -> Result<()> {
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router());
     
+    // Configure CORS for demo frontend
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+    
     // Build main router with simplified Phase 1 routes
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
-        .nest("/api/v1", api_v1);
+        .nest("/api/v1", api_v1)
+        .layer(cors);
     
     info!("R Commerce API server listening on {}", addr);
     info!("Available routes:");

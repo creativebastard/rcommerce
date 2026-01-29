@@ -30,15 +30,16 @@ async function loadProducts() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
-        const products = data.data || data;
+        const products = data.products || data.data || data;
         
-        if (products.length === 0) {
+        if (!products || products.length === 0) {
             grid.innerHTML = '<p class="empty">No products available.</p>';
             return;
         }
         
         renderProducts(products);
     } catch (error) {
+        console.error('Error loading products:', error);
         grid.innerHTML = `
             <div class="error-message">
                 <p>Unable to load products from API.</p>
