@@ -2,64 +2,26 @@
 site_name: R Commerce
 site_description: High-Performance Headless E-Commerce Platform in Rust
 site_author: R Commerce Team
-site_url: https://rcommerce.app
+site_url: https://docs.rcommerce.app
 
 # Repository
-repo_name: gitee.com/captainjez/gocart
-repo_url: https://gitee.com/captainjez/gocart
-edit_uri: blob/master/docs/
+repo_name: creativebastard/rcommerce
+repo_url: https://github.com/creativebastard/rcommerce
+edit_uri: blob/main/docs/
 
 # Copyright
 copyright: Copyright &copy; 2026 R Commerce
 
-# Theme Configuration
+# Theme Configuration - Shadcn Theme
 theme:
-  name: material
-  custom_dir: overrides
-  
-  # Palette - Dark/Light mode toggle
-  palette:
-    # Palette toggle for light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    # Palette toggle for dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  
-  # Font settings
-  font:
-    text: Roboto
-    code: Roboto Mono
-  
-  # Logo and favicon
-  logo: assets/logo.png
-  favicon: assets/favicon.png
-  
-  # Features
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - navigation.tracking
-    - search.suggest
-    - search.highlight
-    - search.share
-    - content.tabs.link
-    - content.code.annotation
-    - content.code.copy
-    - content.action.edit
-    - content.action.view
+  name: shadcn
+  icon: 
+  show_title: true
+  show_stargazers: true
+  topbar_sections: true
+  pygments_style:
+    light: shadcn-light
+    dark: github-dark
 
 # Plugins
 plugins:
@@ -69,7 +31,13 @@ plugins:
         - en
   - redirects:
       redirect_maps:
-        'index.md': 'architecture/01-overview.md'
+        'getting-started/index.md': 'getting-started/quickstart.md'
+        'api-reference/index.md': 'api-reference/overview.md'
+        'deployment/index.md': 'deployment/docker.md'
+        'operations/index.md': 'operations/reverse-proxies/nginx.md'
+        'architecture/index.md': 'architecture/overview.md'
+        'development/index.md': 'development/local-setup.md'
+        'migration/index.md': 'migration/shopify.md'
 
 # Extra CSS and JavaScript
 extra_css:
@@ -97,8 +65,6 @@ markdown_extensions:
   - pymdownx.critic
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -107,8 +73,8 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.magiclink:
       repo_url_shorthand: true
-      user: captainjez
-      repo: gocart
+      user: creativebastard
+      repo: rcommerce
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.snippets:
@@ -129,11 +95,11 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://gitee.com/captainjez/gocart
+      link: https://github.com/creativebastard/rcommerce
   analytics:
     provider: google
     property: G-XXXXXXXXXX
-  
+
 # Exclude patterns
 exclude_docs: |
   development/DEPLOYMENT_READY.md
@@ -146,49 +112,80 @@ exclude_docs: |
 nav:
   - Home: index.md
   
-  - Architecture:
-    - Overview: architecture/01-overview.md
-    - Data Modeling: architecture/02-data-modeling.md
-    - Database Abstraction: architecture/04-database-abstraction.md
-    - Payment Architecture: architecture/05-payment-architecture.md
-    - Shipping Integration: architecture/06-shipping-integration.md
-    - Order Management: architecture/07-order-management.md
-    - Compatibility Layer: architecture/08-compatibility-layer.md
-    - Product Types & Subscriptions: architecture/08-product-types-and-subscriptions.md
-    - Media Storage: architecture/09-media-storage.md
-    - Notifications: architecture/10-notifications.md
-    - Dunning & Payment Retry: architecture/11-dunning-payment-retry.md
-    - Redis Caching: architecture/12-redis-caching.md
+  - Getting Started:
+    - Quick Start: getting-started/quickstart.md
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
   
   - API Reference:
-    - API Design: api/01-api-design.md
-    - Error Codes: api/02-error-codes.md
-    - Cart API: api/03-cart-api.md
-    - Coupon API: api/04-coupon-api.md
+    - Overview: api-reference/index.md
+    - Authentication: api-reference/authentication.md
+    - Error Codes: api-reference/errors.md
+    - Products: api-reference/products.md
+    - Orders: api-reference/orders.md
+    - Customers: api-reference/customers.md
+    - Cart: api-reference/cart.md
+    - Coupons: api-reference/coupons.md
+    - Payments: api-reference/payments.md
+    - Webhooks: api-reference/webhooks.md
+    - GraphQL: api-reference/graphql.md
+  
+  - Payment Gateways:
+    - Overview: payment-gateways/index.md
+    - Stripe: payment-gateways/stripe.md
+    - Airwallex: payment-gateways/airwallex.md
+    - AliPay: payment-gateways/alipay.md
+    - WeChat Pay: payment-gateways/wechatpay.md
+    - Webhooks: payment-gateways/webhooks.md
   
   - Deployment:
-    - Docker: deployment/01-docker.md
-    - Cross-Platform: deployment/01-cross-platform.md
-    - Reverse Proxies: deployment/02-reverse-proxies.md
-    - Redis Setup: deployment/redis-setup.md
-    - Security: deployment/04-security.md
-    - Payment Testing: deployment/payment-testing.md
+    - Overview: deployment/index.md
+    - Docker: deployment/docker.md
+    - Linux:
+      - systemd: deployment/linux/systemd.md
+      - Manual: deployment/linux/manual.md
+    - FreeBSD:
+      - Jails: deployment/freebsd/jails.md
+      - rc.d: deployment/freebsd/rc.d.md
+    - macOS:
+      - launchd: deployment/macos/launchd.md
+    - Kubernetes: deployment/kubernetes.md
+    - Binary: deployment/binary.md
+  
+  - Operations:
+    - Overview: operations/index.md
+    - Reverse Proxies:
+      - Nginx: operations/reverse-proxies/nginx.md
+      - Caddy: operations/reverse-proxies/caddy.md
+      - HAProxy: operations/reverse-proxies/haproxy.md
+      - Traefik: operations/reverse-proxies/traefik.md
+    - Scaling: operations/scaling.md
+    - Monitoring: operations/monitoring.md
+    - Backups: operations/backups.md
+    - Security: operations/security.md
+    - Redis: operations/redis.md
+  
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Data Model: architecture/data-model.md
+    - Database Abstraction: architecture/database-abstraction.md
+    - Order Management: architecture/order-management.md
+    - Notifications: architecture/notifications.md
+    - Media Storage: architecture/media-storage.md
   
   - Development:
-    - Developer Guide: development/developer-guide.md
-    - Configuration Reference: development/configuration-reference.md
+    - Overview: development/index.md
+    - Local Setup: development/local-setup.md
+    - Contributing: development/contributing.md
+    - Testing: development/testing.md
     - CLI Reference: development/cli-reference.md
-    - Development Roadmap: development/development-roadmap.md
   
-  - Migration Guides:
-    - Overview: migration-guides/00-index.md
-    - Shopify: migration-guides/01-shopify.md
-    - WooCommerce: migration-guides/02-woocommerce.md
-    - Magento: migration-guides/03-magento.md
-    - Medusa.js: migration-guides/04-medusa.md
-  
-  - Features:
-    - Feature Suggestions: features/00-feature-suggestions.md
+  - Migration:
+    - Overview: migration/index.md
+    - Shopify: migration/shopify.md
+    - WooCommerce: migration/woocommerce.md
+    - Magento: migration/magento.md
+    - Medusa: migration/medusa.md
 
 # Validation
 validation:

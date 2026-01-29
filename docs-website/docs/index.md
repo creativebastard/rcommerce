@@ -13,7 +13,7 @@ hide:
   <img src="assets/hero-diagram.svg" alt="R Commerce Architecture" style="max-width: 800px; width: 100%;">
 </div>
 
-##  Why R Commerce?
+## 🚀 Why R Commerce?
 
 <div class="grid cards" markdown>
 
@@ -55,7 +55,7 @@ hide:
 
 </div>
 
-## ️ Architecture Overview
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TB
@@ -101,20 +101,20 @@ graph TB
     WS --> REDIS
 ```
 
-##  Core Features
+## ✨ Core Features
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products |  Complete |
-| **Order Management** | Full lifecycle with editing capabilities |  Complete |
-| **Payment Processing** | 6 gateways with fraud detection |  Complete |
-| **Shipping** | Multi-carrier with real-time rates |  Complete |
-| **Subscriptions** | Recurring billing with dunning management |  Complete |
-| **Notifications** | Email, SMS, Push, Webhooks |  Complete |
-| **Redis Caching** | Session, Rate Limit, Job Queue |  Complete |
-| **WebSocket** | Real-time updates and pub/sub |  Complete |
+| **Product Management** | Simple, Variable, Subscription, Digital, Bundle products | ✅ Complete |
+| **Order Management** | Full lifecycle with editing capabilities | ✅ Complete |
+| **Payment Processing** | 6 gateways with fraud detection | ✅ Complete |
+| **Shipping** | Multi-carrier with real-time rates | ✅ Complete |
+| **Subscriptions** | Recurring billing with dunning management | ✅ Complete |
+| **Notifications** | Email, SMS, Push, Webhooks | ✅ Complete |
+| **Redis Caching** | Session, Rate Limit, Job Queue | ✅ Complete |
+| **WebSocket** | Real-time updates and pub/sub | ✅ Complete |
 
-##  Quick Start
+## 🚀 Quick Start
 
 ### Installation
 
@@ -142,17 +142,17 @@ docker-compose up -d
 # - Redis: port 6379
 ```
 
-##  Documentation
+## 📚 Documentation
 
 <div class="grid cards" markdown>
 
-- :material-book-open-variant:{ .lg .middle } __Architecture__
+- :material-book-open-variant:{ .lg .middle } __Getting Started__
 
   ---
 
-  Deep dive into system design, data models, and integration patterns.
+  Quick start guide, installation instructions, and initial configuration.
 
-  [:octicons-arrow-right-24: Explore](architecture/01-overview.md)
+  [:octicons-arrow-right-24: Get Started](getting-started/quickstart.md)
 
 - :material-api:{ .lg .middle } __API Reference__
 
@@ -160,7 +160,15 @@ docker-compose up -d
 
   Complete REST API documentation with examples and error codes.
 
-  [:octicons-arrow-right-24: View API](api/01-api-design.md)
+  [:octicons-arrow-right-24: View API](api-reference/index.md)
+
+- :material-credit-card:{ .lg .middle } __Payment Gateways__
+
+  ---
+
+  Configure Stripe, Airwallex, WeChat Pay, AliPay, and more.
+
+  [:octicons-arrow-right-24: Configure Payments](payment-gateways/index.md)
 
 - :material-rocket-launch:{ .lg .middle } __Deployment__
 
@@ -168,7 +176,15 @@ docker-compose up -d
 
   Production deployment guides for Docker, Kubernetes, and bare metal.
 
-  [:octicons-arrow-right-24: Deploy](deployment/01-docker.md)
+  [:octicons-arrow-right-24: Deploy](deployment/index.md)
+
+- :material-server:{ .lg .middle } __Operations__
+
+  ---
+
+  Scaling, monitoring, backups, reverse proxies, and security.
+
+  [:octicons-arrow-right-24: Operations](operations/index.md)
 
 - :material-code-braces:{ .lg .middle } __Development__
 
@@ -176,7 +192,23 @@ docker-compose up -d
 
   Developer guide, CLI reference, and configuration options.
 
-  [:octicons-arrow-right-24: Develop](development/developer-guide.md)
+  [:octicons-arrow-right-24: Develop](development/index.md)
+
+- :material-swap-horizontal:{ .lg .middle } __Migration__
+
+  ---
+
+  Migrate from Shopify, WooCommerce, Magento, or Medusa.
+
+  [:octicons-arrow-right-24: Migrate](migration/index.md)
+
+- :material-architecture:{ .lg .middle } __Architecture__
+
+  ---
+
+  Deep dive into system design, data models, and integration patterns.
+
+  [:octicons-arrow-right-24: Architecture](architecture/overview.md)
 
 </div>
 
@@ -212,7 +244,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
   }'
 ```
 
-##  Supported Platforms
+## 🖥️ Supported Platforms
 
 <div style="display: flex; gap: 2em; justify-content: center; flex-wrap: wrap; padding: 2em 0;">
 
@@ -224,7 +256,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 </div>
 
-##  Performance Benchmarks
+## 📊 Performance Benchmarks
 
 | Metric | Value |
 |--------|-------|
@@ -234,7 +266,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 | Concurrent Users | 10,000+ per instance |
 | Cold Start | < 1 second |
 
-## ️ Roadmap
+## 🗺️ Roadmap
 
 - [x] Phase 0: Project Foundation
 - [x] Phase 1: Core Infrastructure
@@ -247,7 +279,7 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 <div style="text-align: center; padding: 2em 0;">
 
-**Ready to build?** [Get Started](development/developer-guide.md){ .md-button .md-button--primary }
+**Ready to build?** [Get Started](getting-started/quickstart.md){ .md-button .md-button--primary }
 
 </div>
 
