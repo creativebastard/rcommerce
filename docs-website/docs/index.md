@@ -7,99 +7,113 @@ hide:
 
 # R Commerce
 
-<h2 style="font-weight: 300; margin-top: -0.5em;">High-Performance Headless E-Commerce Platform</h2>
+<p style="font-size: 1.5rem; font-weight: 300; margin-top: -0.5em; color: var(--md-default-fg-color--light);">High-Performance Headless E-Commerce Platform</p>
 
-<div style="text-align: center; padding: 2em 0;">
-  <img src="assets/hero-diagram.svg" alt="R Commerce Architecture" style="max-width: 800px; width: 100%;">
-</div>
+---
 
 ## Why R Commerce?
 
-<div class="grid cards" markdown>
+<div class="grid" markdown>
 
-- **Blazing Fast**
+<div markdown>
 
-  ---
+### Blazing Fast
 
-  Sub-10ms API responses with Rust's zero-cost abstractions. Handle 10,000+ concurrent users per instance.
-
-- **Memory Safe**
-
-  ---
-
-  Rust's ownership model eliminates entire classes of bugs. No garbage collection pauses, no memory leaks.
-
-- **Headless Architecture**
-
-  ---
-
-  API-first design powers any frontend. React, Vue, mobile apps, IoT devices - use what you love.
-
-- **Multi-Database**
-
-  ---
-
-  PostgreSQL, MySQL, or SQLite. Choose the right database for each deployment scenario.
-
-- **6 Payment Gateways**
-
-  ---
-
-  Stripe, PayPal, WeChat Pay, AliPay, Airwallex, Braintree included. Easy to add more.
-
-- **Global Shipping**
-
-  ---
-
-  Multi-carrier support with real-time rates, label generation, and tracking integration.
+Sub-10ms API responses with Rust's zero-cost abstractions. Handle 10,000+ concurrent users per instance.
 
 </div>
+
+<div markdown>
+
+### Memory Safe
+
+Rust's ownership model eliminates entire classes of bugs. No garbage collection pauses, no memory leaks.
+
+</div>
+
+<div markdown>
+
+### Headless Architecture
+
+API-first design powers any frontend. React, Vue, mobile apps, IoT devices - use what you love.
+
+</div>
+
+<div markdown>
+
+### Multi-Database
+
+PostgreSQL, MySQL, or SQLite. Choose the right database for each deployment scenario.
+
+</div>
+
+<div markdown>
+
+### 6 Payment Gateways
+
+Stripe, PayPal, WeChat Pay, AliPay, Airwallex, Braintree included. Easy to add more.
+
+</div>
+
+<div markdown>
+
+### Global Shipping
+
+Multi-carrier support with real-time rates, label generation, and tracking integration.
+
+</div>
+
+</div>
+
+---
 
 ## Architecture Overview
 
 ```mermaid
 graph TB
-    subgraph "Frontend Layer"
+    subgraph Frontend
         WEB[Web App]
         MOBILE[Mobile App]
         POS[POS System]
     end
     
-    subgraph "API Layer"
-        API[REST API<br/>Axum Framework]
-        WS[WebSocket<br/>Real-time]
-        GQL[GraphQL<br/>Optional]
+    subgraph API
+        REST[REST API]
+        WS[WebSocket]
+        GQL[GraphQL]
     end
     
-    subgraph "Service Layer"
+    subgraph Services
         OS[Order Service]
         PS[Product Service]
         PAYS[Payment Service]
         SS[Shipping Service]
     end
     
-    subgraph "Data Layer"
+    subgraph Data
         DB[(PostgreSQL/MySQL)]
         REDIS[(Redis Cache)]
     end
     
-    WEB --> API
-    MOBILE --> API
-    POS --> API
+    WEB --> REST
+    MOBILE --> REST
+    POS --> REST
     
-    API --> OS
-    API --> PS
-    API --> PAYS
-    API --> SS
+    REST --> OS
+    REST --> PS
+    REST --> PAYS
+    REST --> SS
     
     OS --> DB
     PS --> DB
     PAYS --> DB
     SS --> DB
     
-    API --> REDIS
+    REST --> REDIS
     WS --> REDIS
 ```
+
+---
 
 ## Core Features
 
@@ -113,6 +127,8 @@ graph TB
 | **Notifications** | Email, SMS, Push, Webhooks | Complete |
 | **Redis Caching** | Session, Rate Limit, Job Queue | Complete |
 | **WebSocket** | Real-time updates and pub/sub | Complete |
+
+---
 
 ## Quick Start
 
@@ -142,75 +158,79 @@ docker-compose up -d
 # - Redis: port 6379
 ```
 
+---
+
 ## Documentation
 
-<div class="grid cards" markdown>
+<div class="grid" markdown>
 
-- **Getting Started**
+<div markdown>
 
-  ---
+### [Getting Started](getting-started/quickstart.md)
 
-  Quick start guide, installation instructions, and initial configuration.
-
-  [Get Started](getting-started/quickstart.md)
-
-- **API Reference**
-
-  ---
-
-  Complete REST API documentation with examples and error codes.
-
-  [View API](api-reference/index.md)
-
-- **Payment Gateways**
-
-  ---
-
-  Configure Stripe, Airwallex, WeChat Pay, AliPay, and more.
-
-  [Configure Payments](payment-gateways/index.md)
-
-- **Deployment**
-
-  ---
-
-  Production deployment guides for Docker, Kubernetes, and bare metal.
-
-  [Deploy](deployment/index.md)
-
-- **Operations**
-
-  ---
-
-  Scaling, monitoring, backups, reverse proxies, and security.
-
-  [Operations](operations/index.md)
-
-- **Development**
-
-  ---
-
-  Developer guide, CLI reference, and configuration options.
-
-  [Develop](development/index.md)
-
-- **Migration**
-
-  ---
-
-  Migrate from Shopify, WooCommerce, Magento, or Medusa.
-
-  [Migrate](migration/index.md)
-
-- **Architecture**
-
-  ---
-
-  Deep dive into system design, data models, and integration patterns.
-
-  [Architecture](architecture/overview.md)
+Quick start guide, installation instructions, and initial configuration.
 
 </div>
+
+<div markdown>
+
+### [API Reference](api-reference/index.md)
+
+Complete REST API documentation with examples and error codes.
+
+</div>
+
+<div markdown>
+
+### [Payment Gateways](payment-gateways/index.md)
+
+Configure Stripe, Airwallex, WeChat Pay, AliPay, and more.
+
+</div>
+
+<div markdown>
+
+### [Deployment](deployment/index.md)
+
+Production deployment guides for Docker, Kubernetes, and bare metal.
+
+</div>
+
+<div markdown>
+
+### [Operations](operations/index.md)
+
+Scaling, monitoring, backups, reverse proxies, and security.
+
+</div>
+
+<div markdown>
+
+### [Development](development/index.md)
+
+Developer guide, CLI reference, and configuration options.
+
+</div>
+
+<div markdown>
+
+### [Migration](migration/index.md)
+
+Migrate from Shopify, WooCommerce, Magento, or Medusa.
+
+</div>
+
+<div markdown>
+
+### [Architecture](architecture/overview.md)
+
+Deep dive into system design, data models, and integration patterns.
+
+</div>
+
+</div>
+
+---
 
 ## Example API Usage
 
@@ -244,6 +264,8 @@ curl -X POST http://localhost:8080/api/v1/orders \
   }'
 ```
 
+---
+
 ## Supported Platforms
 
 | Platform | Deployment Method |
@@ -254,6 +276,8 @@ curl -X POST http://localhost:8080/api/v1/orders \
 | Docker | Docker Compose, Swarm |
 | Kubernetes | Helm charts, Operators |
 
+---
+
 ## Performance Benchmarks
 
 | Metric | Value |
@@ -263,6 +287,8 @@ curl -X POST http://localhost:8080/api/v1/orders \
 | API Response Time | < 10ms avg |
 | Concurrent Users | 10,000+ per instance |
 | Cold Start | < 1 second |
+
+---
 
 ## Roadmap
 
@@ -275,15 +301,13 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 ---
 
-<div style="text-align: center; padding: 2em 0;">
-
-**Ready to build?** [Get Started](getting-started/quickstart.md)
-
-</div>
+<p style="text-align: center; padding: 2em 0;">
+<a href="getting-started/quickstart.md" class="md-button md-button--primary">Get Started</a>
+</p>
 
 ---
 
-<p style="text-align: center;">
+<p style="text-align: center; color: var(--md-default-fg-color--light);">
 Built with care in Rust • Dual Licensed (AGPL-3.0 / Commercial) • 
 <a href="https://github.com/creativebastard/rcommerce">GitHub</a>
 </p>

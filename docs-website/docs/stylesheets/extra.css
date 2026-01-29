@@ -1,62 +1,174 @@
 /* Material theme custom styles */
 
-/* Ensure proper table styling */
+/* ============================================
+   TABLE STYLES - Full Width
+   ============================================ */
+
+/* Ensure tables extend full width */
 .md-typeset table {
-    width: 100%;
+    width: 100% !important;
+    max-width: 100%;
+    border-collapse: collapse;
     display: table;
 }
 
-.md-typeset table:not([class]) {
-    font-size: 0.64rem;
+/* Table wrapper for overflow handling */
+.md-typeset__table {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    margin: 1em 0;
 }
 
-/* Fix code block styling */
+/* Table header styling */
+.md-typeset table:not([class]) th {
+    font-weight: 700;
+    background-color: var(--md-default-fg-color--lightest);
+    border-bottom: 2px solid var(--md-default-fg-color--lighter);
+    padding: 0.75em 1em;
+    text-align: left;
+}
+
+/* Table cell styling */
+.md-typeset table:not([class]) td {
+    padding: 0.75em 1em;
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    vertical-align: top;
+}
+
+/* Table row hover */
+.md-typeset table:not([class]) tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Dark mode table styling */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+    background-color: var(--md-default-bg-color--lightest);
+}
+
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Inline code in tables */
+.md-typeset table code {
+    white-space: nowrap;
+    word-break: break-word;
+}
+
+/* ============================================
+   GRID LAYOUT - Homepage Cards
+   ============================================ */
+
+/* Grid container */
+.md-typeset .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem;
+    margin: 1em 0;
+}
+
+/* Grid items */
+.md-typeset .grid > div {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.2rem;
+    padding: 1rem;
+    background-color: var(--md-default-bg-color);
+}
+
+/* Grid headings */
+.md-typeset .grid h3 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Grid paragraphs */
+.md-typeset .grid p {
+    margin-bottom: 0;
+}
+
+/* ============================================
+   CODE BLOCKS
+   ============================================ */
+
 .md-typeset pre {
     position: relative;
 }
 
-/* Custom admonition styling */
+/* ============================================
+   ADMONITIONS
+   ============================================ */
+
 .md-typeset .admonition {
     font-size: 0.64rem;
 }
 
-/* Ensure proper spacing */
+/* ============================================
+   HEADINGS
+   ============================================ */
+
 .md-typeset h2 {
     margin-top: 2rem;
+    margin-bottom: 1rem;
 }
 
 .md-typeset h3 {
     margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
-/* Fix for grid cards */
-.md-typeset .grid.cards {
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-}
+/* ============================================
+   MERMAID DIAGRAMS
+   ============================================ */
 
-.md-typeset .grid.cards > ul > li {
-    border: 1px solid var(--md-default-fg-color--lightest);
-    border-radius: 0.2rem;
-    padding: 1rem;
-}
-
-/* Mermaid diagram styling */
 .mermaid {
     text-align: center;
+    margin: 1em 0;
 }
+
+/* ============================================
+   HORIZONTAL RULES
+   ============================================ */
+
+.md-typeset hr {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    margin: 2em 0;
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+
+.md-typeset ul,
+.md-typeset ol {
+    margin: 1em 0;
+}
+
+/* ============================================
+   DEFINITION LISTS
+   ============================================ */
+
+.md-typeset dt {
+    font-weight: 700;
+    margin-top: 1em;
+}
+
+.md-typeset dd {
+    margin-left: 2em;
+}
+
+/* ============================================
+   HOMEPAGE SPECIFIC
+   ============================================ */
 
 /* Custom header styling for homepage */
 .md-content__inner h1:first-child {
     font-weight: 300;
 }
 
-/* Ensure tables don't overflow */
-.md-typeset__table {
-    display: block;
-    overflow-x: auto;
-}
-
-/* Fix inline code in tables */
-.md-typeset td code {
-    white-space: nowrap;
+/* Center align for CTA buttons */
+.md-typeset .md-button {
+    display: inline-block;
 }
