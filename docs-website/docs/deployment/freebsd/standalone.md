@@ -6,7 +6,6 @@ Deploy R Commerce directly on FreeBSD without using jails. This is the simplest 
 
 - **FreeBSD 14.2** - Latest production release (recommended)
 - **FreeBSD 15.0** - Current stable branch
-- **FreeBSD 13.4** - Legacy support (until 2026)
 
 ## When to Use Standalone Deployment
 
