@@ -9,11 +9,11 @@
 
 use axum::{
     Json, Router,
-    routing::{get, post, put, delete},
-    extract::{Path, State},
+    routing::{get, post, put},
+    extract::Path,
     http::StatusCode,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 /// Create a new guest cart
@@ -157,7 +157,7 @@ pub async fn update_cart_item(
 
 /// Remove item from cart
 pub async fn remove_cart_item(
-    Path((_cart_id, item_id)): Path<(Uuid, Uuid)>,
+    Path((_cart_id, _item_id)): Path<(Uuid, Uuid)>,
 ) -> StatusCode {
     // In real implementation, remove item from database
     StatusCode::NO_CONTENT
@@ -177,7 +177,7 @@ pub struct MergeCartRequest {
 
 /// Merge guest cart into customer cart
 pub async fn merge_carts(
-    Json(request): Json<MergeCartRequest>,
+    Json(_request): Json<MergeCartRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let customer_cart_id = Uuid::new_v4();
     let guest_cart_id = Uuid::new_v4();

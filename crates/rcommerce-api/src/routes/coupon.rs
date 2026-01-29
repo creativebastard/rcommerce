@@ -8,7 +8,7 @@
 
 use axum::{
     Json, Router,
-    routing::{get, post, put, delete},
+    routing::{get, post},
     extract::Path,
     http::StatusCode,
 };
