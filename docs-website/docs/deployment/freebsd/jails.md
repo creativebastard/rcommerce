@@ -2,6 +2,12 @@
 
 Deploy R Commerce in a FreeBSD jail for enhanced security and isolation using iocage, the modern jail management framework.
 
+## Supported FreeBSD Versions
+
+- **FreeBSD 14.2** - Latest production release (recommended)
+- **FreeBSD 15.0** - Current stable branch
+- **FreeBSD 13.4** - Legacy support (until 2026)
+
 ## Why Jails?
 
 - **Security**: Process isolation prevents escape
@@ -31,11 +37,11 @@ iocage activate zroot
 
 ```bash
 # Fetch FreeBSD release
-iocage fetch --release 14.1-RELEASE
+iocage fetch --release 14.2-RELEASE
 
 # Create jail
 iocage create --name rcommerce \
-  --release 14.1-RELEASE \
+  --release 14.2-RELEASE \
   --ip4_addr="lo1|192.168.1.100/24" \
   --resolver="nameserver 8.8.8.8" \
   --boot=on
@@ -240,7 +246,7 @@ Create separate jails for different components:
 ```bash
 # Database jail
 iocage create --name rcommerce-db \
-  --release 14.1-RELEASE \
+  --release 14.2-RELEASE \
   --ip4_addr="lo1|192.168.1.101/24" \
   --boot=on
 
@@ -251,7 +257,7 @@ iocage exec rcommerce-db service postgresql start
 
 # Redis jail
 iocage create --name rcommerce-cache \
-  --release 14.1-RELEASE \
+  --release 14.2-RELEASE \
   --ip4_addr="lo1|192.168.1.102/24" \
   --boot=on
 
@@ -261,7 +267,7 @@ iocage exec rcommerce-cache service redis start
 
 # App jail
 iocage create --name rcommerce-app \
-  --release 14.1-RELEASE \
+  --release 14.2-RELEASE \
   --ip4_addr="lo1|192.168.1.103/24" \
   --boot=on
 

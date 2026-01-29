@@ -6,7 +6,7 @@ Run R Commerce in production with confidence. This section covers day-to-day ope
 
 ### Infrastructure
 
-- [Reverse Proxies](./reverse-proxies/nginx.md) - Nginx, Caddy, HAProxy, Traefik
+- [Reverse Proxies](./reverse-proxies/caddy.md) - Caddy, Nginx, HAProxy, Traefik
 - [Scaling](./scaling.md) - Horizontal and vertical scaling
 - [Monitoring](./monitoring.md) - Metrics, logging, alerting
 - [Redis](./redis.md) - Cache and session management

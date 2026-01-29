@@ -191,8 +191,8 @@ nav:
   - Operations:
     - Overview: operations/index.md
     - Reverse Proxies:
-      - Nginx: operations/reverse-proxies/nginx.md
       - Caddy: operations/reverse-proxies/caddy.md
+      - Nginx: operations/reverse-proxies/nginx.md
       - HAProxy: operations/reverse-proxies/haproxy.md
       - Traefik: operations/reverse-proxies/traefik.md
     - Scaling: operations/scaling.md
