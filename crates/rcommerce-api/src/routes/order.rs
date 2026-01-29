@@ -1,4 +1,5 @@
-use axum::{Json, routing::get};
+use axum::{Json, Router, routing::get};
+use crate::state::AppState;
 
 /// List orders - Basic Phase 1 implementation
 pub async fn list_orders() -> Json<serde_json::Value> {
@@ -71,7 +72,7 @@ pub async fn get_order(path: axum::extract::Path<String>) -> Json<serde_json::Va
 }
 
 /// Router for order routes
-pub fn router() -> axum::Router {
+pub fn router() -> Router<AppState> {
     axum::Router::new()
         .route("/orders", get(list_orders))
         .route("/orders/:id", get(get_order))

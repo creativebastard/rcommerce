@@ -1,4 +1,5 @@
-use axum::{Json, routing::post};
+use axum::{Json, Router, routing::post};
+use crate::state::AppState;
 
 /// Login endpoint - Basic Phase 1 implementation
 pub async fn login(Json(_payload): Json<serde_json::Value>) -> Json<serde_json::Value> {
@@ -23,7 +24,7 @@ pub async fn register(Json(_payload): Json<serde_json::Value>) -> Json<serde_jso
 }
 
 /// Router for auth routes
-pub fn router() -> axum::Router {
+pub fn router() -> Router<AppState> {
     axum::Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))

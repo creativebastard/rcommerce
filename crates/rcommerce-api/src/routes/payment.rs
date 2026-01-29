@@ -4,6 +4,7 @@
 
 use axum::{Json, Router, routing::post};
 use serde::{Deserialize, Serialize};
+use crate::state::AppState;
 
 /// Request to create a payment intent
 #[derive(Debug, Deserialize)]
@@ -68,7 +69,7 @@ pub async fn get_stripe_config() -> Json<serde_json::Value> {
 }
 
 /// Router for payment routes
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/payments/config", axum::routing::get(get_stripe_config))
         .route("/payments/intent", post(create_payment_intent))

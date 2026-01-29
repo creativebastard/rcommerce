@@ -4,6 +4,9 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
 use rcommerce_core::{Result, Config};
+use rcommerce_core::repository::{Database, create_pool, ProductRepository, CustomerRepository};
+use rcommerce_core::services::{ProductService, CustomerService, OrderService, AuthService};
+use crate::state::AppState;
 
 pub async fn run(config: Config) -> Result<()> {
     let addr = SocketAddr::from((
@@ -12,15 +15,28 @@ pub async fn run(config: Config) -> Result<()> {
         config.server.port
     ));
     
-    // Build API v1 routes
-    let api_v1 = Router::new()
-        .merge(crate::routes::product_router())
-        .merge(crate::routes::customer_router())
-        .merge(crate::routes::order_router())
-        .merge(crate::routes::auth_router())
-        .merge(crate::routes::cart_router())
-        .merge(crate::routes::coupon_router())
-        .merge(crate::routes::payment_router());
+    // Initialize database connection
+    info!("Connecting to database...");
+    let pool = create_pool(&config.database).await?;
+    let db = Database::new(pool);
+    
+    // Initialize repositories
+    let product_repo = ProductRepository::new(db.clone());
+    let customer_repo = CustomerRepository::new(db.clone());
+    
+    // Initialize services
+    let product_service = ProductService::new(product_repo);
+    let customer_service = CustomerService::new(customer_repo);
+    let order_service = OrderService::new();
+    let auth_service = AuthService::new(config.clone());
+    
+    // Create app state
+    let app_state = AppState::new(
+        product_service,
+        customer_service,
+        order_service,
+        auth_service,
+    );
     
     // Configure CORS for demo frontend
     let cors = CorsLayer::new()
@@ -28,12 +44,13 @@ pub async fn run(config: Config) -> Result<()> {
         .allow_methods(Any)
         .allow_headers(Any);
     
-    // Build main router with simplified Phase 1 routes
+    // Build main router with API v1 routes and state
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
-        .nest("/api/v1", api_v1)
-        .layer(cors);
+        .nest("/api/v1", api_routes())
+        .layer(cors)
+        .with_state(app_state);
     
     info!("R Commerce API server listening on {}", addr);
     info!("Available routes:");
@@ -66,6 +83,18 @@ pub async fn run(config: Config) -> Result<()> {
         .map_err(|e| rcommerce_core::Error::Network(e.to_string()))?;
     
     Ok(())
+}
+
+/// API v1 routes
+fn api_routes() -> Router<AppState> {
+    Router::new()
+        .merge(crate::routes::product_router())
+        .merge(crate::routes::customer_router())
+        .merge(crate::routes::order_router())
+        .merge(crate::routes::auth_router())
+        .merge(crate::routes::cart_router())
+        .merge(crate::routes::coupon_router())
+        .merge(crate::routes::payment_router())
 }
 
 async fn health_check() -> &'static str {

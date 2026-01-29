@@ -14,6 +14,7 @@ use axum::{
 };
 use serde::Deserialize;
 use uuid::Uuid;
+use crate::state::AppState;
 
 /// Request body for creating a coupon
 #[derive(Debug, Deserialize)]
@@ -200,7 +201,7 @@ pub async fn get_coupon_stats(Path(coupon_id): Path<Uuid>) -> Result<Json<serde_
 }
 
 /// Router for coupon routes
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         // Coupon CRUD
         .route("/coupons", get(list_coupons).post(create_coupon))

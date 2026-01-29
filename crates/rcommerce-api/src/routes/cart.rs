@@ -13,6 +13,7 @@ use axum::{
     extract::Path,
     http::StatusCode,
 };
+use crate::state::AppState;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -248,7 +249,7 @@ pub async fn delete_cart(Path(_cart_id): Path<Uuid>) -> StatusCode {
 }
 
 /// Router for cart routes
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         // Guest cart
         .route("/carts/guest", post(create_guest_cart))

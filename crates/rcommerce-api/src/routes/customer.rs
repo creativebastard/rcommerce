@@ -1,4 +1,5 @@
-use axum::{Json, routing::get};
+use axum::{Json, Router, routing::get};
+use crate::state::AppState;
 
 /// List customers - Basic Phase 1 implementation
 pub async fn list_customers() -> Json<serde_json::Value> {
@@ -81,8 +82,8 @@ pub async fn get_customer(path: axum::extract::Path<String>) -> Json<serde_json:
 }
 
 /// Router for customer routes
-pub fn router() -> axum::Router {
-    axum::Router::new()
+pub fn router() -> Router<AppState> {
+    Router::new()
         .route("/customers", get(list_customers))
         .route("/customers/:id", get(get_customer))
 }
