@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R Commerce Demo Store</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">R Commerce</a>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Products</a>
+                    <a href="cart.html" class="nav-link cart-link">
+                        Cart
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Demo Store</h1>
+                <p class="hero-subtitle">A lightweight frontend for R Commerce</p>
+            </div>
+        </section>
+
+        <section class="products">
+            <div class="container">
+                <h2 class="section-title">Products</h2>
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>R Commerce Demo - Built with vanilla HTML/JS</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - R Commerce Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">R Commerce</a>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Products</a>
+                    <a href="cart.html" class="nav-link cart-link">
+                        Cart
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="cart">
+            <div class="container">
+                <h1 class="section-title">Shopping Cart</h1>
+                
+                <div class="cart-empty" id="cartEmpty" style="display: none;">
+                    <h2>Your cart is empty</h2>
+                    <p>Add some products to get started!</p>
+                    <a href="index.html" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+                </div>
+                
+                <div class="cart-items" id="cartItems"></div>
+                
+                <div class="cart-summary" id="cartSummary" style="display: none;">
+                    <div class="cart-total">
+                        <span>Total</span>
+                        <span id="cartTotal">$0.00</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="checkout()" style="width: 100%;">
+                        Proceed to Checkout
+                    </button>
+                    <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                        Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>R Commerce Demo - Built with vanilla HTML/JS</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCart();
+        });
+        
+        async function checkout() {
+            if (cart.length === 0) {
+                showMessage('Your cart is empty!', 'error');
+                return;
+            }
+            
+            try {
+                // Create order via API
+                const orderData = {
+                    items: cart.map(item => ({
+                        product_id: item.productId,
+                        quantity: item.quantity,
+                        price: item.price
+                    })),
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer demo-api-key'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    const order = await response.json();
+                    showMessage('Order placed successfully!', 'success');
+                    cart = [];
+                    saveCart();
+                    updateCartCount();
+                    renderCart();
+                } else {
+                    // Demo mode - simulate order
+                    showMessage('Order placed! (Demo mode)', 'success');
+                    cart = [];
+                    saveCart();
+                    updateCartCount();
+                    renderCart();
+                }
+            } catch (error) {
+                // Demo mode - simulate order
+                showMessage('Order placed! (Demo mode)', 'success');
+                cart = [];
+                saveCart();
+                updateCartCount();
+                renderCart();
+            }
+        }
+    </script>
+</body>
+</html>

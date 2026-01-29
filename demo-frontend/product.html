@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product - R Commerce Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">R Commerce</a>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Products</a>
+                    <a href="cart.html" class="nav-link cart-link">
+                        Cart
+                        <span class="cart-count" id="cartCount">0</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="product-detail">
+            <div class="container">
+                <div class="product-detail-grid" id="productDetail">
+                    <!-- Product will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>R Commerce Demo - Built with vanilla HTML/JS</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        // Load product detail
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+            
+            if (!productId) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Find product (from API or demo data)
+            const product = DEMO_PRODUCTS.find(p => p.id === productId) || DEMO_PRODUCTS[0];
+            
+            const detailContainer = document.getElementById('productDetail');
+            detailContainer.innerHTML = `
+                <div class="product-detail-image">${product.emoji}</div>
+                <div class="product-detail-info">
+                    <h1>${product.name}</h1>
+                    <p class="product-detail-price">$${product.price}</p>
+                    <p class="product-detail-description">${product.description}</p>
+                    
+                    <div class="quantity-selector">
+                        <button class="quantity-btn" onclick="changeQuantity(-1)">-</button>
+                        <input type="number" class="quantity-input" id="quantity" value="1" min="1">
+                        <button class="quantity-btn" onclick="changeQuantity(1)">+</button>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="addProductToCart()" style="width: 100%;">
+                        Add to Cart
+                    </button>
+                    
+                    <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                        Back to Products
+                    </a>
+                </div>
+            `;
+            
+            window.currentProduct = product;
+        });
+        
+        function changeQuantity(delta) {
+            const input = document.getElementById('quantity');
+            const newValue = parseInt(input.value) + delta;
+            if (newValue >= 1) {
+                input.value = newValue;
+            }
+        }
+        
+        function addProductToCart() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const product = window.currentProduct;
+            addToCart(product.id, product.name, product.price, quantity);
+        }
+    </script>
+</body>
+</html>
