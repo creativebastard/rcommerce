@@ -1,27 +1,37 @@
-/* Material theme custom styles */
+/* Material theme custom styles - FORCE TABLES FULL WIDTH */
 
 /* ============================================
-   TABLE STYLES - Full Width
+   TABLE STYLES - FORCE FULL WIDTH
    ============================================ */
 
-/* Ensure tables extend full width */
+/* Force all tables to be full width */
 .md-typeset table {
     width: 100% !important;
-    max-width: 100%;
+    max-width: 100% !important;
+    display: table !important;
     border-collapse: collapse;
-    display: table;
 }
 
-/* Table wrapper for overflow handling */
-.md-typeset__table {
+/* Ensure table cells expand properly */
+.md-typeset table th,
+.md-typeset table td {
+    width: auto;
+    min-width: fit-content;
+}
+
+/* Make sure the table container doesn't constrain width */
+.md-typeset {
     width: 100%;
-    display: block;
-    overflow-x: auto;
-    margin: 1em 0;
+}
+
+/* Ensure the content area is full width */
+.md-content {
+    width: 100%;
+    max-width: 100%;
 }
 
 /* Table header styling */
-.md-typeset table:not([class]) th {
+.md-typeset table th {
     font-weight: 700;
     background-color: var(--md-default-fg-color--lightest);
     border-bottom: 2px solid var(--md-default-fg-color--lighter);
@@ -30,23 +40,23 @@
 }
 
 /* Table cell styling */
-.md-typeset table:not([class]) td {
+.md-typeset table td {
     padding: 0.75em 1em;
     border-bottom: 1px solid var(--md-default-fg-color--lightest);
     vertical-align: top;
 }
 
 /* Table row hover */
-.md-typeset table:not([class]) tr:hover {
+.md-typeset table tr:hover {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
 /* Dark mode table styling */
-[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+[data-md-color-scheme="slate"] .md-typeset table th {
     background-color: var(--md-default-bg-color--lightest);
 }
 
-[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover {
+[data-md-color-scheme="slate"] .md-typeset table tr:hover {
     background-color: rgba(255, 255, 255, 0.02);
 }
 
@@ -60,7 +70,6 @@
    GRID LAYOUT - Homepage Cards
    ============================================ */
 
-/* Grid container */
 .md-typeset .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -68,7 +77,6 @@
     margin: 1em 0;
 }
 
-/* Grid items */
 .md-typeset .grid > div {
     border: 1px solid var(--md-default-fg-color--lightest);
     border-radius: 0.2rem;
@@ -76,7 +84,6 @@
     background-color: var(--md-default-bg-color);
 }
 
-/* Grid headings */
 .md-typeset .grid h3 {
     margin-top: 0;
     margin-bottom: 0.5em;
@@ -84,7 +91,6 @@
     font-weight: 600;
 }
 
-/* Grid paragraphs */
 .md-typeset .grid p {
     margin-bottom: 0;
 }
@@ -163,12 +169,10 @@
    HOMEPAGE SPECIFIC
    ============================================ */
 
-/* Custom header styling for homepage */
 .md-content__inner h1:first-child {
     font-weight: 300;
 }
 
-/* Center align for CTA buttons */
 .md-typeset .md-button {
     display: inline-block;
 }
