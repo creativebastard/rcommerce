@@ -1,57 +1,37 @@
-/* Material theme custom styles - FORCE TABLES FULL WIDTH */
+/* Material theme custom styles */
 
 /* ============================================
-   TABLE STYLES - FORCE FULL WIDTH
+   TABLE STYLES - FULL WIDTH
    ============================================ */
 
-/* Force all tables to be full width */
+/* Tables should fill available width */
 .md-typeset table {
-    width: 100% !important;
-    max-width: 100% !important;
-    display: table !important;
+    width: 100%;
+    max-width: 100%;
+    display: table;
     border-collapse: collapse;
 }
 
-/* Ensure table cells expand properly */
+/* Table cells */
 .md-typeset table th,
 .md-typeset table td {
-    width: auto;
-    min-width: fit-content;
-}
-
-/* Make sure the table container doesn't constrain width */
-.md-typeset {
-    width: 100%;
-}
-
-/* Ensure the content area is full width */
-.md-content {
-    width: 100%;
-    max-width: 100%;
-}
-
-/* Table header styling */
-.md-typeset table th {
-    font-weight: 700;
-    background-color: var(--md-default-fg-color--lightest);
-    border-bottom: 2px solid var(--md-default-fg-color--lighter);
     padding: 0.75em 1em;
     text-align: left;
-}
-
-/* Table cell styling */
-.md-typeset table td {
-    padding: 0.75em 1em;
     border-bottom: 1px solid var(--md-default-fg-color--lightest);
     vertical-align: top;
 }
 
-/* Table row hover */
+.md-typeset table th {
+    font-weight: 700;
+    background-color: var(--md-default-fg-color--lightest);
+    border-bottom: 2px solid var(--md-default-fg-color--lighter);
+}
+
 .md-typeset table tr:hover {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-/* Dark mode table styling */
+/* Dark mode */
 [data-md-color-scheme="slate"] .md-typeset table th {
     background-color: var(--md-default-bg-color--lightest);
 }
@@ -60,10 +40,45 @@
     background-color: rgba(255, 255, 255, 0.02);
 }
 
-/* Inline code in tables */
+/* Code in tables */
 .md-typeset table code {
     white-space: nowrap;
+}
+
+/* ============================================
+   CODE BLOCKS - CONSTRAINED WIDTH
+   ============================================ */
+
+/* Code blocks should NOT overflow */
+.md-typeset pre {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Ensure code blocks stay in their container */
+.md-typeset .highlight {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+/* Code inside pre should wrap or scroll */
+.md-typeset pre code {
+    max-width: 100%;
+    word-wrap: normal;
+    white-space: pre;
+}
+
+/* Inline code */
+.md-typeset code {
     word-break: break-word;
+}
+
+/* ============================================
+   ADMONITIONS - CONSTRAINED
+   ============================================ */
+
+.md-typeset .admonition {
+    max-width: 100%;
 }
 
 /* ============================================
@@ -96,22 +111,6 @@
 }
 
 /* ============================================
-   CODE BLOCKS
-   ============================================ */
-
-.md-typeset pre {
-    position: relative;
-}
-
-/* ============================================
-   ADMONITIONS
-   ============================================ */
-
-.md-typeset .admonition {
-    font-size: 0.64rem;
-}
-
-/* ============================================
    HEADINGS
    ============================================ */
 
@@ -132,6 +131,7 @@
 .mermaid {
     text-align: center;
     margin: 1em 0;
+    max-width: 100%;
 }
 
 /* ============================================
@@ -175,4 +175,22 @@
 
 .md-typeset .md-button {
     display: inline-block;
+}
+
+/* ============================================
+   CONTENT AREA FIX
+   ============================================ */
+
+/* Ensure main content doesn't overflow */
+.md-content__inner {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Fix for snippets and warnings */
+.md-typeset .snippet,
+.md-typeset .warning,
+.md-typeset blockquote {
+    max-width: 100%;
+    box-sizing: border-box;
 }
