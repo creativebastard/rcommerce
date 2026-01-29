@@ -1,0 +1,63 @@
+/* Fix table overflow and spacing issues */
+.table-wrapper {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.table-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.table-wrapper th {
+    font-weight: 600;
+    background-color: var(--muted, #f3f4f6);
+}
+
+.table-wrapper tr:hover {
+    background-color: var(--muted, #f9fafb);
+}
+
+/* Ensure code blocks in tables don't break layout */
+.table-wrapper td code {
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+/* Fix for dark mode */
+.dark .table-wrapper th {
+    background-color: var(--muted, #374151);
+}
+
+.dark .table-wrapper tr:hover {
+    background-color: var(--muted, #4b5563);
+}
+
+/* Ensure proper spacing around JSON code blocks */
+.highlight pre {
+    margin: 1rem 0;
+}
+
+/* Fix any potential z-index issues */
+h2, h3, h4 {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure content doesn't overlap */
+.prose {
+    position: relative;
+}
+
+.prose > * + * {
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+}
