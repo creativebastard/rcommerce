@@ -12,7 +12,7 @@ pub use coupon_repository::CouponRepository;
 use sqlx::{Pool, Postgres};
 use crate::Result;
 
-/// Database connection wrapper
+/// Database connection wrapper (PostgreSQL)
 #[derive(Clone)]
 pub struct Database {
     pool: Pool<Postgres>,
@@ -30,18 +30,21 @@ impl Database {
     /// Run migrations
     pub async fn run_migrations(&self) -> Result<()> {
         // For now, migrations need to be run manually or via CLI
-        // This is a placeholder for future migration system integration
         Ok(())
     }
 }
 
-/// Helper function to create a database connection pool
+/// Create database pool from configuration
+/// Currently supports PostgreSQL only
 pub async fn create_pool(config: &crate::config::DatabaseConfig) -> Result<Pool<Postgres>> {
     use sqlx::postgres::PgPoolOptions;
+    use crate::config::DatabaseType;
     use crate::Error;
     
-    if config.db_type != crate::config::DatabaseType::Postgres {
-        return Err(Error::Config("Only PostgreSQL is currently supported".to_string()));
+    if config.db_type != DatabaseType::Postgres {
+        return Err(Error::Config(
+            format!("Database type {:?} not yet supported. Use PostgreSQL for now.", config.db_type)
+        ));
     }
     
     let database_url = format!(
@@ -49,11 +52,14 @@ pub async fn create_pool(config: &crate::config::DatabaseConfig) -> Result<Pool<
         config.username, config.password, config.host, config.port, config.database
     );
     
+    tracing::info!("Connecting to PostgreSQL database...");
+    
     let pool = PgPoolOptions::new()
         .max_connections(config.pool_size)
         .connect(&database_url)
         .await
         .map_err(|e| Error::Database(e))?;
     
+    tracing::info!("Database connected successfully");
     Ok(pool)
 }
