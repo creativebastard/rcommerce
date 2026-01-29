@@ -1,164 +1,62 @@
-/* Fix table overflow and spacing issues */
-.table-wrapper {
-    overflow-x: auto;
-    margin: 1.5rem 0;
-    position: relative;
-    z-index: 1;
-}
+/* Material theme custom styles */
 
-.table-wrapper table {
+/* Ensure proper table styling */
+.md-typeset table {
     width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-    table-layout: auto;
-}
-
-.table-wrapper th,
-.table-wrapper td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border, #e5e7eb);
-    vertical-align: top;
-}
-
-.table-wrapper th {
-    font-weight: 600;
-    background-color: var(--muted, #f3f4f6);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.table-wrapper tr:hover {
-    background-color: var(--muted, #f9fafb);
-}
-
-/* Ensure code blocks in tables don't break layout */
-.table-wrapper td code {
-    white-space: nowrap;
-    word-break: keep-all;
-    display: inline-block;
-}
-
-/* Fix for dark mode */
-.dark .table-wrapper th {
-    background-color: var(--muted, #374151);
-}
-
-.dark .table-wrapper tr:hover {
-    background-color: var(--muted, #4b5563);
-}
-
-/* Ensure proper spacing around JSON code blocks */
-.highlight pre,
-pre {
-    margin: 1rem 0;
-    position: relative;
-    z-index: 1;
-}
-
-/* Fix any potential z-index issues */
-h1, h2, h3, h4, h5, h6 {
-    position: relative;
-    z-index: 5;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-}
-
-/* Ensure content doesn't overlap */
-.prose {
-    position: relative;
-}
-
-.prose > * + * {
-    margin-top: 1.25em;
-    margin-bottom: 1.25em;
-}
-
-/* Fix code block overflow */
-pre code {
-    display: block;
-    overflow-x: auto;
-    padding: 1rem;
-    white-space: pre;
-    word-wrap: normal;
-}
-
-/* Ensure tables don't overlap with preceding elements */
-.table-wrapper::before {
-    content: "";
     display: table;
-    clear: both;
 }
 
-/* Fix for mermaid diagrams */
+.md-typeset table:not([class]) {
+    font-size: 0.64rem;
+}
+
+/* Fix code block styling */
+.md-typeset pre {
+    position: relative;
+}
+
+/* Custom admonition styling */
+.md-typeset .admonition {
+    font-size: 0.64rem;
+}
+
+/* Ensure proper spacing */
+.md-typeset h2 {
+    margin-top: 2rem;
+}
+
+.md-typeset h3 {
+    margin-top: 1.5rem;
+}
+
+/* Fix for grid cards */
+.md-typeset .grid.cards {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.md-typeset .grid.cards > ul > li {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.2rem;
+    padding: 1rem;
+}
+
+/* Mermaid diagram styling */
 .mermaid {
-    margin: 1.5rem 0;
     text-align: center;
 }
 
-/* Grid cards styling */
-.grid.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
+/* Custom header styling for homepage */
+.md-content__inner h1:first-child {
+    font-weight: 300;
 }
 
-.grid.cards > * {
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    background-color: var(--background, white);
+/* Ensure tables don't overflow */
+.md-typeset__table {
+    display: block;
+    overflow-x: auto;
 }
 
-.grid.cards h3 {
-    margin-top: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-
-.grid.cards p {
-    margin-bottom: 0;
-    color: var(--muted-foreground, #6b7280);
-}
-
-/* Fix horizontal rule spacing */
-hr {
-    margin: 2rem 0;
-    border: 0;
-    border-top: 1px solid var(--border, #e5e7eb);
-}
-
-/* Ensure lists have proper spacing */
-ul, ol {
-    margin: 1rem 0;
-    padding-left: 1.5rem;
-}
-
-li {
-    margin: 0.25rem 0;
-}
-
-/* Fix blockquote styling */
-blockquote {
-    margin: 1.5rem 0;
-    padding: 1rem 1.5rem;
-    border-left: 4px solid var(--border, #e5e7eb);
-    background-color: var(--muted, #f9fafb);
-}
-
-/* Fix definition list spacing */
-dl {
-    margin: 1rem 0;
-}
-
-dt {
-    font-weight: 600;
-    margin-top: 1rem;
-}
-
-dd {
-    margin-left: 1.5rem;
-    margin-bottom: 0.5rem;
+/* Fix inline code in tables */
+.md-typeset td code {
+    white-space: nowrap;
 }

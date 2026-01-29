@@ -12,16 +12,49 @@ edit_uri: blob/main/docs/
 # Copyright
 copyright: Copyright &copy; 2026 R Commerce
 
-# Theme Configuration - Shadcn Theme
+# Theme Configuration - Material Theme
 theme:
-  name: shadcn
-  icon: 
-  show_title: true
-  show_stargazers: true
-  topbar_sections: true
-  pygments_style:
-    light: shadcn-light
-    dark: github-dark
+  name: material
+  
+  # Palette - Dark/Light mode toggle
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  # Font settings
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  # Features
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
 
 # Plugins
 plugins:
@@ -65,6 +98,8 @@ markdown_extensions:
   - pymdownx.critic
   - pymdownx.details
   - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
