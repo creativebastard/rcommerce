@@ -145,7 +145,8 @@ nav:
       - systemd: deployment/linux/systemd.md
       - Manual: deployment/linux/manual.md
     - FreeBSD:
-      - Jails: deployment/freebsd/jails.md
+      - Standalone: deployment/freebsd/standalone.md
+      - Jails (iocage): deployment/freebsd/jails.md
       - rc.d: deployment/freebsd/rc.d.md
     - macOS:
       - launchd: deployment/macos/launchd.md

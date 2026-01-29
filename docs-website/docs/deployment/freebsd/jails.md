@@ -1,6 +1,6 @@
-# FreeBSD Jail Deployment
+# FreeBSD Jail Deployment with iocage
 
-Deploy R Commerce in a FreeBSD jail for enhanced security and isolation.
+Deploy R Commerce in a FreeBSD jail for enhanced security and isolation using iocage, the modern jail management framework.
 
 ## Why Jails?
 
@@ -8,79 +8,81 @@ Deploy R Commerce in a FreeBSD jail for enhanced security and isolation.
 - **Resource Control**: CPU/memory limits per jail
 - **Easy Management**: Create/destroy/clone jails quickly
 - **Network Isolation**: Separate IP addresses and firewall rules
+- **ZFS Integration**: Built-in snapshots and cloning
 
 ## Prerequisites
 
 ```bash
-# Install ezjail for jail management
-pkg install ezjail
+# Install iocage
+pkg install iocage
 
-# Enable jails in rc.conf
-echo 'jail_enable="YES"' >> /etc/rc.conf
-echo 'ezjail_enable="YES"' >> /etc/rc.conf
-```
-
-## Setup
-
-### 1. Configure ezjail
-
-```bash
-# Edit ezjail configuration
-cat >> /usr/local/etc/ezjail.conf << 'EOF'
-ezjail_jaildir=/usr/jails
-ezjail_use_zfs="YES"
-ezjail_use_zfs_for_jails="YES"
-ezjail_jailzfs="zroot/jails"
+# Enable iocage service
+tee /etc/rc.conf << 'EOF'
+iocage_enable="YES"
 EOF
+
+# Activate iocage on ZFS pool (usually zroot)
+iocage activate zroot
 ```
 
-### 2. Create Base Jail
+## Quick Start
+
+### 1. Create R Commerce Jail
 
 ```bash
-# Fetch FreeBSD base system
-ezjail-admin install -p
+# Fetch FreeBSD release
+iocage fetch --release 14.1-RELEASE
 
-# Update base jail
-ezjail-admin update -u
-```
-
-### 3. Create R Commerce Jail
-
-```bash
 # Create jail
-ezjail-admin create -f basic rcommerce 'lo1|192.168.1.100'
+iocage create --name rcommerce \
+  --release 14.1-RELEASE \
+  --ip4_addr="lo1|192.168.1.100/24" \
+  --resolver="nameserver 8.8.8.8" \
+  --boot=on
 
 # Start jail
-ezjail-admin start rcommerce
-
-# Enter jail
-jexec rcommerce /bin/sh
+iocage start rcommerce
 ```
 
-### 4. Inside the Jail
+### 2. Configure Jail
 
 ```bash
+# Enter jail
+iocage exec rcommerce /bin/sh
+
 # Update packages
 pkg update
 pkg upgrade -y
 
 # Install dependencies
-pkg install -y postgresql15-server redis nginx
+pkg install -y postgresql15-server redis nginx ca_root_nss
 
 # Create user
 pw useradd -n rcommerce -s /bin/sh -d /usr/local/rcommerce -m
 
-# Install R Commerce
-fetch -o /usr/local/bin/rcommerce \
-  https://github.com/captainjez/gocart/releases/latest/download/rcommerce-freebsd-amd64
-chmod +x /usr/local/bin/rcommerce
+# Exit jail
+exit
 ```
 
-### 5. Configuration
+### 3. Deploy R Commerce
+
+From the host, copy the binary into the jail:
 
 ```bash
-mkdir -p /usr/local/etc/rcommerce
-cat > /usr/local/etc/rcommerce/config.toml << 'EOF'
+# Download and install R Commerce
+iocage exec rcommerce fetch -o /usr/local/bin/rcommerce \
+  "https://github.com/creativebastard/rcommerce/releases/latest/download/rcommerce-freebsd-amd64"
+iocage exec rcommerce chmod +x /usr/local/bin/rcommerce
+```
+
+### 4. Configuration
+
+```bash
+# Create config directory
+iocage exec rcommerce mkdir -p /usr/local/etc/rcommerce
+
+# Create configuration
+iocage exec rcommerce tee /usr/local/etc/rcommerce/config.toml << 'EOF'
 [server]
 host = "127.0.0.1"
 port = 8080
@@ -99,11 +101,12 @@ max_size_mb = 100
 EOF
 ```
 
-### 6. rc.d Script
+### 5. rc.d Service Script
 
-Create `/usr/local/etc/rc.d/rcommerce`:
+Create the service script inside the jail:
 
-```sh
+```bash
+iocage exec rcommerce tee /usr/local/etc/rc.d/rcommerce << 'EOF'
 #!/bin/sh
 # PROVIDE: rcommerce
 # REQUIRE: postgresql redis
@@ -151,19 +154,18 @@ rcommerce_status() {
 }
 
 run_rc_command "$1"
+EOF
+
+iocage exec rcommerce chmod +x /usr/local/etc/rc.d/rcommerce
+iocage exec rcommerce sysrc rcommerce_enable=YES
 ```
 
-```bash
-chmod +x /usr/local/etc/rc.d/rcommerce
-echo 'rcommerce_enable="YES"' >> /etc/rc.conf
-```
+### 6. PF Configuration (Host)
 
-### 7. PF Configuration (Host)
-
-On the host, configure PF for jail networking:
+Configure PF on the host for jail networking:
 
 ```bash
-cat >> /etc/pf.conf << 'EOF'
+tee -a /etc/pf.conf << 'EOF'
 # NAT for jails
 nat on em0 from 192.168.1.0/24 to any -> (em0)
 
@@ -179,25 +181,56 @@ EOF
 pfctl -f /etc/pf.conf
 ```
 
-## Jail Management
+## Jail Management with iocage
+
+### Basic Commands
 
 ```bash
 # List jails
-jls
+iocage list
 
 # Start/stop/restart
-ezjail-admin start rcommerce
-ezjail-admin stop rcommerce
-ezjail-admin restart rcommerce
+iocage start rcommerce
+iocage stop rcommerce
+iocage restart rcommerce
 
 # Enter jail for maintenance
-jexec rcommerce /bin/sh
+iocage console rcommerce
 
-# View jail resources
-rctl -h jail:rcommerce
+# Execute command in jail
+iocage exec rcommerce ps aux
 
-# Update jail
-ezjail-admin update -j rcommerce
+# View jail properties
+iocage get all rcommerce
+```
+
+### Resource Limits
+
+```bash
+# Set memory limit (4GB)
+iocage set memoryuse=4G rcommerce
+
+# Set CPU limit (2 cores)
+iocage set pcpu=200 rcommerce
+
+# Set disk quota (50GB)
+iocage set quota=50G rcommerce
+```
+
+### Snapshots and Clones
+
+```bash
+# Create snapshot
+iocage snapshot rcommerce
+
+# List snapshots
+iocage snaplist rcommerce
+
+# Rollback to snapshot
+iocage rollback rcommerce@snapshot_name
+
+# Clone jail
+iocage create --name rcommerce-dev --clone rcommerce
 ```
 
 ## Multiple Jails Setup
@@ -206,40 +239,90 @@ Create separate jails for different components:
 
 ```bash
 # Database jail
-ezjail-admin create -f basic rcommerce-db 'lo1|192.168.1.101'
+iocage create --name rcommerce-db \
+  --release 14.1-RELEASE \
+  --ip4_addr="lo1|192.168.1.101/24" \
+  --boot=on
 
-# Redis jail  
-ezjail-admin create -f basic rcommerce-cache 'lo1|192.168.1.102'
+iocage exec rcommerce-db pkg install -y postgresql15-server
+iocage exec rcommerce-db sysrc postgresql_enable=YES
+iocage exec rcommerce-db service postgresql initdb
+iocage exec rcommerce-db service postgresql start
+
+# Redis jail
+iocage create --name rcommerce-cache \
+  --release 14.1-RELEASE \
+  --ip4_addr="lo1|192.168.1.102/24" \
+  --boot=on
+
+iocage exec rcommerce-cache pkg install -y redis
+iocage exec rcommerce-cache sysrc redis_enable=YES
+iocage exec rcommerce-cache service redis start
 
 # App jail
-ezjail-admin create -f basic rcommerce-app 'lo1|192.168.1.103'
+iocage create --name rcommerce-app \
+  --release 14.1-RELEASE \
+  --ip4_addr="lo1|192.168.1.103/24" \
+  --boot=on
 
 # Update config to use separate jails
+cat > /usr/local/etc/rcommerce/config.toml << 'EOF'
 [database]
 host = "192.168.1.101"
+port = 5432
 
 [cache]
 redis_url = "redis://192.168.1.102:6379"
+EOF
 ```
 
 ## Backup Strategy
 
 ```bash
 # Snapshot jail
-zfs snapshot zroot/jails/rcommerce@backup-$(date +%Y%m%d)
+iocage snapshot rcommerce
 
-# Send to remote
-zfs send zroot/jails/rcommerce@backup-20260128 | ssh backup-server zfs receive tank/backups/rcommerce
+# Export jail to file
+iocage export rcommerce
 
-# Automated in cron
-0 2 * * * /root/scripts/backup-rcommerce.sh
+# Automated backups via cron
+0 2 * * * /usr/local/bin/iocage snapshot rcommerce
 ```
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| Jail won't start | Check `ezjail-admin list` and logs |
-| Network unreachable | Verify PF rules and jail IP |
-| Permission denied | Check jail file ownership |
-| Out of memory | Adjust jail limits with rctl |
+| Jail won't start | Check `iocage list` and `iocage console rcommerce` |
+| Network unreachable | Verify PF rules and jail IP configuration |
+| Permission denied | Check jail file ownership with `iocage exec` |
+| Out of memory | Adjust jail limits with `iocage set memoryuse` |
+| ZFS issues | Check pool status with `zpool status` |
+
+## Migration from ezjail
+
+If you're currently using ezjail:
+
+```bash
+# Stop ezjail
+service ezjail stop
+
+# Export existing jail data
+cp -a /usr/jails/rcommerce /tmp/rcommerce-backup
+
+# Create new iocage jail with same configuration
+iocage create --name rcommerce --release 14.1-RELEASE ...
+
+# Copy data to new jail
+cp -a /tmp/rcommerce-backup/* /zroot/iocage/jails/rcommerce/root/
+
+# Update rc.conf to disable ezjail
+sysrc ezjail_enable=NO
+sysrc iocage_enable=YES
+```
+
+## See Also
+
+- [Standalone FreeBSD Deployment](standalone.md) - Deploy without jails
+- [rc.d Service](rc.d.md) - Traditional rc.d service management
+- [Operations Overview](../../operations/index.md)
