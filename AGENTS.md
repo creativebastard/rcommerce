@@ -534,8 +534,36 @@ log_slow_queries = 1000  # ms
 ## Repository
 
 - **URL**: https://gitee.com/captainjez/gocart
+- **GitHub Mirror**: https://github.com/creativebastard/rcommerce
 - **Primary Branch**: `master`
 - **License**: Dual-licensed (AGPL-3.0 / Commercial)
+
+---
+
+## Agent Guidelines
+
+### Git Workflow
+
+**When committing changes:**
+1. Always commit with a descriptive message
+2. **Push to both remotes:**
+   ```bash
+   git push origin master    # Gitee
+   git push github master:main   # GitHub
+   ```
+
+### Documentation Updates
+
+**When making documentation changes:**
+1. Update the relevant markdown files in `docs-website/docs/`
+2. **Always rebuild the documentation site:**
+   ```bash
+   cd docs-website
+   mkdocs build --clean
+   tar -czf site.tar.gz site/
+   ```
+3. Commit the updated `site.tar.gz` along with source changes
+4. Push to both Gitee and GitHub
 
 ---
 
