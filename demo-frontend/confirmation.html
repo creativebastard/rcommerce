@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart - R Commerce Demo</title>
+    <title>Order Confirmed - R Commerce Demo</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,30 +30,33 @@
     </header>
 
     <main class="main">
-        <section class="cart">
+        <section class="confirmation">
             <div class="container">
-                <h1 class="section-title">Shopping Cart</h1>
+                <div class="confirmation-icon">✅</div>
+                <h1>Order Confirmed!</h1>
+                <p>Thank you for your purchase. Your order has been received and is being processed.</p>
                 
-                <div class="cart-empty" id="cartEmpty" style="display: none;">
-                    <h2>Your cart is empty</h2>
-                    <p>Add some products to get started!</p>
-                    <a href="index.html" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
-                </div>
-                
-                <div class="cart-items" id="cartItems"></div>
-                
-                <div class="cart-summary" id="cartSummary" style="display: none;">
-                    <div class="cart-total">
-                        <span>Total</span>
-                        <span id="cartTotal">$0.00</span>
+                <div class="order-details">
+                    <h2>Order Details</h2>
+                    <div class="order-detail-row">
+                        <span>Order ID</span>
+                        <span id="orderId">-</span>
                     </div>
-                    <a href="checkout.html" class="btn btn-primary" style="width: 100%; display: block; text-align: center;">
-                        Proceed to Checkout
-                    </a>
-                    <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
-                        Continue Shopping
-                    </a>
+                    <div class="order-detail-row">
+                        <span>Status</span>
+                        <span id="orderStatus">Confirmed</span>
+                    </div>
+                    <div class="order-detail-row">
+                        <span>Date</span>
+                        <span id="orderDate">-</span>
+                    </div>
+                    <div class="order-detail-row" style="font-weight: 700; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 2px solid var(--color-border);">
+                        <span>Total</span>
+                        <span id="orderTotal">-</span>
+                    </div>
                 </div>
+                
+                <a href="index.html" class="btn btn-primary">Continue Shopping</a>
             </div>
         </section>
     </main>
@@ -124,8 +127,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             initCart();
             updateAuthUI();
-            renderCart();
+            loadOrderDetails();
         });
+
+        function loadOrderDetails() {
+            const params = new URLSearchParams(window.location.search);
+            const orderId = params.get('order_id') || 'DEMO-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+            
+            document.getElementById('orderId').textContent = orderId;
+            document.getElementById('orderDate').textContent = new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Try to get order total from session storage or display placeholder
+            const orderTotal = sessionStorage.getItem('lastOrderTotal');
+            document.getElementById('orderTotal').textContent = orderTotal ? `$${parseFloat(orderTotal).toFixed(2)}` : 'See email';
+        }
 
         async function handleLogin(event) {
             event.preventDefault();
@@ -143,57 +162,6 @@
                 password: document.getElementById('regPassword').value
             };
             await register(customerData);
-        }
-        
-        async function checkout() {
-            if (cart.length === 0) {
-                showMessage('Your cart is empty!', 'error');
-                return;
-            }
-            
-            try {
-                // Create order via API
-                const orderData = {
-                    items: cart.map(item => ({
-                        product_id: item.productId,
-                        quantity: item.quantity,
-                        price: item.price
-                    })),
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-                };
-                
-                const response = await fetch(`${API_BASE_URL}/orders`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer demo-api-key'
-                    },
-                    body: JSON.stringify(orderData)
-                });
-                
-                if (response.ok) {
-                    const order = await response.json();
-                    showMessage('Order placed successfully!', 'success');
-                    cart = [];
-                    saveCart();
-                    updateCartCount();
-                    renderCart();
-                } else {
-                    // Demo mode - simulate order
-                    showMessage('Order placed! (Demo mode)', 'success');
-                    cart = [];
-                    saveCart();
-                    updateCartCount();
-                    renderCart();
-                }
-            } catch (error) {
-                // Demo mode - simulate order
-                showMessage('Order placed! (Demo mode)', 'success');
-                cart = [];
-                saveCart();
-                updateCartCount();
-                renderCart();
-            }
         }
     </script>
 </body>

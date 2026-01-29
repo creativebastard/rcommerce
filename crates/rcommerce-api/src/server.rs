@@ -19,7 +19,8 @@ pub async fn run(config: Config) -> Result<()> {
         .merge(crate::routes::order_router())
         .merge(crate::routes::auth_router())
         .merge(crate::routes::cart_router())
-        .merge(crate::routes::coupon_router());
+        .merge(crate::routes::coupon_router())
+        .merge(crate::routes::payment_router());
     
     // Configure CORS for demo frontend
     let cors = CorsLayer::new()
@@ -51,6 +52,9 @@ pub async fn run(config: Config) -> Result<()> {
     info!("  POST /api/v1/carts/merge         - Merge carts");
     info!("  GET  /api/v1/coupons             - List coupons");
     info!("  POST /api/v1/coupons             - Create coupon");
+    info!("  GET  /api/v1/payments/config     - Stripe config");
+    info!("  POST /api/v1/payments/intent     - Create payment intent");
+    info!("  POST /api/v1/payments/confirm    - Confirm payment");
     
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)

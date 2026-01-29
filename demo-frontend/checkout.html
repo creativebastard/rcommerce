@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart - R Commerce Demo</title>
+    <title>Checkout - R Commerce Demo</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <header class="header">
@@ -30,29 +32,66 @@
     </header>
 
     <main class="main">
-        <section class="cart">
+        <section class="checkout">
             <div class="container">
-                <h1 class="section-title">Shopping Cart</h1>
+                <h1 class="section-title">Checkout</h1>
                 
-                <div class="cart-empty" id="cartEmpty" style="display: none;">
-                    <h2>Your cart is empty</h2>
-                    <p>Add some products to get started!</p>
-                    <a href="index.html" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
-                </div>
-                
-                <div class="cart-items" id="cartItems"></div>
-                
-                <div class="cart-summary" id="cartSummary" style="display: none;">
-                    <div class="cart-total">
-                        <span>Total</span>
-                        <span id="cartTotal">$0.00</span>
+                <div class="checkout-grid">
+                    <!-- Order Summary -->
+                    <div class="checkout-summary">
+                        <h2>Order Summary</h2>
+                        <div id="checkoutItems"></div>
+                        <div class="checkout-totals">
+                            <div class="total-line">
+                                <span>Subtotal</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Shipping</span>
+                                <span>Free</span>
+                            </div>
+                            <div class="total-line total-final">
+                                <span>Total</span>
+                                <span id="total">$0.00</span>
+                            </div>
+                        </div>
                     </div>
-                    <a href="checkout.html" class="btn btn-primary" style="width: 100%; display: block; text-align: center;">
-                        Proceed to Checkout
-                    </a>
-                    <a href="index.html" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
-                        Continue Shopping
-                    </a>
+
+                    <!-- Payment Form -->
+                    <div class="checkout-payment">
+                        <h2>Payment Details</h2>
+                        
+                        <!-- Customer Info -->
+                        <div id="customerSection">
+                            <div class="form-group">
+                                <label for="customerEmail">Email</label>
+                                <input type="email" id="customerEmail" placeholder="your@email.com" required>
+                            </div>
+                        </div>
+
+                        <!-- Stripe Card Element -->
+                        <div class="form-group">
+                            <label>Card Information</label>
+                            <div id="cardElement" class="stripe-element">
+                                <!-- Stripe Card Element will be mounted here -->
+                            </div>
+                            <div id="cardErrors" class="card-errors"></div>
+                        </div>
+
+                        <!-- Test Card Info -->
+                        <div class="test-card-info">
+                            <p><strong>Demo Mode:</strong> Use test card numbers:</p>
+                            <ul>
+                                <li><code>4242 4242 4242 4242</code> - Success</li>
+                                <li><code>4000 0000 0000 0002</code> - Decline</li>
+                            </ul>
+                            <p>Use any future date and any 3-digit CVC</p>
+                        </div>
+
+                        <button id="submitPayment" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                            Pay Now
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -120,13 +159,8 @@
 
     <script src="app.js"></script>
     <script src="auth.js"></script>
+    <script src="checkout.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initCart();
-            updateAuthUI();
-            renderCart();
-        });
-
         async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('loginEmail').value;
@@ -143,57 +177,6 @@
                 password: document.getElementById('regPassword').value
             };
             await register(customerData);
-        }
-        
-        async function checkout() {
-            if (cart.length === 0) {
-                showMessage('Your cart is empty!', 'error');
-                return;
-            }
-            
-            try {
-                // Create order via API
-                const orderData = {
-                    items: cart.map(item => ({
-                        product_id: item.productId,
-                        quantity: item.quantity,
-                        price: item.price
-                    })),
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-                };
-                
-                const response = await fetch(`${API_BASE_URL}/orders`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer demo-api-key'
-                    },
-                    body: JSON.stringify(orderData)
-                });
-                
-                if (response.ok) {
-                    const order = await response.json();
-                    showMessage('Order placed successfully!', 'success');
-                    cart = [];
-                    saveCart();
-                    updateCartCount();
-                    renderCart();
-                } else {
-                    // Demo mode - simulate order
-                    showMessage('Order placed! (Demo mode)', 'success');
-                    cart = [];
-                    saveCart();
-                    updateCartCount();
-                    renderCart();
-                }
-            } catch (error) {
-                // Demo mode - simulate order
-                showMessage('Order placed! (Demo mode)', 'success');
-                cart = [];
-                saveCart();
-                updateCartCount();
-                renderCart();
-            }
         }
     </script>
 </body>

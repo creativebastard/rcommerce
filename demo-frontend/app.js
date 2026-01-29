@@ -123,6 +123,8 @@ function renderCart() {
     const summary = document.getElementById('cartSummary');
     
     if (!items) return;
+    
+    console.log('Rendering cart:', cart);
 
     if (cart.length === 0) {
         items.style.display = 'none';
