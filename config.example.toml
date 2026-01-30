@@ -562,8 +562,8 @@ write_key = "${SEGMENT_WRITE_KEY}"
 # Log level: trace, debug, info, warn, error
 level = "info"
 
-# Log format: json or pretty
-format = "pretty"
+# Log format: Json or Text
+format = "Text"
 
 # Enable file logging
 file_logging = false
