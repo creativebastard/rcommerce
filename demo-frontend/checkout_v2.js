@@ -13,160 +13,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('customerEmail').value = customer.email;
     }
     
-    // Load available payment methods
-    await loadPaymentMethods();
+    // Setup payment method selection
+    setupPaymentMethodSelection();
     
     // Handle payment submission
     document.getElementById('submitPayment').addEventListener('click', handlePayment);
 });
 
-// Load available payment methods from API
-async function loadPaymentMethods() {
+// Setup payment method selection (simplified for demo)
+function setupPaymentMethodSelection() {
     const container = document.getElementById('paymentMethods');
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const submitBtn = document.getElementById('submitPayment');
     
-    try {
-        const response = await fetch(`${API_BASE_URL}/v2/payments/methods`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                currency: 'usd',
-                amount: total.toFixed(2)
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to load payment methods');
-        }
-        
-        const gateways = await response.json();
-        
-        // Render payment methods
-        let html = '';
-        gateways.forEach(gateway => {
-            gateway.payment_methods.forEach(method => {
-                html += renderPaymentMethod(gateway, method);
-            });
-        });
-        
-        container.innerHTML = html;
-        
-        // Add event listeners for payment method selection
-        document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const methodType = e.target.value;
-                const gatewayId = e.target.dataset.gateway;
-                showPaymentForm(gatewayId, methodType);
-            });
-        });
-        
-    } catch (error) {
-        console.error('Failed to load payment methods:', error);
-        container.innerHTML = '<p class="error">Failed to load payment methods. Please try again.</p>';
-    }
-}
-
-// Render a payment method option
-function renderPaymentMethod(gateway, method) {
-    const methodId = `${gateway.gateway_id}_${method.method_type}`;
-    
-    return `
+    // For demo, just show Stripe card option
+    container.innerHTML = `
         <div class="payment-method-option">
             <label class="payment-method-label">
-                <input type="radio" name="payment_method" value="${method.method_type}" data-gateway="${gateway.gateway_id}" id="${methodId}">
-                <span class="payment-method-icon">${getPaymentMethodIcon(method.method_type)}</span>
-                <span class="payment-method-name">${method.display_name}</span>
+                <input type="radio" name="payment_method" value="card" data-gateway="stripe" id="stripe_card" checked>
+                <span class="payment-method-icon">💳</span>
+                <span class="payment-method-name">Credit/Debit Card (Stripe)</span>
             </label>
-            <div class="payment-method-form" id="form_${methodId}" style="display: none;">
-                ${renderPaymentFields(method)}
-            </div>
         </div>
     `;
-}
-
-// Get icon for payment method type
-function getPaymentMethodIcon(type) {
-    const icons = {
-        card: '💳',
-        google_pay: 'G',
-        apple_pay: '🍎',
-        alipay: 'A',
-        wechat_pay: 'W',
-        paypal: 'P',
-        bank_transfer: '🏦',
-        installments: '💰',
-        crypto: '₿',
-        cash: '💵'
-    };
-    return icons[type] || '💳';
-}
-
-// Render payment fields based on method configuration
-function renderPaymentFields(method) {
-    if (method.required_fields.length === 0) {
-        return '<p>No additional information required.</p>';
-    }
     
-    return method.required_fields.map(field => {
-        const inputType = getInputType(field.field_type);
-        const pattern = field.pattern ? `pattern="${field.pattern}"` : '';
-        const placeholder = field.placeholder ? `placeholder="${field.placeholder}"` : '';
-        const helpText = field.help_text ? `<small class="help-text">${field.help_text}</small>` : '';
-        
-        return `
-            <div class="form-group">
-                <label for="field_${field.name}">${field.label}</label>
-                <input 
-                    type="${inputType}" 
-                    id="field_${field.name}"
-                    name="${field.name}"
-                    class="payment-field"
-                    data-field-type="${field.field_type}"
-                    ${pattern}
-                    ${placeholder}
-                    required
-                >
-                ${helpText}
-            </div>
-        `;
-    }).join('');
-}
-
-// Get HTML input type from field type
-function getInputType(fieldType) {
-    switch (fieldType) {
-        case 'card_number':
-        case 'expiry_date':
-        case 'cvc':
-            return 'text';
-        case 'number':
-            return 'number';
-        case 'checkbox':
-            return 'checkbox';
-        case 'hidden':
-            return 'hidden';
-        default:
-            return 'text';
-    }
-}
-
-// Show payment form for selected method
-function showPaymentForm(gatewayId, methodType) {
-    // Hide all forms
-    document.querySelectorAll('.payment-method-form').forEach(form => {
-        form.style.display = 'none';
-    });
+    // Show card form and enable button
+    document.getElementById('cardPaymentForm').style.display = 'block';
+    submitBtn.disabled = false;
     
-    // Show selected form
-    const formId = `form_${gatewayId}_${methodType}`;
-    const form = document.getElementById(formId);
-    if (form) {
-        form.style.display = 'block';
-    }
-    
-    // Store selected gateway and method
-    window.selectedGateway = gatewayId;
-    window.selectedMethod = methodType;
+    // Store selection
+    window.selectedGateway = 'stripe';
+    window.selectedMethod = 'card';
 }
 
 // Load cart items in checkout
@@ -180,7 +56,7 @@ function loadCheckoutItems() {
     
     container.innerHTML = cart.map(item => `
         <div class="checkout-item">
-            <span class="checkout-item-name">${escape(item.name)}</span>
+            <span class="checkout-item-name">${escapeHtml(item.name)}</span>
             <span class="checkout-item-qty">x${item.quantity}</span>
             <span class="checkout-item-price">$${(item.price * item.quantity).toFixed(2)}</span>
         </div>
@@ -201,8 +77,15 @@ async function handlePayment() {
         return;
     }
     
-    if (!window.selectedGateway || !window.selectedMethod) {
-        showMessage('Please select a payment method', 'error');
+    // Collect card data from form
+    const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+    const expiryMonth = parseInt(document.getElementById('expiryMonth').value);
+    const expiryYear = parseInt(document.getElementById('expiryYear').value);
+    const cvc = document.getElementById('cvc').value;
+    const cardName = document.getElementById('cardName').value;
+    
+    if (!cardNumber || !expiryMonth || !expiryYear || !cvc) {
+        showMessage('Please fill in all card details', 'error');
         return;
     }
     
@@ -213,37 +96,65 @@ async function handlePayment() {
         // Calculate total
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         
-        // Collect payment method data
-        const paymentMethodData = collectPaymentMethodData(window.selectedMethod);
+        // Build payment method data
+        const paymentMethodData = {
+            type: 'card',
+            card: {
+                number: cardNumber,
+                exp_month: expiryMonth,
+                exp_year: expiryYear,
+                cvc: cvc,
+                name: cardName
+            }
+        };
+        
+        console.log('Sending payment request:', {
+            gateway_id: 'stripe',
+            amount: total.toFixed(2),
+            currency: 'usd',
+            payment_method: paymentMethodData
+        });
         
         // Create payment via API
-        const paymentResponse = await fetch(`${API_BASE_URL}/v2/payments`, {
+        const paymentResponse = await fetch(`http://localhost:8080/api/v2/payments`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify({
-                gateway_id: window.selectedGateway,
+                gateway_id: 'stripe',
                 amount: total.toFixed(2),
                 currency: 'usd',
-                payment_method_type: window.selectedMethod,
-                order_id: null, // Will be created after payment
+                payment_method: paymentMethodData,
+                order_id: 'order_' + Date.now(),
                 customer_email: email,
-                payment_method_data: paymentMethodData,
-                save_payment_method: false,
-                description: `Order from ${window.location.hostname}`
+                description: `Order from ${window.location.hostname}`,
+                return_url: window.location.origin + '/checkout/complete'
             })
         });
         
+        console.log('Payment response status:', paymentResponse.status);
+        
         if (!paymentResponse.ok) {
-            const error = await paymentResponse.json();
-            throw new Error(error.message || 'Payment failed');
+            let errorMessage = 'Payment failed';
+            try {
+                const errorData = await paymentResponse.json();
+                errorMessage = errorData.error?.message || errorData.message || `HTTP ${paymentResponse.status}`;
+            } catch (e) {
+                errorMessage = `Payment failed: HTTP ${paymentResponse.status}`;
+            }
+            throw new Error(errorMessage);
         }
         
         const paymentResult = await paymentResponse.json();
+        console.log('Payment result:', paymentResult);
         
-        // Handle different response types
-        switch (paymentResult.status) {
+        // Handle different response types - API returns 'type' field, not 'status'
+        switch (paymentResult.type) {
             case 'success':
                 // Payment succeeded immediately
+                showMessage('Payment successful! Creating order...', 'success');
                 await createOrder(paymentResult.payment_id, email, total);
                 break;
                 
@@ -257,7 +168,8 @@ async function handlePayment() {
                 throw new Error(paymentResult.error_message || 'Payment failed');
                 
             default:
-                throw new Error('Unexpected payment response');
+                console.error('Unexpected payment response:', paymentResult);
+                throw new Error('Unexpected payment response type: ' + paymentResult.type);
         }
         
     } catch (error) {
@@ -268,128 +180,77 @@ async function handlePayment() {
     }
 }
 
-// Collect payment method data from form
-function collectPaymentMethodData(methodType) {
-    const data = { type: methodType };
-    
-    // Collect fields based on method type
-    document.querySelectorAll('.payment-field').forEach(field => {
-        if (field.closest('.payment-method-form').style.display !== 'none') {
-            data[field.name] = field.value;
-        }
-    });
-    
-    return data;
-}
-
 // Handle payment that requires additional action
 async function handlePaymentAction(paymentResult) {
     const { payment_id, action_type, action_data } = paymentResult;
     
+    console.log('Payment requires action:', { action_type, action_data });
+    
     switch (action_type) {
         case 'three_d_secure':
             // Handle 3D Secure
-            if (action_data.redirect_url) {
+            if (action_data?.redirect_url) {
+                // Save payment ID for when user returns
+                sessionStorage.setItem('pending_payment_id', payment_id);
                 // Redirect to 3DS page
                 window.location.href = action_data.redirect_url;
-            } else if (action_data.use_stripe_sdk) {
-                // Handle Stripe 3DS via SDK (would need Stripe.js for this)
-                showMessage('3D Secure authentication required. This demo does not support 3DS.', 'error');
+            } else {
+                showMessage('3D Secure authentication required but no redirect URL provided', 'error');
             }
             break;
             
         case 'redirect':
             // Redirect to payment provider (PayPal, Alipay, etc.)
-            if (action_data.redirect_url) {
+            if (action_data?.redirect_url) {
                 window.location.href = action_data.redirect_url;
+            } else {
+                showMessage('Redirect required but no URL provided', 'error');
             }
             break;
             
-        case 'challenge':
-            // Show challenge/OTP form
-            showMessage('Additional verification required. This demo does not support challenges.', 'error');
-            break;
-            
         default:
-            showMessage('Unknown payment action required', 'error');
+            showMessage(`Payment action required: ${action_type}`, 'error');
     }
 }
 
 // Create order after successful payment
 async function createOrder(paymentId, email, total) {
     try {
-        const orderData = {
-            items: cart.map(item => ({
-                product_id: item.productId,
-                quantity: item.quantity,
-                price: item.price
-            })),
-            total: total,
-            email: email,
-            payment_id: paymentId
-        };
-        
-        // Add auth header if logged in
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (isAuthenticated()) {
-            headers['Authorization'] = `Bearer ${getToken()}`;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/orders`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(orderData)
-        });
-        
-        let order;
-        if (response.ok) {
-            order = await response.json();
-        } else {
-            // Demo mode - create mock order
-            order = {
-                order: {
-                    id: 'ord_' + Math.random().toString(36).substr(2, 9),
-                    status: 'confirmed',
-                    total: total,
-                    created_at: new Date().toISOString()
-                }
-            };
-        }
+        // For demo, just show success and redirect
+        showMessage('Order created successfully!', 'success');
         
         // Clear cart
-        cart = [];
-        saveCart();
-        updateCartCount();
+        localStorage.removeItem('cart');
         
         // Redirect to confirmation page
-        const orderId = order.order?.id || order.id;
-        window.location.href = `confirmation.html?order_id=${orderId}`;
+        setTimeout(() => {
+            window.location.href = `confirmation.html?payment_id=${paymentId}`;
+        }, 1500);
         
     } catch (error) {
-        console.error('Order creation failed:', error);
-        // Still redirect to confirmation in demo mode
-        window.location.href = `confirmation.html?order_id=demo_${Date.now()}`;
+        console.error('Failed to create order:', error);
+        showMessage('Payment successful but order creation failed. Please contact support.', 'error');
     }
-}
-
-// Utility function to escape HTML
-function escape(html) {
-    const div = document.createElement('div');
-    div.textContent = html;
-    return div.innerHTML;
 }
 
 // Show message to user
 function showMessage(message, type = 'info') {
-    const container = document.getElementById('messageContainer') || document.body;
-    const messageEl = document.createElement('div');
-    messageEl.className = `message message-${type}`;
-    messageEl.textContent = message;
-    container.appendChild(messageEl);
+    const messageDiv = document.getElementById('paymentMessage');
+    messageDiv.textContent = message;
+    messageDiv.className = `payment-message ${type}`;
+    messageDiv.style.display = 'block';
     
-    setTimeout(() => {
-        messageEl.remove();
-    }, 5000);
+    // Auto-hide success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
