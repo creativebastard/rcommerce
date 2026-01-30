@@ -187,7 +187,14 @@ mod tests {
         // For now, we'll test the interface
         
         let config = Config::default();
-        let pool_result = create_pool(&config.database).await;
+        let pool_result = create_pool(
+            &config.database.host,
+            config.database.port,
+            &config.database.database,
+            &config.database.username,
+            &config.database.password,
+            config.database.pool_size,
+        ).await;
         
         // In a real test environment with PostgreSQL:
         // let db = Database::new(pool.unwrap());

@@ -1,6 +1,7 @@
 //! Payment gateway implementations
 
 pub mod stripe;
+pub mod stripe_agnostic;
 pub mod airwallex;
 pub mod wechatpay;
 pub mod alipay;
