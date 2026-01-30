@@ -116,7 +116,7 @@ async function handlePayment() {
         });
         
         // Create payment via API
-        const paymentResponse = await fetch(`http://localhost:8080/api/v2/payments`, {
+        const paymentResponse = await fetch(`${API_BASE_URL}/payments`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',

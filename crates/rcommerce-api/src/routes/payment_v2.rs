@@ -306,7 +306,8 @@ pub async fn handle_webhook(
     }))
 }
 
-/// Router for payment v2 routes (mounted at /api/v2)
+/// Router for agnostic payment routes (mounted at /api/v1)
+/// These routes provide server-side payment processing without Stripe.js
 pub fn router() -> Router<AppState> {
     Router::new()
         // Get available payment methods
