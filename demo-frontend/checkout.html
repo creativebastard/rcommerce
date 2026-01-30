@@ -8,8 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Stripe.js -->
-    <script src="https://js.stripe.com/v3/"></script>
+    <!-- No Stripe.js needed - we use the backend API for payment processing -->
 </head>
 <body>
     <header class="header">
@@ -48,16 +47,20 @@
                             </div>
                             <div class="total-line">
                                 <span>Shipping</span>
-                                <span>Free</span>
+                                <span id="shipping">$0.00</span>
                             </div>
-                            <div class="total-line total-final">
+                            <div class="total-line">
+                                <span>Tax</span>
+                                <span id="tax">$0.00</span>
+                            </div>
+                            <div class="total-line total-grand">
                                 <span>Total</span>
                                 <span id="total">$0.00</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Form -->
+                    <!-- Payment Section -->
                     <div class="checkout-payment">
                         <h2>Payment Details</h2>
                         
@@ -69,13 +72,35 @@
                             </div>
                         </div>
 
-                        <!-- Stripe Card Element -->
-                        <div class="form-group">
-                            <label>Card Information</label>
-                            <div id="cardElement" class="stripe-element">
-                                <!-- Stripe Card Element will be mounted here -->
+                        <!-- Payment Methods -->
+                        <div id="paymentMethods" class="payment-methods">
+                            <p>Loading payment methods...</p>
+                        </div>
+
+                        <!-- Card Payment Form (shown when card is selected) -->
+                        <div id="cardPaymentForm" class="card-payment-form" style="display: none;">
+                            <div class="form-group">
+                                <label for="cardNumber">Card Number</label>
+                                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
                             </div>
-                            <div id="cardErrors" class="card-errors"></div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiryMonth">Expiry Month</label>
+                                    <input type="text" id="expiryMonth" placeholder="MM" maxlength="2">
+                                </div>
+                                <div class="form-group">
+                                    <label for="expiryYear">Expiry Year</label>
+                                    <input type="text" id="expiryYear" placeholder="YYYY" maxlength="4">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvc">CVC</label>
+                                    <input type="text" id="cvc" placeholder="123" maxlength="4">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="cardName">Cardholder Name</label>
+                                <input type="text" id="cardName" placeholder="John Doe">
+                            </div>
                         </div>
 
                         <!-- Test Card Info -->
@@ -84,11 +109,14 @@
                             <ul>
                                 <li><code>4242 4242 4242 4242</code> - Success</li>
                                 <li><code>4000 0000 0000 0002</code> - Decline</li>
+                                <li><code>4000 0025 0000 3155</code> - Requires 3D Secure</li>
                             </ul>
                             <p>Use any future date and any 3-digit CVC</p>
                         </div>
 
-                        <button id="submitPayment" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                        <div id="paymentMessage" class="payment-message"></div>
+
+                        <button id="submitPayment" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" disabled>
                             Pay Now
                         </button>
                     </div>
@@ -159,7 +187,7 @@
 
     <script src="app.js"></script>
     <script src="auth.js"></script>
-    <script src="checkout.js"></script>
+    <script src="checkout_v2.js"></script>
     <script>
         async function handleLogin(event) {
             event.preventDefault();

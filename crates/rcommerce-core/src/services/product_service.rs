@@ -9,7 +9,6 @@ use crate::{
     },
     repository::ProductRepository,
     repository::traits::ProductRepositoryTrait,
-    traits::Repository,
     services::{Service, PaginationParams},
 };
 

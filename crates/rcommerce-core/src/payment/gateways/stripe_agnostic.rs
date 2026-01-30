@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use reqwest;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 
 use crate::Result;
@@ -14,6 +14,7 @@ use crate::payment::agnostic::*;
 
 pub struct StripeAgnosticGateway {
     api_key: String,
+    #[allow(dead_code)]
     webhook_secret: String,
     client: reqwest::Client,
     supported_methods: Vec<PaymentMethodConfig>,
@@ -498,7 +499,7 @@ impl AgnosticPaymentGateway for StripeAgnosticGateway {
         headers: &[(String, String)],
     ) -> Result<WebhookEvent> {
         // Verify webhook signature
-        let signature = headers.iter()
+        let _signature = headers.iter()
             .find(|(k, _)| k == "Stripe-Signature")
             .map(|(_, v)| v.as_str())
             .unwrap_or("");
@@ -774,9 +775,11 @@ struct StripeErrorDetails {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct StripePaymentMethod {
     id: String,
     #[serde(rename = "type")]
+    #[allow(dead_code)]
     type_: String,
     card: Option<StripeCard>,
     billing_details: StripeBillingDetails,
@@ -796,10 +799,13 @@ struct StripeBillingDetails {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct StripePaymentIntent {
     id: String,
     status: String,
+    #[allow(dead_code)]
     amount: i64,
+    #[allow(dead_code)]
     currency: String,
     charges: StripeList<StripeCharge>,
     next_action: Option<StripeNextAction>,
@@ -835,7 +841,9 @@ struct StripeList<T> {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct StripeWebhookEvent {
+    #[allow(dead_code)]
     id: String,
     #[serde(rename = "type")]
     type_: String,

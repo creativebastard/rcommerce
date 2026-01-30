@@ -31,11 +31,11 @@ pub struct GetPaymentMethodsResponse {
 
 /// Get available payment methods
 pub async fn get_payment_methods(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Json(request): Json<GetPaymentMethodsRequest>,
 ) -> Json<Vec<GetPaymentMethodsResponse>> {
     // Parse amount
-    let amount = request.amount.parse::<rust_decimal::Decimal>()
+    let _amount = request.amount.parse::<rust_decimal::Decimal>()
         .unwrap_or_else(|_| rust_decimal::Decimal::ZERO);
     
     // In a real implementation, we'd query the payment service
@@ -128,7 +128,7 @@ pub struct InitiatePaymentApiRequest {
 
 /// Initiate a payment
 pub async fn initiate_payment(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Json(request): Json<InitiatePaymentApiRequest>,
 ) -> Json<InitiatePaymentResponse> {
     // In a real implementation, this would:
@@ -166,9 +166,9 @@ pub struct CompletePaymentActionApiRequest {
 }
 
 pub async fn complete_payment_action(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(payment_id): Path<String>,
-    Json(request): Json<CompletePaymentActionApiRequest>,
+    Json(_request): Json<CompletePaymentActionApiRequest>,
 ) -> Json<CompletePaymentActionResponse> {
     // In a real implementation, this would complete the payment action
     
@@ -191,7 +191,7 @@ pub async fn complete_payment_action(
 
 /// Get payment status
 pub async fn get_payment_status(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(payment_id): Path<String>,
 ) -> Json<serde_json::Value> {
     Json(serde_json::json!({
@@ -211,7 +211,7 @@ pub struct RefundRequest {
 }
 
 pub async fn refund_payment(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(payment_id): Path<String>,
     Json(request): Json<RefundRequest>,
 ) -> Json<RefundResponse> {
@@ -238,8 +238,8 @@ pub struct SavePaymentMethodRequest {
 }
 
 pub async fn save_payment_method(
-    State(state): State<AppState>,
-    Json(request): Json<SavePaymentMethodRequest>,
+    State(_state): State<AppState>,
+    Json(_request): Json<SavePaymentMethodRequest>,
 ) -> Json<PaymentMethodToken> {
     Json(PaymentMethodToken {
         token: format!("tok_{}", Uuid::new_v4()),
@@ -258,8 +258,8 @@ pub async fn save_payment_method(
 
 /// Get saved payment methods for a customer
 pub async fn get_saved_payment_methods(
-    State(state): State<AppState>,
-    Path(customer_id): Path<String>,
+    State(_state): State<AppState>,
+    Path(_customer_id): Path<String>,
 ) -> Json<Vec<PaymentMethodInfo>> {
     Json(vec![
         PaymentMethodInfo {
@@ -276,7 +276,7 @@ pub async fn get_saved_payment_methods(
 
 /// Delete a saved payment method
 pub async fn delete_payment_method(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(token): Path<String>,
 ) -> Json<serde_json::Value> {
     Json(serde_json::json!({
@@ -288,10 +288,10 @@ pub async fn delete_payment_method(
 
 /// Handle webhooks from payment providers
 pub async fn handle_webhook(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(gateway_id): Path<String>,
-    headers: axum::http::HeaderMap,
-    body: String,
+    _headers: axum::http::HeaderMap,
+    _body: String,
 ) -> Json<serde_json::Value> {
     // In a real implementation, this would:
     // 1. Verify webhook signature
