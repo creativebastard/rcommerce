@@ -59,11 +59,12 @@ pub async fn run(config: Config) -> Result<()> {
         .allow_methods(Any)
         .allow_headers(Any);
     
-    // Build main router with API v1 routes and state
+    // Build main router with API v1 and v2 routes
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
         .nest("/api/v1", api_routes())
+        .nest("/api/v2", payment_v2_routes())
         .layer(cors)
         .with_state(app_state);
     
@@ -138,7 +139,11 @@ fn api_routes() -> Router<AppState> {
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router())
         .merge(crate::routes::payment_router())
-        .merge(crate::routes::payment_v2_router())
+}
+
+/// API v2 routes (payment agnostic API)
+fn payment_v2_routes() -> Router<AppState> {
+    crate::routes::payment_v2_router()
 }
 
 async fn health_check() -> &'static str {

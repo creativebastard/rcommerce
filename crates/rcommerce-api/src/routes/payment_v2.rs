@@ -306,25 +306,25 @@ pub async fn handle_webhook(
     }))
 }
 
-/// Router for payment v2 routes
+/// Router for payment v2 routes (mounted at /api/v2)
 pub fn router() -> Router<AppState> {
     Router::new()
         // Get available payment methods
-        .route("/v2/payments/methods", post(get_payment_methods))
+        .route("/payments/methods", post(get_payment_methods))
         // Initiate a payment
-        .route("/v2/payments", post(initiate_payment))
+        .route("/payments", post(initiate_payment))
         // Get payment status
-        .route("/v2/payments/:payment_id", get(get_payment_status))
+        .route("/payments/:payment_id", get(get_payment_status))
         // Complete payment action (3DS, redirect)
-        .route("/v2/payments/:payment_id/complete", post(complete_payment_action))
+        .route("/payments/:payment_id/complete", post(complete_payment_action))
         // Refund a payment
-        .route("/v2/payments/:payment_id/refund", post(refund_payment))
+        .route("/payments/:payment_id/refund", post(refund_payment))
         // Save payment method
-        .route("/v2/payment-methods", post(save_payment_method))
+        .route("/payment-methods", post(save_payment_method))
         // Get saved payment methods
-        .route("/v2/customers/:customer_id/payment-methods", get(get_saved_payment_methods))
+        .route("/customers/:customer_id/payment-methods", get(get_saved_payment_methods))
         // Delete payment method
-        .route("/v2/payment-methods/:token", delete(delete_payment_method))
+        .route("/payment-methods/:token", delete(delete_payment_method))
         // Webhook handler
-        .route("/v2/webhooks/:gateway_id", post(handle_webhook))
+        .route("/webhooks/:gateway_id", post(handle_webhook))
 }
