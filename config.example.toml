@@ -110,29 +110,6 @@ client_cert = "/path/to/client.crt"
 client_key = "/path/to/client.key"
 
 # ============================================================================
-# REDIS CONFIGURATION (Optional)
-# ============================================================================
-[redis]
-# Enable Redis for caching and session storage
-enabled = false
-
-# Redis connection URL
-# Format: redis://[:password@]host[:port][/database]
-url = "redis://localhost:6379"
-
-# Connection pool size
-pool_size = 10
-
-# Connection timeout in seconds
-timeout = 5
-
-# Key prefix for all Redis keys (useful for multi-tenant setups)
-key_prefix = "rcommerce:"
-
-# Default TTL for cached data in seconds (1 hour)
-default_ttl = 3600
-
-# ============================================================================
 # CACHE CONFIGURATION
 # ============================================================================
 [cache]
@@ -141,6 +118,13 @@ cache_type = "Memory"
 
 # Maximum cache size in MB (for memory cache)
 max_size_mb = 100
+
+# Redis connection URL (required when cache_type = "Redis")
+# Format: redis://[:password@]host[:port][/database]
+redis_url = "redis://localhost:6379"
+
+# Redis connection pool size
+redis_pool_size = 10
 
 # Default TTL for cached items in seconds
 default_ttl = 300

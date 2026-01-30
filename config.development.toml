@@ -28,8 +28,17 @@ log_queries = true
 log_slow_queries = 100
 
 [cache]
+# Cache type: Memory or Redis
 cache_type = "Memory"
+
+# Maximum cache size in MB (for memory cache)
 max_size_mb = 50
+
+# Redis connection URL (required when cache_type = "Redis")
+# redis_url = "redis://localhost:6379"
+
+# Redis connection pool size
+# redis_pool_size = 10
 
 [security]
 force_https = false
