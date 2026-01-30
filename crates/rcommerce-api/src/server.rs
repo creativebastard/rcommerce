@@ -138,7 +138,6 @@ fn api_routes() -> Router<AppState> {
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router())
         .merge(crate::routes::payment_router())
-        .merge(crate::routes::payment_v2_router())
 }
 
 
