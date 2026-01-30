@@ -16,6 +16,7 @@ allowed_headers = ["*"]
 allow_credentials = false
 
 [database]
+# Database type: Currently only PostgreSQL is supported
 db_type = "Postgres"
 host = "localhost"
 port = 5432

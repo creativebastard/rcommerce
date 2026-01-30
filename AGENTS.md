@@ -12,7 +12,7 @@ This file provides essential information for AI coding agents working on the R C
 
 - **Language**: Rust (edition 2021, minimum version 1.70.0)
 - **Architecture**: Headless/API-first (REST with WebSocket support)
-- **Database**: Multi-database support (PostgreSQL, MySQL, SQLite via SQLx)
+- **Database**: PostgreSQL (MySQL and SQLite support planned)
 - **Cache**: In-memory (DashMap/LRU) or Redis
 - **License**: Dual-licensed under AGPL-3.0 and Commercial License
 - **Repository**: https://gitee.com/captainjez/gocart

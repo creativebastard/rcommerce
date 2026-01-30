@@ -55,7 +55,7 @@ max_age = 3600
 # DATABASE CONFIGURATION
 # ============================================================================
 [database]
-# Database type: Postgres, Mysql, or Sqlite
+# Database type: Currently only PostgreSQL is supported
 db_type = "Postgres"
 
 # Database host
