@@ -12,33 +12,21 @@
 
 ## 为什么选择 R Commerce？
 
-<div class="grid cards" markdown>
+### 极致性能
 
--   :material-rocket-launch:{ .lg .middle } __极致性能__
+亚毫秒级响应时间，每秒处理 10万+ 请求。Rust 的速度，Node.js 的开发效率。
 
-    ---
+### 企业级
 
-    亚毫秒级响应时间，每秒处理 10万+ 请求。Rust 的速度，Node.js 的开发效率。
+内置多租户、角色权限管理、审计日志。符合 SOC2 和 GDPR 标准。
 
--   :material-scale-balance:{ .lg .middle } __企业级__
+### API 优先
 
-    ---
+GraphQL 和 REST API。Webhook、实时订阅、完整 SDK 支持。
 
-    内置多租户、角色权限管理、审计日志。符合 SOC2 和 GDPR 标准。
+### PostgreSQL 驱动
 
--   :material-code-json:{ .lg .middle } __API 优先__
-
-    ---
-
-    GraphQL 和 REST API。Webhook、实时订阅、完整 SDK 支持。
-
--   :material-postgresql:{ .lg .middle } __PostgreSQL 驱动__
-
-    ---
-
-    基于 PostgreSQL 构建，提供可靠性、性能和完整的 ACID 合规性。
-
-</div>
+基于 PostgreSQL 构建，提供可靠性、性能和完整的 ACID 合规性。
 
 ## 核心功能
 

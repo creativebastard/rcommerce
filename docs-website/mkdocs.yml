@@ -69,6 +69,67 @@ plugins:
         - locale: zh
           name: 简体中文
           build: true
+          nav_translations:
+            Home: 首页
+            Getting Started: 开始使用
+            Quick Start: 快速开始
+            Installation: 安装
+            Configuration: 配置
+            API Reference: API 参考
+            Overview: 概览
+            Authentication: 认证
+            Error Codes: 错误代码
+            Products: 产品
+            Orders: 订单
+            Customers: 客户
+            Cart: 购物车
+            Coupons: 优惠券
+            Payments: 支付
+            Webhooks: Webhooks
+            GraphQL: GraphQL
+            Payment Gateways: 支付网关
+            AliPay: 支付宝
+            WeChat Pay: 微信支付
+            Deployment: 部署
+            Docker: Docker
+            Linux: Linux
+            systemd: systemd
+            Manual: 手动
+            FreeBSD: FreeBSD
+            Standalone: 独立部署
+            Jails (iocage): Jails (iocage)
+            rc.d: rc.d
+            macOS: macOS
+            launchd: launchd
+            Kubernetes: Kubernetes
+            Binary: 二进制
+            Operations: 运维
+            Reverse Proxies: 反向代理
+            Caddy: Caddy
+            Nginx: Nginx
+            HAProxy: HAProxy
+            Traefik: Traefik
+            Scaling: 扩展
+            Monitoring: 监控
+            Backups: 备份
+            Security: 安全
+            Redis: Redis
+            Architecture: 架构
+            Data Model: 数据模型
+            Database Abstraction: 数据库抽象
+            Order Management: 订单管理
+            Notifications: 通知
+            Media Storage: 媒体存储
+            Development: 开发
+            Local Setup: 本地设置
+            Contributing: 贡献
+            Testing: 测试
+            CLI Reference: CLI 参考
+            Migration: 迁移
+            Shopify: Shopify
+            WooCommerce: WooCommerce
+            Magento: Magento
+            Medusa: Medusa
   - search:
       separator: '[\s\-]+'
       lang:
