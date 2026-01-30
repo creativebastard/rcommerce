@@ -71,22 +71,24 @@ pub async fn run(config: Config) -> Result<()> {
     info!("Available routes:");
     info!("  GET  /health                      - Health check");
     info!("  GET  /                            - API info");
-    info!("  GET  /api/v1/products            - List products");
-    info!("  GET  /api/v1/products/:id        - Get product");
-    info!("  GET  /api/v1/customers           - List customers");
-    info!("  GET  /api/v1/customers/:id       - Get customer");
-    info!("  GET  /api/v1/orders              - List orders");
-    info!("  GET  /api/v1/orders/:id          - Get order");
-    info!("  POST /api/v1/auth/login          - Login");
-    info!("  POST /api/v1/auth/register       - Register");
-    info!("  POST /api/v1/carts/guest         - Create guest cart");
-    info!("  GET  /api/v1/carts/me            - Get customer cart");
-    info!("  POST /api/v1/carts/merge         - Merge carts");
-    info!("  GET  /api/v1/coupons             - List coupons");
-    info!("  POST /api/v1/coupons             - Create coupon");
-    info!("  GET  /api/v1/payments/config     - Stripe config");
-    info!("  POST /api/v1/payments/intent     - Create payment intent");
-    info!("  POST /api/v1/payments/confirm    - Confirm payment");
+    info!("  GET  /api/v1/products             - List products");
+    info!("  GET  /api/v1/products/:id         - Get product");
+    info!("  GET  /api/v1/customers            - List customers");
+    info!("  GET  /api/v1/customers/:id        - Get customer");
+    info!("  GET  /api/v1/orders               - List orders");
+    info!("  GET  /api/v1/orders/:id           - Get order");
+    info!("  POST /api/v1/auth/login           - Login");
+    info!("  POST /api/v1/auth/register        - Register");
+    info!("  POST /api/v1/carts/guest          - Create guest cart");
+    info!("  GET  /api/v1/carts/me             - Get customer cart");
+    info!("  POST /api/v1/carts/merge          - Merge carts");
+    info!("  GET  /api/v1/coupons              - List coupons");
+    info!("  POST /api/v1/coupons              - Create coupon");
+    info!("  POST /api/v1/payments/methods     - Get payment methods");
+    info!("  POST /api/v1/payments             - Create payment");
+    info!("  GET  /api/v1/payments/:id         - Get payment status");
+    info!("  POST /api/v1/payments/:id/complete - Complete payment");
+    info!("  POST /api/v1/payments/:id/refund  - Refund payment");
     
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)
