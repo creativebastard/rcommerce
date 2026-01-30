@@ -1,0 +1,73 @@
+# R Commerce Development Configuration
+# ====================================
+# Minimal configuration for local development
+# Copy this to config.toml for quick local setup
+
+[server]
+host = "127.0.0.1"
+port = 8080
+worker_threads = 2
+
+[server.cors]
+# Allow all origins in development
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+allowed_headers = ["*"]
+allow_credentials = false
+
+[database]
+db_type = "Postgres"
+host = "localhost"
+port = 5432
+database = "rcommerce"
+username = "rcommerce"
+password = "password"
+pool_size = 5
+log_queries = true
+log_slow_queries = 100
+
+[cache]
+cache_type = "Memory"
+max_size_mb = 50
+
+[security]
+force_https = false
+
+[security.jwt]
+# Development secret (change in production!)
+secret = "dev-secret-do-not-use-in-production-change-this-to-a-random-string"
+expiry_hours = 24
+
+[security.rate_limit]
+# Relaxed rate limits for development
+enabled = true
+requests_per_minute = 1000
+auth_requests_per_minute = 100
+
+[payment]
+test_mode = true
+default_gateway = "stripe"
+auto_capture = true
+
+[payment.stripe]
+enabled = true
+# Use Stripe test keys
+secret_key = "sk_test_your_test_key_here"
+publishable_key = "pk_test_your_test_key_here"
+webhook_secret = "whsec_your_webhook_secret_here"
+
+[storage]
+type = "Local"
+
+[storage.local]
+upload_dir = "./uploads"
+base_url = "/uploads"
+
+[logging]
+level = "debug"
+format = "pretty"
+
+[features]
+debug_api = true
+metrics = true
+health_check = true

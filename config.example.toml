@@ -1,0 +1,664 @@
+# R Commerce Configuration File
+# =============================
+# This is a comprehensive example configuration file for R Commerce.
+# Copy this file to config.toml and customize it for your deployment.
+#
+# Environment variables can be used with ${VAR_NAME} syntax.
+# Example: password = "${DB_PASSWORD}"
+
+# ============================================================================
+# SERVER CONFIGURATION
+# ============================================================================
+[server]
+# Host address to bind the server to
+# Use "0.0.0.0" to listen on all interfaces (production)
+# Use "127.0.0.1" for local development only
+host = "0.0.0.0"
+
+# Port number for the HTTP server
+port = 8080
+
+# Number of worker threads for handling requests
+# 0 = automatic (number of CPU cores)
+worker_threads = 0
+
+# Maximum request body size in bytes (default: 10MB)
+max_request_body_size = 10485760
+
+# Request timeout in seconds
+request_timeout = 30
+
+# Enable HTTP/2 support
+enable_http2 = true
+
+# Enable compression (gzip, brotli)
+enable_compression = true
+
+# CORS settings
+[server.cors]
+# Allowed origins (use ["*"] for development, specific domains for production)
+allowed_origins = ["https://yourstore.com", "https://admin.yourstore.com"]
+
+# Allowed HTTP methods
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+# Allowed headers
+allowed_headers = ["Authorization", "Content-Type", "X-Request-ID"]
+
+# Allow credentials (cookies, authorization headers)
+allow_credentials = true
+
+# Max age for CORS preflight cache (in seconds)
+max_age = 3600
+
+# ============================================================================
+# DATABASE CONFIGURATION
+# ============================================================================
+[database]
+# Database type: Postgres, Mysql, or Sqlite
+db_type = "Postgres"
+
+# Database host
+host = "localhost"
+
+# Database port (default: 5432 for PostgreSQL)
+port = 5432
+
+# Database name
+database = "rcommerce"
+
+# Database user
+username = "rcommerce"
+
+# Database password (use environment variable in production!)
+password = "${DB_PASSWORD}"
+
+# Connection pool size
+# Recommended: 10-20 for most deployments, 50+ for high traffic
+pool_size = 20
+
+# Connection timeout in seconds
+connect_timeout = 10
+
+# Idle connection timeout in seconds (0 = never)
+idle_timeout = 600
+
+# Maximum connection lifetime in seconds (0 = never)
+max_lifetime = 1800
+
+# Enable SQL query logging (development only)
+log_queries = false
+
+# Log slow queries (milliseconds, 0 = disabled)
+log_slow_queries = 1000
+
+# SSL/TLS configuration for database connection
+[database.ssl]
+# Enable SSL
+enabled = false
+
+# SSL mode: disable, prefer, require, verify-ca, verify-full
+mode = "prefer"
+
+# Path to CA certificate file (for verify-ca or verify-full)
+ca_cert = "/path/to/ca.crt"
+
+# Path to client certificate file
+client_cert = "/path/to/client.crt"
+
+# Path to client key file
+client_key = "/path/to/client.key"
+
+# ============================================================================
+# REDIS CONFIGURATION (Optional)
+# ============================================================================
+[redis]
+# Enable Redis for caching and session storage
+enabled = false
+
+# Redis connection URL
+# Format: redis://[:password@]host[:port][/database]
+url = "redis://localhost:6379"
+
+# Connection pool size
+pool_size = 10
+
+# Connection timeout in seconds
+timeout = 5
+
+# Key prefix for all Redis keys (useful for multi-tenant setups)
+key_prefix = "rcommerce:"
+
+# Default TTL for cached data in seconds (1 hour)
+default_ttl = 3600
+
+# ============================================================================
+# CACHE CONFIGURATION
+# ============================================================================
+[cache]
+# Cache type: Memory or Redis
+cache_type = "Memory"
+
+# Maximum cache size in MB (for memory cache)
+max_size_mb = 100
+
+# Default TTL for cached items in seconds
+default_ttl = 300
+
+# Cache key prefix
+key_prefix = "rc:"
+
+# ============================================================================
+# SECURITY CONFIGURATION
+# ============================================================================
+[security]
+# Enable HTTPS redirection (production only)
+force_https = false
+
+# HSTS max age in seconds (HTTP Strict Transport Security)
+hsts_max_age = 31536000
+
+# Content Security Policy header
+# Customize based on your frontend requirements
+csp_policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.stripe.com;"
+
+# API Key configuration
+[security.api_key]
+# Length of the API key prefix (visible part)
+prefix_length = 8
+
+# Length of the secret part
+secret_length = 32
+
+# JWT (JSON Web Token) configuration
+[security.jwt]
+# JWT secret key for signing tokens (generate a strong random string!)
+# Use: openssl rand -base64 64
+secret = "${JWT_SECRET}"
+
+# Token expiration time in hours
+expiry_hours = 24
+
+# Refresh token expiration time in hours
+refresh_expiry_hours = 168
+
+# Token issuer claim
+issuer = "rcommerce"
+
+# Token audience claim
+audience = "rcommerce-api"
+
+# Password hashing configuration
+[security.password]
+# BCrypt cost factor (higher = more secure but slower)
+# Recommended: 12 for production
+bcrypt_cost = 12
+
+# Minimum password length
+min_length = 8
+
+# Require uppercase letters
+require_uppercase = true
+
+# Require lowercase letters
+require_lowercase = true
+
+# Require numbers
+require_numbers = true
+
+# Require special characters
+require_special = false
+
+# Rate limiting configuration
+[security.rate_limit]
+# Enable rate limiting
+enabled = true
+
+# Requests per minute per IP
+requests_per_minute = 60
+
+# Burst allowance (concurrent requests)
+burst_size = 10
+
+# Stricter limits for authentication endpoints
+auth_requests_per_minute = 5
+
+# IP whitelist (bypass rate limiting)
+whitelist = ["127.0.0.1", "10.0.0.0/8"]
+
+# ============================================================================
+# PAYMENT CONFIGURATION
+# ============================================================================
+[payment]
+# Default payment gateway
+default_gateway = "stripe"
+
+# Enable test mode (use test API keys)
+test_mode = true
+
+# Required 3D Secure threshold in currency units (e.g., 3000 = $30.00)
+# Amounts >= this value require 3D Secure authentication
+tds_threshold = 3000
+
+# Auto-capture payments (true) or manual capture (false)
+auto_capture = true
+
+# Delay capture by N seconds (0 = capture immediately)
+capture_delay_seconds = 0
+
+# Supported currencies
+supported_currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CNY", "HKD", "SGD"]
+
+# Enable fraud detection
+enable_fraud_check = true
+
+# Risk score threshold (0-100, higher = more strict)
+risk_threshold = 75
+
+# Webhook configuration
+[payment.webhook]
+# Webhook secret for signature verification
+secret = "${WEBHOOK_SECRET}"
+
+# Retry failed webhooks
+retry_enabled = true
+
+# Maximum retry attempts
+max_retries = 3
+
+# Retry delay in seconds
+retry_delay = 5
+
+# Stripe configuration
+[payment.stripe]
+enabled = true
+
+# API keys (use environment variables!)
+secret_key = "${STRIPE_SECRET_KEY}"
+publishable_key = "${STRIPE_PUBLISHABLE_KEY}"
+webhook_secret = "${STRIPE_WEBHOOK_SECRET}"
+
+# Statement descriptor (appears on customer bank statements)
+statement_descriptor = "R COMMERCE"
+statement_descriptor_suffix = "STORE"
+
+# Enable Stripe Connect (for marketplace features)
+connect_enabled = false
+connect_client_id = "${STRIPE_CONNECT_CLIENT_ID}"
+
+# Stripe-specific settings
+capture_method = "automatic"  # automatic or manual
+setup_future_usage = "off_session"  # on_session, off_session, or none
+
+# Airwallex configuration
+[payment.airwallex]
+enabled = false
+client_id = "${AIRWALLEX_CLIENT_ID}"
+api_key = "${AIRWALLEX_API_KEY}"
+webhook_secret = "${AIRWALLEX_WEBHOOK_SECRET}"
+account_id = "${AIRWALLEX_ACCOUNT_ID}"
+
+# WeChat Pay configuration
+[payment.wechatpay]
+enabled = false
+mch_id = "${WECHATPAY_MCH_ID}"
+app_id = "${WECHATPAY_APP_ID}"
+api_key = "${WECHATPAY_API_KEY}"
+serial_no = "${WECHATPAY_SERIAL_NO}"
+private_key = """
+-----BEGIN PRIVATE KEY-----
+${WECHATPAY_PRIVATE_KEY}
+-----END PRIVATE KEY-----
+"""
+sandbox = true
+
+# Alipay configuration
+[payment.alipay]
+enabled = false
+app_id = "${ALIPAY_APP_ID}"
+private_key = "${ALIPAY_PRIVATE_KEY}"
+alipay_public_key = "${ALIPAY_PUBLIC_KEY}"
+sandbox = true
+
+# ============================================================================
+# EMAIL CONFIGURATION
+# ============================================================================
+[email]
+# Enable email notifications
+enabled = false
+
+# SMTP server configuration
+smtp_host = "smtp.gmail.com"
+smtp_port = 587
+smtp_user = "${SMTP_USER}"
+smtp_password = "${SMTP_PASSWORD}"
+
+# Use TLS for SMTP
+smtp_tls = true
+
+# From address for outgoing emails
+from_address = "noreply@yourstore.com"
+from_name = "R Commerce Store"
+
+# Reply-to address
+reply_to = "support@yourstore.com"
+
+# Email templates directory
+templates_dir = "./templates/email"
+
+# ============================================================================
+# SMS CONFIGURATION (Optional)
+# ============================================================================
+[sms]
+# Enable SMS notifications
+enabled = false
+
+# SMS provider: twilio, aws_sns, or messagebird
+provider = "twilio"
+
+# Twilio configuration
+[sms.twilio]
+account_sid = "${TWILIO_ACCOUNT_SID}"
+auth_token = "${TWILIO_AUTH_TOKEN}"
+from_number = "${TWILIO_PHONE_NUMBER}"
+
+# ============================================================================
+# FILE STORAGE CONFIGURATION
+# ============================================================================
+[storage]
+# Storage type: Local, S3, or GCS
+type = "Local"
+
+# Local storage configuration
+[storage.local]
+# Base directory for uploads
+upload_dir = "./uploads"
+
+# Base URL for serving files
+base_url = "/uploads"
+
+# Maximum file size in MB
+max_file_size = 10
+
+# Allowed file types
+allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]
+
+# AWS S3 configuration
+[storage.s3]
+bucket = "${S3_BUCKET}"
+region = "${AWS_REGION}"
+access_key = "${AWS_ACCESS_KEY_ID}"
+secret_key = "${AWS_SECRET_ACCESS_KEY}"
+endpoint = ""  # For S3-compatible services like MinIO
+cdn_url = ""   # CloudFront or other CDN URL
+
+# Google Cloud Storage configuration
+[storage.gcs]
+bucket = "${GCS_BUCKET}"
+project_id = "${GCS_PROJECT_ID}"
+credentials_file = "${GOOGLE_APPLICATION_CREDENTIALS}"
+cdn_url = ""
+
+# Image processing configuration
+[storage.images]
+# Generate thumbnails
+enable_thumbnails = true
+
+# Thumbnail sizes (width x height)
+thumbnail_sizes = [
+    { name = "small", width = 150, height = 150 },
+    { name = "medium", width = 300, height = 300 },
+    { name = "large", width = 600, height = 600 }
+]
+
+# Image quality (1-100)
+quality = 85
+
+# ============================================================================
+# SHIPPING CONFIGURATION
+# ============================================================================
+[shipping]
+# Default shipping provider: manual, shipstation, easypost, or shippo
+provider = "manual"
+
+# Default shipping origin address
+[shipping.origin]
+name = "Your Store"
+address1 = "123 Commerce St"
+address2 = ""
+city = "San Francisco"
+province = "CA"
+country = "US"
+zip = "94102"
+phone = "+1-555-123-4567"
+
+# Shipping providers
+[shipping.shipstation]
+enabled = false
+api_key = "${SHIPSTATION_API_KEY}"
+api_secret = "${SHIPSTATION_API_SECRET}"
+
+[shipping.easypost]
+enabled = false
+api_key = "${EASYPOST_API_KEY}"
+
+# ============================================================================
+# TAX CONFIGURATION
+# ============================================================================
+[tax]
+# Tax calculation provider: manual, taxjar, or avalara
+provider = "manual"
+
+# Default tax rate (percentage)
+default_rate = 0.0
+
+# Tax included in prices (true) or added at checkout (false)
+included_in_price = false
+
+# TaxJar configuration
+[tax.taxjar]
+enabled = false
+api_key = "${TAXJAR_API_KEY}"
+
+# Avalara AvaTax configuration
+[tax.avalara]
+enabled = false
+account_id = "${AVALARA_ACCOUNT_ID}"
+license_key = "${AVALARA_LICENSE_KEY}"
+company_code = "DEFAULT"
+sandbox = true
+
+# ============================================================================
+# INVENTORY CONFIGURATION
+# ============================================================================
+[inventory]
+# Enable inventory tracking
+enabled = true
+
+# Allow overselling (negative inventory)
+allow_oversell = false
+
+# Low stock threshold percentage (triggers alerts)
+low_stock_threshold = 20
+
+# Enable stock reservations (hold stock during checkout)
+enable_reservations = true
+
+# Reservation timeout in minutes
+reservation_timeout_minutes = 30
+
+# Enable multi-location inventory
+multi_location = false
+
+# ============================================================================
+# NOTIFICATION CONFIGURATION
+# ============================================================================
+[notifications]
+# Enable push notifications
+enabled = false
+
+# Push notification provider: firebase, onesignal, or pusher
+provider = "firebase"
+
+[notifications.firebase]
+project_id = "${FIREBASE_PROJECT_ID}"
+credentials_file = "${FIREBASE_CREDENTIALS}"
+
+[notifications.onesignal]
+app_id = "${ONESIGNAL_APP_ID}"
+rest_api_key = "${ONESIGNAL_REST_API_KEY}"
+
+# Webhook configuration for external integrations
+[notifications.webhooks]
+# Order created webhook
+order_created_url = "https://your-integration.com/webhooks/order-created"
+
+# Order paid webhook
+order_paid_url = "https://your-integration.com/webhooks/order-paid"
+
+# Order shipped webhook
+order_shipped_url = "https://your-integration.com/webhooks/order-shipped"
+
+# ============================================================================
+# SEARCH CONFIGURATION
+# ============================================================================
+[search]
+# Search provider: database, meilisearch, or algolia
+provider = "database"
+
+# MeiliSearch configuration
+[search.meilisearch]
+enabled = false
+host = "http://localhost:7700"
+api_key = "${MEILISEARCH_API_KEY}"
+
+# Algolia configuration
+[search.algolia]
+enabled = false
+app_id = "${ALGOLIA_APP_ID}"
+api_key = "${ALGOLIA_API_KEY}"
+
+# ============================================================================
+# ANALYTICS CONFIGURATION
+# ============================================================================
+[analytics]
+# Enable analytics tracking
+enabled = false
+
+# Google Analytics
+[analytics.google]
+enabled = false
+tracking_id = "${GA_TRACKING_ID}"
+
+# Segment
+[analytics.segment]
+enabled = false
+write_key = "${SEGMENT_WRITE_KEY}"
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+[logging]
+# Log level: trace, debug, info, warn, error
+level = "info"
+
+# Log format: json or pretty
+format = "pretty"
+
+# Enable file logging
+file_logging = false
+log_file = "./logs/rcommerce.log"
+
+# Log rotation
+max_log_size = "100MB"
+max_log_files = 5
+
+# Enable structured logging (JSON)
+structured = false
+
+# Sentry error tracking
+[logging.sentry]
+enabled = false
+dsn = "${SENTRY_DSN}"
+environment = "production"
+
+# ============================================================================
+# FEATURE FLAGS
+# ============================================================================
+[features]
+# Enable debug API endpoints (development only)
+debug_api = false
+
+# Enable metrics endpoint (/metrics)
+metrics = true
+
+# Enable health check endpoint (/health)
+health_check = true
+
+# Enable GraphQL API
+graphql = false
+
+# Enable WebSocket real-time updates
+websockets = true
+
+# Enable multi-currency support
+multi_currency = false
+
+# Enable multi-language support
+multi_language = false
+
+# Enable subscription products
+subscriptions = false
+
+# Enable marketplace/multi-vendor features
+marketplace = false
+
+# Enable gift cards
+gift_cards = false
+
+# Enable loyalty points
+loyalty = false
+
+# Enable wishlist
+wishlist = true
+
+# Enable product reviews
+reviews = true
+
+# Enable live chat
+live_chat = false
+
+# ============================================================================
+# MAINTENANCE MODE
+# ============================================================================
+[maintenance]
+# Enable maintenance mode (blocks all requests except health checks)
+enabled = false
+
+# Maintenance message
+message = "We're currently performing scheduled maintenance. Please check back soon."
+
+# Allowed IPs during maintenance
+allowed_ips = ["127.0.0.1"]
+
+# ============================================================================
+# BACKUP CONFIGURATION
+# ============================================================================
+[backup]
+# Enable automatic backups
+enabled = false
+
+# Backup schedule (cron expression)
+schedule = "0 2 * * *"  # Daily at 2 AM
+
+# Backup retention (number of backups to keep)
+retention = 7
+
+# Backup destination: local, s3, or gcs
+destination = "s3"
+
+# S3 backup configuration
+[backup.s3]
+bucket = "${BACKUP_S3_BUCKET}"
+region = "${AWS_REGION}"
+prefix = "backups/rcommerce/"
