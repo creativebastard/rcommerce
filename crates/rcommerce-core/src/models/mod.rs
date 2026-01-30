@@ -11,10 +11,6 @@ pub mod subscription;
 pub mod cart;
 pub mod coupon;
 
-// SQLite-compatible models (optional feature)
-#[cfg(feature = "sqlite")]
-pub mod sqlite;
-
 // Re-export common models
 pub use customer::*;
 pub use order::*;

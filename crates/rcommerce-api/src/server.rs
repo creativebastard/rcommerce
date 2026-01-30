@@ -4,21 +4,10 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
 use rcommerce_core::{Result, Config};
-use rcommerce_core::config::DatabaseType;
-
-// PostgreSQL imports
-#[cfg(not(feature = "sqlite"))]
 use rcommerce_core::repository::{
     Database, create_pool,
     ProductRepository, CustomerRepository,
 };
-
-// SQLite imports  
-#[cfg(feature = "sqlite")]
-use rcommerce_core::repository::{
-    sqlite::{SqliteDb, create_pool as create_sqlite_pool, SqliteProductRepository, SqliteCustomerRepository},
-};
-
 use rcommerce_core::services::{ProductService, CustomerService, OrderService, AuthService};
 use crate::state::AppState;
 
@@ -29,44 +18,25 @@ pub async fn run(config: Config) -> Result<()> {
         config.server.port
     ));
     
-    // Initialize database and services based on type
-    #[cfg(not(feature = "sqlite"))]
-    let (product_service, customer_service) = {
-        info!("Connecting to PostgreSQL database...");
-        let pool = create_pool(
-            &config.database.host,
-            config.database.port,
-            &config.database.database,
-            &config.database.username,
-            &config.database.password,
-            config.database.pool_size,
-        ).await?;
-        let db = Database::new(pool);
-        
-        let product_repo = ProductRepository::new(db.clone());
-        let customer_repo = CustomerRepository::new(db);
-        
-        (
-            ProductService::new(product_repo),
-            CustomerService::new(customer_repo),
-        )
-    };
+    // Initialize database connection
+    info!("Connecting to PostgreSQL database...");
+    let pool = create_pool(
+        &config.database.host,
+        config.database.port,
+        &config.database.database,
+        &config.database.username,
+        &config.database.password,
+        config.database.pool_size,
+    ).await?;
+    let db = Database::new(pool);
     
-    #[cfg(feature = "sqlite")]
-    let (product_service, customer_service) = {
-        info!("Connecting to SQLite database...");
-        let pool = create_sqlite_pool(&config.database.sqlite_path).await?;
-        let db = SqliteDb::new(pool);
-        
-        let product_repo = SqliteProductRepository::new(db.clone());
-        let customer_repo = SqliteCustomerRepository::new(db);
-        
-        (
-            ProductService::new(product_repo),
-            CustomerService::new(customer_repo),
-        )
-    };
+    // Initialize repositories
+    let product_repo = ProductRepository::new(db.clone());
+    let customer_repo = CustomerRepository::new(db);
     
+    // Initialize services
+    let product_service = ProductService::new(product_repo);
+    let customer_service = CustomerService::new(customer_repo);
     let order_service = OrderService::new();
     let auth_service = AuthService::new(config.clone());
     

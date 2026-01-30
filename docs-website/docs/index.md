@@ -41,9 +41,9 @@ API-first design powers any frontend. React, Vue, mobile apps, IoT devices - use
 
 <div markdown>
 
-### Multi-Database
+### PostgreSQL Powered
 
-PostgreSQL, MySQL, or SQLite. Choose the right database for each deployment scenario.
+Built on PostgreSQL for reliability, performance, and full ACID compliance.
 
 </div>
 

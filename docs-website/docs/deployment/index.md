@@ -61,9 +61,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ### Database
 
-- PostgreSQL 14+ (recommended)
-- MySQL 8.0+
-- SQLite 3.35+ (development only)
+- PostgreSQL 14+
 
 ## Configuration
 

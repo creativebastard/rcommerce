@@ -25,8 +25,13 @@ host = "127.0.0.1"
 port = 8080
 
 [database]
-type = "sqlite"
-path = "./rcommerce.db"
+db_type = "Postgres"
+host = "localhost"
+port = 5432
+database = "rcommerce"
+username = "rcommerce"
+password = "your_password"
+pool_size = 20
 
 [cache]
 provider = "memory"
@@ -103,25 +108,6 @@ pool_size = 20
 max_lifetime = "30min"
 idle_timeout = "10min"
 connection_timeout = "30s"
-
-# MySQL specific
-charset = "utf8mb4"
-collation = "utf8mb4_unicode_ci"
-```
-
-### SQLite
-
-```toml
-[database]
-type = "sqlite"
-path = "./rcommerce.db"
-
-# SQLite-specific options
-foreign_keys = true
-busy_timeout = "5s"
-journal_mode = "WAL"
-synchronous = "NORMAL"
-```
 
 ## Cache Configuration
 

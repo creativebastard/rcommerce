@@ -7,7 +7,7 @@ Get R Commerce up and running in minutes with this quick start guide.
 Before you begin, ensure you have the following installed:
 
 - **Rust 1.70+** - [Install from rustup.rs](https://rustup.rs/)
-- **PostgreSQL 13+** or **MySQL 8+** or **SQLite 3+**
+- **PostgreSQL 13+**
 - **Redis 6+** (optional, for caching)
 
 ## Installation
@@ -97,10 +97,6 @@ GRANT ALL PRIVILEGES ON rcommerce_dev.* TO 'rcommerce_dev'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 ```
-
-**SQLite:**
-
-No setup required - the database file will be created automatically.
 
 ### 3. Run Migrations
 

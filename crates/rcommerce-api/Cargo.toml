@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # Core library
-rcommerce-core = { path = "../rcommerce-core", default-features = false }
+rcommerce-core = { path = "../rcommerce-core" }
 
 # Async runtime
 tokio = { workspace = true }
@@ -81,11 +81,6 @@ acme-lib = "0.8"
 
 # Certificate generation
 rcgen = "0.11"
-
-[features]
-default = ["postgres"]
-postgres = ["rcommerce-core/postgres"]
-sqlite = ["rcommerce-core/sqlite"]
 
 # For E2E tests
 [dev-dependencies]

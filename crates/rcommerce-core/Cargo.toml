@@ -104,7 +104,5 @@ handlebars = { workspace = true }
 lru = "0.12"
 
 [features]
-default = ["postgres"]
-postgres = []
-sqlite = []
+default = []
 integration-tests = []

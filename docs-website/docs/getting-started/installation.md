@@ -26,9 +26,8 @@ This guide covers detailed installation instructions for R Commerce on various p
 # Rust 1.70+ (Install from https://rustup.rs)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# PostgreSQL 13+ or MySQL 8+ or SQLite 3+ (development)
-# For PostgreSQL: 
-# For MySQL:
+# PostgreSQL 13+ (Required)
+# See database setup below
 
 # Optional but recommended
 # - pkg-config
@@ -43,7 +42,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # Install system packages
 pkg install -y \
   postgresql15-client \
-  sqlite3 \
   pkgconf \
   openssl \
   ca_root_nss
@@ -65,11 +63,7 @@ apt-get install -y \
   pkg-config \
   libssl-dev \
   postgresql-client \
-  libpq-dev \
-  sqlite3 \
-  libsqlite3-dev
-
-# For MySQL support
+  libpq-dev
 apt-get install -y \
   libmysqlclient-dev
 ```
@@ -82,12 +76,7 @@ yum groupinstall -y "Development Tools"
 yum install -y \
   openssl-devel \
   postgresql-devel \
-  sqlite-devel \
   pkgconfig
-
-# For MySQL support
-yum install -y \
-  mysql-devel
 ```
 
 **macOS:**
@@ -102,11 +91,7 @@ xcode-select --install
 # Install dependencies
 brew install \
   postgresql@15 \
-  sqlite \
   pkg-config
-
-# For MySQL support
-brew install mysql-client
 ```
 
 ## Build Steps (All Platforms)
@@ -193,7 +178,6 @@ RUN apt-get update && \
     ca-certificates \
     libssl3 \
     libpq5 \
-    libsqlite3-0 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
