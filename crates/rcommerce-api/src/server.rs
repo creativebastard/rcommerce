@@ -9,6 +9,7 @@ use rcommerce_core::repository::{
     ProductRepository, CustomerRepository,
 };
 use rcommerce_core::services::{ProductService, CustomerService, OrderService, AuthService};
+use rcommerce_core::cache::RedisPool;
 use crate::state::AppState;
 
 pub async fn run(config: Config) -> Result<()> {
@@ -40,12 +41,16 @@ pub async fn run(config: Config) -> Result<()> {
     let order_service = OrderService::new();
     let auth_service = AuthService::new(config.clone());
     
+    // Initialize Redis (optional)
+    let redis = init_redis(&config).await;
+    
     // Create app state
     let app_state = AppState::new(
         product_service,
         customer_service,
         order_service,
         auth_service,
+        redis,
     );
     
     // Configure CORS for demo frontend
@@ -93,6 +98,34 @@ pub async fn run(config: Config) -> Result<()> {
         .map_err(|e| rcommerce_core::Error::Network(e.to_string()))?;
     
     Ok(())
+}
+
+/// Initialize Redis connection pool (optional)
+async fn init_redis(config: &Config) -> Option<RedisPool> {
+    // Check if Redis URL is configured
+    let redis_url = config.cache.redis_url.clone()
+        .or_else(|| std::env::var("REDIS_URL").ok());
+    
+    if let Some(url) = redis_url {
+        info!("Connecting to Redis at {}...", url);
+        match RedisPool::new(rcommerce_core::cache::RedisConfig {
+            url,
+            pool_size: config.cache.redis_pool_size as usize,
+            ..Default::default()
+        }).await {
+            Ok(pool) => {
+                info!("Redis connected successfully");
+                Some(pool)
+            }
+            Err(e) => {
+                tracing::warn!("Failed to connect to Redis: {}. Continuing without cache.", e);
+                None
+            }
+        }
+    } else {
+        info!("Redis not configured. Running without cache.");
+        None
+    }
 }
 
 /// API v1 routes

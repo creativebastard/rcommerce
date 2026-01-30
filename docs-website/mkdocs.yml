@@ -58,10 +58,22 @@ theme:
 
 # Plugins
 plugins:
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: zh
+          name: 简体中文
+          build: true
   - search:
       separator: '[\s\-]+'
       lang:
         - en
+        - zh
   - redirects:
       redirect_maps:
         'getting-started/index.md': 'getting-started/quickstart.md'
