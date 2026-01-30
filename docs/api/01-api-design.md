@@ -242,7 +242,7 @@ GET    /v1/checkout/:session_id     # Get checkout
 POST   /v1/checkout/:session_id/payments # Process payment
 ```
 
-### Payments
+### Payments (v1 - Legacy)
 
 ```
 GET    /v1/payments                 # List payments
@@ -252,6 +252,67 @@ PATCH  /v1/payments/:id             # Update payment (e.g., status)
 
 GET    /v1/payment-methods          # List available payment methods
 GET    /v1/payment-gateways         # List configured gateways
+```
+
+### Payments (v2 - Agnostic)
+
+The v2 Payments API provides a provider-agnostic interface where all payment processing happens server-side. The frontend sends card data to R Commerce, which then communicates with payment providers.
+
+```
+POST   /v2/payments/methods         # Get available payment methods for checkout
+POST   /v2/payments                 # Initiate payment (server-side processing)
+GET    /v2/payments/:id             # Get payment status
+POST   /v2/payments/:id/complete    # Complete 3DS/redirect action
+POST   /v2/payments/:id/refund      # Process refund
+
+POST   /v2/payment-methods          # Save payment method for customer
+GET    /v2/customers/:id/payment-methods  # List saved payment methods
+DELETE /v2/payment-methods/:token   # Delete saved payment method
+
+POST   /v2/webhooks/:gateway       # Receive webhooks from payment providers
+```
+
+**Key Differences from v1:**
+- **Server-side processing**: Card data is sent to R Commerce API, not directly to Stripe
+- **Unified interface**: Same API structure works for all gateways (Stripe, Airwallex, WeChat Pay, etc.)
+- **3D Secure handling**: Backend returns `requires_action` response; frontend handles redirect/iframe
+- **No provider SDK required**: Frontend doesn't need Stripe.js or other provider SDKs
+
+**Example v2 Payment Flow:**
+
+```javascript
+// 1. Get available payment methods
+const methods = await fetch('/api/v2/payments/methods', {
+  method: 'POST',
+  body: JSON.stringify({ currency: 'USD', amount: '99.99' })
+});
+
+// 2. Initiate payment with card data
+const result = await fetch('/api/v2/payments', {
+  method: 'POST',
+  body: JSON.stringify({
+    gateway_id: 'stripe',
+    amount: '99.99',
+    currency: 'USD',
+    payment_method: {
+      type: 'card',
+      card: {
+        number: '4242424242424242',
+        exp_month: 12,
+        exp_year: 2025,
+        cvc: '123'
+      }
+    }
+  })
+});
+
+// 3. Handle response
+if (result.type === 'success') {
+  // Payment complete
+} else if (result.type === 'requires_action') {
+  // Handle 3D Secure or redirect
+  window.location.href = result.action_data.redirect_url;
+}
 ```
 
 ### Shipping

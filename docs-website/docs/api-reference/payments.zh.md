@@ -1,11 +1,21 @@
 # 支付 API
 
-支付 API 处理支付处理、交易、退款和支付方式管理。
+支付 API 通过提供商无关的接口处理支付。所有支付处理都在服务器端进行，以提高安全性并实现所有支付网关的统一集成。
+
+## 概述
+
+v2 支付 API 提供了一个统一的接口，用于通过多个网关（Stripe、Airwallex、微信支付、支付宝）处理支付，无需前端与提供商 SDK 集成。
+
+**主要优势：**
+- **服务器端处理**：卡数据发送到 R Commerce API，而不是直接发送给提供商
+- **无需提供商 SDK**：前端不需要 Stripe.js 或其他 SDK
+- **统一接口**：相同的 API 结构适用于所有网关
+- **更好的安全性**：API 密钥永远不会暴露在前端 JavaScript 中
 
 ## 基础 URL
 
 ```
-/api/v1/payments
+/api/v2/payments
 ```
 
 ## 认证
@@ -16,181 +26,329 @@
 Authorization: Bearer YOUR_SECRET_KEY
 ```
 
-## 支付对象
+## 支付流程
 
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440200",
-  "order_id": "550e8400-e29b-41d4-a716-446655440100",
-  "amount": "59.49",
-  "currency": "USD",
-  "status": "succeeded",
-  "gateway": "stripe",
-  "gateway_payment_id": "pi_3O...",
-  "payment_method": {
-    "type": "card",
-    "card": {
-      "brand": "visa",
-      "last4": "4242",
-      "exp_month": 12,
-      "exp_year": 2025,
-      "fingerprint": "fp_..."
-    }
-  },
-  "description": "订单 #1001",
-  "receipt_email": "customer@example.com",
-  "receipt_url": "https://pay.stripe.com/receipts/...",
-  "captured": true,
-  "capture_method": "automatic",
-  "confirmation_method": "automatic",
-  "customer_id": "550e8400-e29b-41d4-a716-446655440001",
-  "refunded_amount": "0.00",
-  "refunds": [],
-  "dispute": null,
-  "metadata": {
-    "order_number": "1001",
-    "customer_name": "John Doe"
-  },
-  "created_at": "2024-01-15T10:01:00Z",
-  "updated_at": "2024-01-15T10:01:30Z",
-  "captured_at": "2024-01-15T10:01:30Z"
-}
+```mermaid
+sequenceDiagram
+    participant F as 前端
+    participant A as R Commerce API
+    participant G as 支付网关
+    participant P as 提供商 (Stripe)
+    
+    F->>A: POST /v2/payments/methods
+    A-->>F: 可用方法和字段
+    
+    F->>A: POST /v2/payments (带卡数据)
+    A->>G: 处理支付
+    G->>P: 创建支付意图
+    P-->>G: 支付意图响应
+    G-->>A: 通用响应
+    
+    alt 成功
+        A-->>F: {type: "success", ...}
+    else 需要操作 (3DS)
+        A-->>F: {type: "requires_action", ...}
+        F->>P: 完成 3D 安全验证
+        P-->>F: 重定向返回
+        F->>A: POST /v2/payments/:id/complete
+        A-->>F: {type: "success", ...}
+    end
 ```
-
-### 支付字段
-
-| 字段 | 类型 | 说明 |
-|-------|------|-------------|
-| `id` | UUID | 唯一标识符 |
-| `order_id` | UUID | 关联订单 |
-| `amount` | decimal | 支付金额 |
-| `currency` | string | ISO 4217 货币代码 |
-| `status` | string | `pending`、`processing`、`succeeded`、`failed`、`canceled`、`refunded` |
-| `gateway` | string | 使用的支付网关 |
-| `gateway_payment_id` | string | 网关的交易 ID |
-| `payment_method` | object | 支付方式详情 |
-| `description` | string | 支付描述 |
-| `receipt_email` | string | 收据邮箱 |
-| `receipt_url` | string | 查看收据的 URL |
-| `captured` | boolean | 资金已捕获 |
-| `capture_method` | string | `automatic` 或 `manual` |
-| `customer_id` | UUID | 已保存的客户（如适用） |
-| `refunded_amount` | decimal | 退款总额 |
-| `refunds` | array | 退款列表 |
-| `dispute` | object | 争议信息 |
-| `metadata` | object | 自定义键值数据 |
-| `created_at` | datetime | 创建时间戳 |
-| `updated_at` | datetime | 最后修改时间 |
-| `captured_at` | datetime | 捕获时间戳 |
 
 ## 端点
 
-### 列出支付
+### 获取支付方式
+
+检索结账会话的可用支付方式。
 
 ```http
-GET /api/v1/payments
+POST /api/v2/payments/methods
+Content-Type: application/json
+Authorization: Bearer <token>
 ```
-
-检索分页的支付列表。
-
-#### 查询参数
-
-| 参数 | 类型 | 说明 |
-|-----------|------|-------------|
-| `page` | integer | 页码（默认：1） |
-| `per_page` | integer | 每页项目数（默认：20，最大：100） |
-| `order_id` | UUID | 按订单筛选 |
-| `customer_id` | UUID | 按客户筛选 |
-| `gateway` | string | 按支付网关筛选 |
-| `status` | string | 按状态筛选 |
-| `min_amount` | decimal | 最低金额 |
-| `max_amount` | decimal | 最高金额 |
-| `created_after` | datetime | 创建日期之后 |
-| `created_before` | datetime | 创建日期之前 |
-| `sort` | string | `created_at`、`amount` |
-| `order` | string | `asc` 或 `desc` |
-
-### 获取支付
-
-```http
-GET /api/v1/payments/{id}
-```
-
-通过 ID 检索单个支付。
-
-### 创建支付
-
-```http
-POST /api/v1/payments
-```
-
-为订单创建新支付。
 
 #### 请求体
 
 ```json
 {
-  "order_id": "550e8400-e29b-41d4-a716-446655440100",
-  "amount": "59.49",
   "currency": "USD",
-  "gateway": "stripe",
+  "amount": "99.99"
+}
+```
+
+#### 响应
+
+```json
+[
+  {
+    "gateway_id": "stripe",
+    "gateway_name": "Stripe",
+    "payment_methods": [
+      {
+        "method_type": "card",
+        "enabled": true,
+        "display_name": "信用卡/借记卡",
+        "requires_redirect": false,
+        "supports_3ds": true,
+        "supports_tokenization": true,
+        "supports_recurring": true,
+        "required_fields": [
+          {
+            "name": "number",
+            "label": "卡号",
+            "field_type": "card_number",
+            "required": true,
+            "pattern": "^[\\d\\s]{13,19}$",
+            "placeholder": "1234 5678 9012 3456"
+          },
+          {
+            "name": "exp_month",
+            "label": "到期月份",
+            "field_type": "expiry_date",
+            "required": true,
+            "pattern": "^(0[1-9]|1[0-2])$",
+            "placeholder": "MM"
+          },
+          {
+            "name": "exp_year",
+            "label": "到期年份",
+            "field_type": "expiry_date",
+            "required": true,
+            "pattern": "^20[2-9][0-9]$",
+            "placeholder": "YYYY"
+          },
+          {
+            "name": "cvc",
+            "label": "安全码",
+            "field_type": "cvc",
+            "required": true,
+            "pattern": "^\\d{3,4}$",
+            "placeholder": "123"
+          }
+        ],
+        "supported_currencies": ["USD", "EUR", "GBP"],
+        "min_amount": "0.50",
+        "max_amount": "999999.99"
+      }
+    ]
+  }
+]
+```
+
+### 发起支付
+
+创建新支付。支付由 R Commerce 在服务器端处理。
+
+```http
+POST /api/v2/payments
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+#### 请求体
+
+```json
+{
+  "gateway_id": "stripe",
+  "amount": "99.99",
+  "currency": "USD",
   "payment_method": {
     "type": "card",
     "card": {
       "number": "4242424242424242",
       "exp_month": 12,
       "exp_year": 2025,
-      "cvc": "123"
+      "cvc": "123",
+      "name": "John Doe"
     }
   },
-  "capture_method": "automatic",
-  "receipt_email": "customer@example.com",
+  "order_id": "550e8400-e29b-41d4-a716-446655440100",
+  "customer_email": "customer@example.com",
+  "customer_id": "550e8400-e29b-41d4-a716-446655440001",
   "description": "订单 #1001",
   "metadata": {
     "order_number": "1001"
+  },
+  "return_url": "https://yoursite.com/checkout/complete",
+  "idempotency_key": "unique-key-123",
+  "save_payment_method": false
+}
+```
+
+#### 支付方式类型
+
+**卡：**
+```json
+{
+  "type": "card",
+  "card": {
+    "number": "4242424242424242",
+    "exp_month": 12,
+    "exp_year": 2025,
+    "cvc": "123",
+    "name": "John Doe"
   }
 }
 ```
 
-### 捕获支付
-
-```http
-POST /api/v1/payments/{id}/capture
-```
-
-捕获已授权（未捕获）的支付。
-
-#### 请求体
-
+**已保存的卡：**
 ```json
 {
-  "amount": "59.49"
+  "type": "saved_card",
+  "token": "card_1234567890"
 }
 ```
 
-### 取消支付
-
-```http
-POST /api/v1/payments/{id}/cancel
+**银行转账：**
+```json
+{
+  "type": "bank_transfer",
+  "bank_transfer": {
+    "account_number": "000123456789",
+    "routing_number": "110000000",
+    "account_holder_name": "John Doe",
+    "bank_name": "测试银行"
+  }
+}
 ```
 
-取消未捕获的支付。
+#### 响应：成功
 
-## 退款
-
-### 创建退款
-
-```http
-POST /api/v1/payments/{id}/refunds
+```json
+{
+  "type": "success",
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "transaction_id": "pi_3O...",
+  "payment_status": "succeeded",
+  "payment_method": {
+    "method_type": "card",
+    "last_four": "4242",
+    "card_brand": "visa",
+    "exp_month": "12",
+    "exp_year": "2025",
+    "cardholder_name": "John Doe",
+    "token": null
+  },
+  "receipt_url": "https://pay.stripe.com/receipts/..."
+}
 ```
 
-对已捕获的支付进行退款。
+#### 响应：需要操作 (3D 安全验证)
+
+```json
+{
+  "type": "requires_action",
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "action_type": "three_d_secure",
+  "action_data": {
+    "type": "use_stripe_sdk",
+    "stripe_js": {
+      "type": "three_d_secure_redirect",
+      "stripe_js": "..."
+    },
+    "redirect_url": "https://hooks.stripe.com/3d_secure/..."
+  },
+  "expires_at": "2026-01-28T11:00:00Z"
+}
+```
+
+#### 响应：失败
+
+```json
+{
+  "type": "failed",
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "error_code": "card_declined",
+  "error_message": "您的卡被拒绝。",
+  "retry_allowed": true
+}
+```
+
+### 完成支付操作
+
+完成需要额外操作的支付（3D 安全验证、重定向等）。
+
+```http
+POST /api/v2/payments/{payment_id}/complete
+Content-Type: application/json
+Authorization: Bearer <token>
+```
 
 #### 请求体
 
 ```json
 {
-  "amount": "59.49",
+  "action_type": "three_d_secure",
+  "action_data": {
+    "payment_intent": "pi_3O...",
+    "payment_intent_client_secret": "pi_3O..._secret_..."
+  }
+}
+```
+
+#### 响应
+
+```json
+{
+  "type": "success",
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "transaction_id": "pi_3O...",
+  "payment_status": "succeeded",
+  "payment_method": {
+    "method_type": "card",
+    "last_four": "4242",
+    "card_brand": "visa",
+    "exp_month": "12",
+    "exp_year": "2025"
+  },
+  "receipt_url": "https://pay.stripe.com/receipts/..."
+}
+```
+
+### 获取支付状态
+
+检索支付的当前状态。
+
+```http
+GET /api/v2/payments/{payment_id}
+Authorization: Bearer <token>
+```
+
+#### 响应
+
+```json
+{
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "status": "succeeded",
+  "amount": "99.99",
+  "currency": "USD",
+  "gateway": "stripe",
+  "transaction_id": "pi_3O...",
+  "payment_method": {
+    "method_type": "card",
+    "last_four": "4242",
+    "card_brand": "visa"
+  },
+  "created_at": "2026-01-28T10:00:00Z",
+  "completed_at": "2026-01-28T10:00:05Z"
+}
+```
+
+### 退款
+
+对已捕获的支付进行退款。
+
+```http
+POST /api/v2/payments/{payment_id}/refund
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+#### 请求体
+
+```json
+{
+  "amount": "99.99",
   "reason": "requested_by_customer",
   "metadata": {
     "note": "客户对产品不满意"
@@ -204,205 +362,229 @@ POST /api/v1/payments/{id}/refunds
 - `fraudulent` - 欺诈交易
 - `requested_by_customer` - 客户要求
 
-### 获取退款
+#### 响应
 
-```http
-GET /api/v1/payments/{payment_id}/refunds/{refund_id}
-```
-
-### 列出退款
-
-```http
-GET /api/v1/payments/{payment_id}/refunds
+```json
+{
+  "refund_id": "ref_550e8400-e29b-41d4-a716-446655440001",
+  "payment_id": "pay_550e8400-e29b-41d4-a716-446655440000",
+  "amount": "99.99",
+  "currency": "USD",
+  "status": "succeeded",
+  "reason": "requested_by_customer",
+  "created_at": "2026-01-28T10:30:00Z"
+}
 ```
 
 ## 支付方式
 
-### 列出客户支付方式
+### 保存支付方式
+
+保存支付方式以供将来使用。
 
 ```http
-GET /api/v1/customers/{customer_id}/payment_methods
-```
-
-### 创建支付方式
-
-```http
-POST /api/v1/customers/{customer_id}/payment_methods
+POST /api/v2/payment-methods
+Content-Type: application/json
+Authorization: Bearer <token>
 ```
 
 #### 请求体
 
 ```json
 {
-  "type": "card",
-  "card": {
-    "number": "4242424242424242",
-    "exp_month": 12,
-    "exp_year": 2025,
-    "cvc": "123"
+  "gateway_id": "stripe",
+  "payment_method_data": {
+    "type": "card",
+    "card": {
+      "number": "4242424242424242",
+      "exp_month": 12,
+      "exp_year": 2025,
+      "cvc": "123",
+      "name": "John Doe"
+    }
   },
   "set_as_default": true
 }
 ```
 
-### 删除支付方式
-
-```http
-DELETE /api/v1/customers/{customer_id}/payment_methods/{payment_method_id}
-```
-
-### 设置默认支付方式
-
-```http
-POST /api/v1/customers/{customer_id}/payment_methods/{payment_method_id}/default
-```
-
-## 支付意图
-
-支付意图用于具有 3D 安全验证的复杂支付流程。
-
-### 创建支付意图
-
-```http
-POST /api/v1/payment_intents
-```
-
-#### 请求体
+#### 响应
 
 ```json
 {
-  "amount": "59.49",
-  "currency": "USD",
-  "customer_id": "550e8400-e29b-41d4-a716-446655440001",
-  "payment_method": "pm_...",
-  "confirmation_method": "manual",
-  "capture_method": "automatic",
-  "setup_future_usage": "off_session",
-  "metadata": {
-    "order_id": "550e8400-e29b-41d4-a716-446655440100"
+  "token": "pm_550e8400-e29b-41d4-a716-446655440002",
+  "payment_method": {
+    "method_type": "card",
+    "last_four": "4242",
+    "card_brand": "visa",
+    "exp_month": "12",
+    "exp_year": "2025",
+    "cardholder_name": "John Doe"
+  },
+  "expires_at": null
+}
+```
+
+### 列出已保存的支付方式
+
+检索客户已保存的支付方式。
+
+```http
+GET /api/v2/customers/{customer_id}/payment-methods
+Authorization: Bearer <token>
+```
+
+#### 响应
+
+```json
+[
+  {
+    "token": "pm_550e8400-e29b-41d4-a716-446655440002",
+    "method_type": "card",
+    "last_four": "4242",
+    "card_brand": "visa",
+    "exp_month": "12",
+    "exp_year": "2025",
+    "cardholder_name": "John Doe",
+    "is_default": true
+  }
+]
+```
+
+### 删除支付方式
+
+删除已保存的支付方式。
+
+```http
+DELETE /api/v2/payment-methods/{token}
+Authorization: Bearer <token>
+```
+
+#### 响应
+
+```json
+{
+  "success": true,
+  "message": "支付方式已删除",
+  "token": "pm_550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+## Webhooks
+
+### 接收提供商 Webhook
+
+接收来自支付提供商（Stripe、Airwallex 等）的 webhook。
+
+```http
+POST /api/v2/webhooks/{gateway_id}
+Content-Type: application/json
+```
+
+#### 请求头
+
+提供商特定的请求头（例如 `Stripe-Signature`、`Airwallex-Signature`）
+
+#### 响应
+
+```json
+{
+  "success": true,
+  "gateway": "stripe",
+  "message": "Webhook 已处理"
+}
+```
+
+## 前端集成示例
+
+```javascript
+// checkout.js
+
+async function processPayment() {
+  // 1. 从表单收集卡数据
+  const cardData = {
+    number: document.getElementById('cardNumber').value,
+    exp_month: parseInt(document.getElementById('expMonth').value),
+    exp_year: parseInt(document.getElementById('expYear').value),
+    cvc: document.getElementById('cvc').value,
+    name: document.getElementById('cardName').value
+  };
+  
+  // 2. 发送到 R Commerce API
+  const response = await fetch('/api/v2/payments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`
+    },
+    body: JSON.stringify({
+      gateway_id: 'stripe', // 或 'airwallex'、'wechatpay' 等
+      amount: '99.99',
+      currency: 'USD',
+      payment_method: {
+        type: 'card',
+        card: cardData
+      },
+      order_id: orderId,
+      customer_email: customerEmail,
+      return_url: window.location.origin + '/checkout/complete'
+    })
+  });
+  
+  const result = await response.json();
+  
+  // 3. 处理响应
+  switch (result.type) {
+    case 'success':
+      // 支付完成
+      window.location.href = '/checkout/success';
+      break;
+      
+    case 'requires_action':
+      // 处理 3D 安全验证或重定向
+      if (result.action_type === 'redirect') {
+        window.location.href = result.action_data.redirect_url;
+      } else if (result.action_type === 'three_d_secure') {
+        await handleThreeDSecure(result);
+      }
+      break;
+      
+    case 'failed':
+      showError(result.error_message);
+      break;
+  }
+}
+
+// 处理 3D 安全验证完成
+async function handleThreeDSecure(paymentResult) {
+  // 选项 1：重定向方式
+  window.location.href = paymentResult.action_data.redirect_url;
+}
+
+// 客户从 3DS/重定向返回时调用
+async function completePayment(paymentId) {
+  const response = await fetch(`/api/v2/payments/${paymentId}/complete`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`
+    },
+    body: JSON.stringify({
+      action_type: 'three_d_secure',
+      action_data: {
+        // 来自 URL 参数或 iframe 的数据
+      }
+    })
+  });
+  
+  const result = await response.json();
+  
+  if (result.type === 'success') {
+    window.location.href = '/checkout/success';
+  } else {
+    showError(result.error_message);
   }
 }
 ```
-
-### 确认支付意图
-
-```http
-POST /api/v1/payment_intents/{id}/confirm
-```
-
-### 捕获支付意图
-
-```http
-POST /api/v1/payment_intents/{id}/capture
-```
-
-### 取消支付意图
-
-```http
-POST /api/v1/payment_intents/{id}/cancel
-```
-
-## 争议
-
-### 列出争议
-
-```http
-GET /api/v1/disputes
-```
-
-### 获取争议
-
-```http
-GET /api/v1/disputes/{id}
-```
-
-### 提交证据
-
-```http
-POST /api/v1/disputes/{id}/evidence
-```
-
-#### 请求体
-
-```json
-{
-  "product_description": "优质棉质 T 恤",
-  "customer_email": "customer@example.com",
-  "shipping_date": "2024-01-16",
-  "shipping_carrier": "UPS",
-  "shipping_tracking_number": "1Z999...",
-  "access_activity_log": "客户访问数字下载 3 次",
-  "uncategorized_text": "其他说明...",
-  "uncategorized_file": "file_..."
-}
-```
-
-## 提现
-
-### 列出提现
-
-```http
-GET /api/v1/payouts
-```
-
-检索到您银行账户的提现。
-
-#### 查询参数
-
-| 参数 | 类型 | 说明 |
-|-----------|------|-------------|
-| `status` | string | `pending`、`in_transit`、`paid`、`failed`、`canceled` |
-| `date_after` | date | 日期之后的提现（YYYY-MM-DD） |
-| `date_before` | date | 日期之前的提现 |
-
-### 获取提现
-
-```http
-GET /api/v1/payouts/{id}
-```
-
-## 余额
-
-### 获取余额
-
-```http
-GET /api/v1/balance
-```
-
-检索当前账户余额。
-
-#### 示例响应
-
-```json
-{
-  "available": [
-    {
-      "currency": "USD",
-      "amount": "12500.00"
-    }
-  ],
-  "pending": [
-    {
-      "currency": "USD",
-      "amount": "3500.00"
-    }
-  ],
-  "instant_available": [
-    {
-      "currency": "USD",
-      "amount": "5000.00"
-    }
-  ]
-}
-```
-
-### 获取余额交易
-
-```http
-GET /api/v1/balance/transactions
-```
-
-检索详细的余额交易历史。
 
 ## 错误代码
 
@@ -420,9 +602,10 @@ GET /api/v1/balance/transactions
 | `ALREADY_CAPTURED` | 409 | 支付已捕获 |
 | `ALREADY_REFUNDED` | 409 | 支付已全额退款 |
 | `REFUND_AMOUNT_INVALID` | 400 | 退款超过支付金额 |
-| `DISPUTE_NOT_FOUND` | 404 | 争议不存在 |
+| `GATEWAY_NOT_FOUND` | 404 | 支付网关未配置 |
+| `IDEMPOTENCY_KEY_REUSED` | 409 | 幂等键已使用 |
 
-## Webhooks
+## Webhook 事件
 
 | 事件 | 说明 |
 |-------|-------------|
@@ -431,12 +614,48 @@ GET /api/v1/balance/transactions
 | `payment.failed` | 支付失败 |
 | `payment.captured` | 已授权支付已捕获 |
 | `payment.canceled` | 支付已取消 |
+| `payment.requires_action` | 支付需要 3D 安全验证或重定向 |
+| `payment.action_completed` | 3D 安全验证或重定向已完成 |
 | `refund.created` | 退款已发起 |
 | `refund.succeeded` | 退款已完成 |
 | `refund.failed` | 退款失败 |
-| `dispute.created` | 争议/拒付已开启 |
-| `dispute.updated` | 争议状态已更改 |
-| `dispute.closed` | 争议已解决 |
-| `payout.created` | 提现已发起 |
-| `payout.paid` | 提现已存入 |
-| `payout.failed` | 提现失败 |
+
+## 从 v1 API 迁移
+
+### v1 (旧版) - 需要 Stripe.js
+
+```javascript
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripe = await loadStripe('pk_live_...');
+const { client_secret } = await fetch('/api/v1/payments').then(r => r.json());
+const result = await stripe.confirmCardPayment(client_secret, { ... });
+```
+
+### v2 (新版) - 服务器端处理
+
+```javascript
+const result = await fetch('/api/v2/payments', {
+  method: 'POST',
+  body: JSON.stringify({
+    gateway_id: 'stripe',
+    payment_method: { type: 'card', card: { number, exp_month, ... } }
+  })
+});
+// 处理 RequiresAction 或 Success 响应
+```
+
+## 测试卡
+
+### Stripe 测试卡
+
+| 卡号 | 场景 |
+|-------------|----------|
+| `4242424242424242` | 成功 |
+| `4000000000000002` | 拒绝 |
+| `4000000000009995` | 余额不足 |
+| `4000002500003155` | 需要 3D 安全验证 |
+| `4000000000003220` | 3D 安全验证 2 无摩擦 |
+| `4000008400001629` | 3D 安全验证 2 挑战 |
+| `4000000000000127` | CVC 不正确 |
+| `4000000000000069` | 卡已过期 |
