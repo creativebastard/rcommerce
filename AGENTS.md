@@ -554,16 +554,22 @@ log_slow_queries = 1000  # ms
 
 ### Documentation Updates
 
-**When making documentation changes:**
-1. Update the relevant markdown files in `docs-website/docs/`
-2. **Always rebuild the documentation site:**
+**CRITICAL: When making ANY documentation changes, you MUST rebuild the documentation site.**
+
+1. Update the relevant markdown files in `docs/` and/or `docs-website/docs/`
+2. **ALWAYS rebuild the documentation site:**
    ```bash
    cd docs-website
-   mkdocs build --clean
+   ./build.sh              # Or: mkdocs build --clean
+   ```
+3. Create the deployment archive:
+   ```bash
    tar -czf site.tar.gz site/
    ```
-3. Commit the updated `site.tar.gz` along with source changes
-4. Push to both Gitee and GitHub
+4. Commit BOTH the source changes AND the rebuilt `site.tar.gz`
+5. Push to both Gitee and GitHub
+
+**Note:** The documentation site uses MkDocs with the Material theme and i18n plugin for Chinese/English support. The build script handles dependency installation automatically.
 
 ---
 

@@ -5,6 +5,7 @@ mkdocs-material>=9.4.0
 # Plugins
 mkdocs-minify-plugin>=0.7.0
 mkdocs-redirects>=1.2.0
+mkdocs-static-i18n>=1.2.0
 
 # Markdown extensions
 pymdown-extensions>=10.0.0
