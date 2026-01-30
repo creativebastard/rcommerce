@@ -1,0 +1,53 @@
+# Docker 部署
+
+使用 Docker 和 Docker Compose 部署 R Commerce。
+
+## 快速开始
+
+```bash
+docker-compose up -d
+```
+
+## 生产环境 Docker Compose
+
+```yaml
+version: '3.8'
+
+services:
+  rcommerce:
+    image: rcommerce:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - RCOMMERCE_CONFIG=/etc/rcommerce/config.toml
+    volumes:
+      - ./config.toml:/etc/rcommerce/config.toml
+      - uploads:/app/uploads
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: rcommerce
+      POSTGRES_USER: rcommerce
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+```
+
+请参阅 [Linux systemd](./linux/systemd.md) 了解非 Docker 部署。
