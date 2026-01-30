@@ -45,7 +45,7 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 
 # Database
-sqlx = { workspace = true }
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio-native-tls"] }
 
 # Colors for terminal output
 console = "0.15"

@@ -22,6 +22,7 @@ pub use config::Config;
 pub use models::{Currency, Pagination, SortDirection, SortParams, ProductType, SubscriptionInterval, OrderType, SubscriptionStatus};
 pub use traits::Repository;
 pub use repository::{Database, create_pool};
+pub use db::migrate::{Migrator, auto_migrate, DbStatus};
 pub use services::{ProductService, CustomerService, OrderService, AuthService, ApiKey, JwtClaims, Service, PaginationParams, PaginationInfo};
 pub use payment::{PaymentGateway, CreatePaymentRequest, PaymentMethod, CardDetails, PaymentSession, PaymentSessionStatus, Payment, PaymentStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType};
 pub use payment::gateways::{stripe::StripeGateway, wechatpay::WeChatPayGateway, alipay::AliPayGateway};

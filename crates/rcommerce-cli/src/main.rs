@@ -28,6 +28,9 @@ pub enum Commands {
         
         #[arg(short = 'P', long, help = "Port number", default_value = "8080")]
         port: u16,
+        
+        #[arg(long, help = "Skip automatic database migration on startup")]
+        skip_migrate: bool,
     },
     
     /// Database operations
@@ -63,8 +66,11 @@ pub enum DbCommands {
     /// Run database migrations
     Migrate,
     
-    /// Reset database (DANGEROUS)
-    Reset,
+    /// Reset database (DANGEROUS - deletes all data)
+    Reset {
+        #[arg(long, help = "Skip confirmation prompt")]
+        force: bool,
+    },
     
     /// Seed database with sample data
     Seed,
@@ -157,32 +163,103 @@ async fn main() -> Result<()> {
     
     // Execute command
     match cli.command {
-        Commands::Server { host, port } => {
+        Commands::Server { host, port, skip_migrate } => {
             // Override config with CLI arguments
             let mut config = config;
             config.server.host = host;
             config.server.port = port;
+            
+            // Auto-migrate database unless skipped
+            if !skip_migrate {
+                info!("Running database migrations...");
+                match run_migrations(&config).await {
+                    Ok(_) => info!("Database migrations completed successfully"),
+                    Err(e) => {
+                        eprintln!("❌ Database migration failed: {}", e);
+                        eprintln!("Use --skip-migrate to start without migration");
+                        std::process::exit(1);
+                    }
+                }
+            }
             
             rcommerce_api::run(config).await?;
         }
         
         Commands::Db { command } => {
             use colored::*;
+            
+            // Create database pool
+            let pool = create_pool(&config).await?;
+            let migrator = rcommerce_core::Migrator::new(pool);
+            
             match command {
                 DbCommands::Migrate => {
-                    println!("{}", "Running migrations...".yellow());
-                    println!("Use: psql < migrations/001_initial_schema.sql");
+                    println!("{}", "Running database migrations...".yellow());
+                    match migrator.migrate().await {
+                        Ok(_) => {
+                            println!("{}", "✅ Migrations completed successfully!".green());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Migration failed: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
-                DbCommands::Reset => {
-                    println!("{}", "Resetting database...".red().bold());
-                    println!("DANGER: This will delete all data!");
+                DbCommands::Reset { force } => {
+                    if !force {
+                        println!("{}", "⚠️  WARNING: This will DELETE ALL DATA!".red().bold());
+                        print!("Type 'yes' to confirm: ");
+                        use std::io::Write;
+                        std::io::stdout().flush().unwrap();
+                        
+                        let mut input = String::new();
+                        std::io::stdin().read_line(&mut input).unwrap();
+                        
+                        if input.trim() != "yes" {
+                            println!("Aborted.");
+                            return Ok(());
+                        }
+                    }
+                    
+                    println!("{}", "Resetting database...".red());
+                    match migrator.reset().await {
+                        Ok(_) => {
+                            println!("{}", "✅ Database reset complete!".green());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Reset failed: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
                 DbCommands::Seed => {
-                    println!("{}", "Seeding sample data...".green());
+                    println!("{}", "Seeding database with demo data...".green());
+                    match migrator.seed().await {
+                        Ok(_) => {
+                            println!("{}", "✅ Demo data seeded successfully!".green());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Seed failed: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
                 DbCommands::Status => {
-                    println!("Database: {}", config.database.database);
-                    println!("Host: {}:{}", config.database.host, config.database.port);
+                    match migrator.status().await {
+                        Ok(status) => {
+                            println!("{}", "Database Status".bold().underline());
+                            println!("  Host: {}:{}", config.database.host, config.database.port);
+                            println!("  Database: {}", config.database.database);
+                            println!("  Applied migrations: {}", status.applied_migrations);
+                            println!("  Products: {}", status.product_count);
+                            println!("  Customers: {}", status.customer_count);
+                            println!("  Orders: {}", status.order_count);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to get status: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
             }
         }
@@ -210,6 +287,35 @@ async fn main() -> Result<()> {
         }
     }
     
+    Ok(())
+}
+
+/// Create database pool from config
+async fn create_pool(config: &Config) -> Result<sqlx::PgPool> {
+    use sqlx::postgres::PgPoolOptions;
+    
+    let database_url = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        config.database.username,
+        config.database.password,
+        config.database.host,
+        config.database.port,
+        config.database.database
+    );
+    
+    let pool = PgPoolOptions::new()
+        .max_connections(config.database.pool_size)
+        .connect(&database_url)
+        .await
+        .map_err(|e| rcommerce_core::Error::Database(e))?;
+    
+    Ok(pool)
+}
+
+/// Run database migrations
+async fn run_migrations(config: &Config) -> Result<()> {
+    let pool = create_pool(config).await?;
+    rcommerce_core::auto_migrate(&pool).await?;
     Ok(())
 }
 

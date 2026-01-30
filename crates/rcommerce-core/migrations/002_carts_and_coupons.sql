@@ -74,7 +74,10 @@ ON cart_items(cart_id, product_id, COALESCE(variant_id, '00000000-0000-0000-0000
 -- Coupon Tables
 -- ============================================
 
-CREATE TYPE discount_type AS ENUM ('percentage', 'fixed_amount', 'free_shipping', 'buy_x_get_y');
+DO $$ BEGIN
+    CREATE TYPE discount_type AS ENUM ('percentage', 'fixed_amount', 'free_shipping', 'buy_x_get_y');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS coupons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
