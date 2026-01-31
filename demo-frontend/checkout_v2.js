@@ -96,24 +96,29 @@ async function handlePayment() {
         // Calculate total
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         
-        // Build payment method data
+        // Build payment method data (matches API format)
         const paymentMethodData = {
             type: 'card',
-            card: {
-                number: cardNumber,
-                exp_month: expiryMonth,
-                exp_year: expiryYear,
-                cvc: cvc,
-                name: cardName
-            }
+            number: cardNumber,
+            exp_month: expiryMonth.toString(),
+            exp_year: expiryYear.toString(),
+            cvc: cvc,
+            name: cardName
         };
         
-        console.log('Sending payment request:', {
+        const requestBody = {
             gateway_id: 'stripe',
             amount: total.toFixed(2),
             currency: 'usd',
-            payment_method: paymentMethodData
-        });
+            payment_method_type: 'card',
+            payment_method_data: paymentMethodData,
+            order_id: 'order_' + Date.now(),
+            customer_email: email,
+            description: `Order from ${window.location.hostname}`,
+            save_payment_method: false
+        };
+        
+        console.log('Sending payment request:', requestBody);
         
         // Create payment via API
         const paymentResponse = await fetch(`${API_BASE_URL}/payments`, {
@@ -122,16 +127,7 @@ async function handlePayment() {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                gateway_id: 'stripe',
-                amount: total.toFixed(2),
-                currency: 'usd',
-                payment_method: paymentMethodData,
-                order_id: 'order_' + Date.now(),
-                customer_email: email,
-                description: `Order from ${window.location.hostname}`,
-                return_url: window.location.origin + '/checkout/complete'
-            })
+            body: JSON.stringify(requestBody)
         });
         
         console.log('Payment response status:', paymentResponse.status);
@@ -150,8 +146,8 @@ async function handlePayment() {
         const paymentResult = await paymentResponse.json();
         console.log('Payment result:', paymentResult);
         
-        // Handle different response types - API returns 'type' field, not 'status'
-        switch (paymentResult.type) {
+        // Handle different response types - API returns 'result' field
+        switch (paymentResult.result) {
             case 'success':
                 // Payment succeeded immediately
                 showMessage('Payment successful! Creating order...', 'success');
@@ -169,7 +165,7 @@ async function handlePayment() {
                 
             default:
                 console.error('Unexpected payment response:', paymentResult);
-                throw new Error('Unexpected payment response type: ' + paymentResult.type);
+                throw new Error('Unexpected payment response type: ' + paymentResult.result);
         }
         
     } catch (error) {

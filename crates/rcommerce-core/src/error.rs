@@ -179,6 +179,11 @@ impl Error {
         Error::Network(msg.into())
     }
     
+    /// Create a new internal error
+    pub fn internal<T: Into<String>>(msg: T) -> Self {
+        Error::Other(msg.into())
+    }
+    
     /// Create a notification error (convenience method matching naming convention)
     pub fn notification_error<T: Into<String>>(msg: T) -> Self {
         Error::Notification(msg.into())
@@ -287,6 +292,25 @@ impl ValidationErrors {
 impl Default for ValidationErrors {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Axum IntoResponse implementation for API error handling
+impl axum::response::IntoResponse for Error {
+    fn into_response(self) -> axum::response::Response {
+        let status = self.status_code();
+        let body = serde_json::json!({
+            "error": {
+                "message": self.to_string(),
+                "code": status,
+                "category": self.category()
+            }
+        });
+        
+        (
+            axum::http::StatusCode::from_u16(status).unwrap_or(axum::http::StatusCode::INTERNAL_SERVER_ERROR),
+            axum::Json(body)
+        ).into_response()
     }
 }
 

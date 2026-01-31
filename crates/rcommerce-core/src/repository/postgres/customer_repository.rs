@@ -50,6 +50,27 @@ impl PostgresCustomerRepository {
         Ok(customer)
     }
     
+    pub async fn create_with_password(&self, request: CreateCustomerRequest, password_hash: String) -> Result<Customer> {
+        let customer = sqlx::query_as::<_, Customer>(
+            r#"
+            INSERT INTO customers (email, first_name, last_name, phone, accepts_marketing, currency, password_hash)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING *
+            "#
+        )
+        .bind(request.email)
+        .bind(request.first_name)
+        .bind(request.last_name)
+        .bind(request.phone)
+        .bind(request.accepts_marketing)
+        .bind(request.currency)
+        .bind(password_hash)
+        .fetch_one(self.db.pool())
+        .await?;
+        
+        Ok(customer)
+    }
+    
     pub async fn update_with_request(&self, id: Uuid, request: UpdateCustomerRequest) -> Result<Customer> {
         let mut query = String::from("UPDATE customers SET ");
         let mut sets = Vec::new();

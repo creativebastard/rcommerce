@@ -39,6 +39,32 @@ impl CustomerService {
         Ok(customer)
     }
     
+    /// Create a new customer with password (for registration)
+    pub async fn create_customer_with_password(
+        &self, 
+        request: CreateCustomerRequest,
+        password_hash: String
+    ) -> Result<Customer> {
+        // Validate email
+        if !crate::common::validation::validate_email(&request.email) {
+            return Err(Error::validation("Invalid email format"));
+        }
+        
+        // Check if email already exists
+        if let Some(_existing) = self.repository.find_by_email(&request.email).await? {
+            return Err(Error::validation("Email already exists"));
+        }
+        
+        let customer = self.repository.create_with_password(request, password_hash).await?;
+        
+        Ok(customer)
+    }
+    
+    /// Get customer by email (for login)
+    pub async fn find_by_email(&self, email: &str) -> Result<Option<Customer>> {
+        self.repository.find_by_email(email).await
+    }
+    
     /// Get customer by ID with addresses
     pub async fn get_customer(&self, id: Uuid) -> Result<Option<CustomerDetail>> {
         let customer = match self.repository.find_by_id(id).await? {

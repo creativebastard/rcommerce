@@ -70,5 +70,8 @@ reqwest = { workspace = true }
 # Crypto for password hashing
 bcrypt = "0.16"
 
+# UUID
+uuid = { workspace = true }
+
 # Markdown rendering for help
 comrak = "0.26"

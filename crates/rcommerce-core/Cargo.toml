@@ -90,9 +90,10 @@ tracing-subscriber = { workspace = true }
 # Job scheduling
 cron = { workspace = true }
 
-# Crypto for JWT
+# Crypto for JWT and passwords
 jsonwebtoken = { workspace = true }
 jwt-simple = { workspace = true }
+bcrypt = "0.15"
 
 # Time utilities
 time = { workspace = true }

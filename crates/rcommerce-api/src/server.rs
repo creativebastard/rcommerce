@@ -1,7 +1,10 @@
-use axum::{Router, routing::get};
+use axum::{Router, routing::get, middleware};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::trace::TraceLayer;
 use tracing::info;
+
+use crate::middleware::{auth_middleware, admin_middleware};
 
 use rcommerce_core::{Result, Config};
 use rcommerce_core::repository::{
@@ -63,8 +66,9 @@ pub async fn run(config: Config) -> Result<()> {
     let app = Router::new()
         .route("/health", get(health_check))
         .route("/", get(root))
-        .nest("/api/v1", api_routes())
+        .nest("/api/v1", api_routes(app_state.clone()))
         .layer(cors)
+        .layer(TraceLayer::new_for_http())
         .with_state(app_state);
     
     info!("R Commerce API server listening on {}", addr);
@@ -131,15 +135,30 @@ async fn init_redis(config: &Config) -> Option<RedisPool> {
 }
 
 /// API v1 routes
-fn api_routes() -> Router<AppState> {
-    Router::new()
+fn api_routes(app_state: AppState) -> Router<AppState> {
+    // Public routes (no auth required)
+    let public_routes = Router::new()
         .merge(crate::routes::product_router())
+        .merge(crate::routes::auth_router());
+    
+    // Protected routes (auth required) - middleware applied to each router individually
+    let protected_routes = Router::new()
         .merge(crate::routes::customer_router())
         .merge(crate::routes::order_router())
-        .merge(crate::routes::auth_router())
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router())
         .merge(crate::routes::payment_router())
+        .route_layer(middleware::from_fn_with_state(app_state.clone(), auth_middleware));
+    
+    // Admin routes (admin auth required)
+    let admin_routes = Router::new()
+        .nest("/admin", crate::routes::admin_router())
+        .route_layer(middleware::from_fn_with_state(app_state, admin_middleware));
+    
+    Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
+        .merge(admin_routes)
 }
 
 

@@ -57,6 +57,12 @@ pub enum Commands {
         command: CustomerCommands,
     },
     
+    /// API Key management
+    ApiKey {
+        #[command(subcommand)]
+        command: ApiKeyCommands,
+    },
+    
     /// Show configuration
     Config,
 }
@@ -140,6 +146,54 @@ pub enum CustomerCommands {
     
     /// Create a customer
     Create,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ApiKeyCommands {
+    /// List all API keys
+    List {
+        #[arg(short = 'u', long, help = "Filter by customer ID")]
+        customer_id: Option<String>,
+    },
+    
+    /// Create a new API key
+    Create {
+        #[arg(short = 'u', long, help = "Customer ID (optional for system keys)")]
+        customer_id: Option<String>,
+        
+        #[arg(short = 'n', long, help = "Key name/description")]
+        name: Option<String>,
+        
+        #[arg(short = 's', long, help = "Scopes (comma-separated)", default_value = "read")]
+        scopes: String,
+        
+        #[arg(short = 'e', long, help = "Expiration in days (optional)")]
+        expires_days: Option<i64>,
+    },
+    
+    /// Get API key details
+    Get {
+        #[arg(help = "Key prefix or ID")]
+        prefix: String,
+    },
+    
+    /// Revoke an API key
+    Revoke {
+        #[arg(help = "Key prefix or ID")]
+        prefix: String,
+        
+        #[arg(short, long, help = "Reason for revocation")]
+        reason: Option<String>,
+    },
+    
+    /// Delete an API key permanently
+    Delete {
+        #[arg(help = "Key prefix or ID")]
+        prefix: String,
+        
+        #[arg(long, help = "Skip confirmation")]
+        force: bool,
+    },
 }
 
 #[tokio::main]
@@ -279,6 +333,142 @@ async fn main() -> Result<()> {
             println!("Use the API for full CRUD operations");
         }
         
+        Commands::ApiKey { command } => {
+            use colored::*;
+            
+            // Create database pool
+            let pool = create_pool(&config).await?;
+            
+            match command {
+                ApiKeyCommands::List { customer_id } => {
+                    match list_api_keys(&pool, customer_id).await {
+                        Ok(keys) => {
+                            if keys.is_empty() {
+                                println!("{}", "No API keys found".yellow());
+                            } else {
+                                println!("{}", "API Keys".bold().underline());
+                                println!("{:<12} {:<20} {:<30} {:<10} {:<12}", 
+                                    "Prefix", "Name", "Scopes", "Active", "Expires");
+                                println!("{}", "-".repeat(90));
+                                for key in keys {
+                                    let expires = key.expires_at
+                                        .map(|d| d.format("%Y-%m-%d").to_string())
+                                        .unwrap_or_else(|| "Never".to_string());
+                                    println!("{:<12} {:<20} {:<30} {:<10} {:<12}",
+                                        key.key_prefix,
+                                        key.name,
+                                        key.scopes.join(", "),
+                                        if key.is_active { "✓".green() } else { "✗".red() },
+                                        expires
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to list API keys: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                ApiKeyCommands::Create { customer_id, name, scopes, expires_days } => {
+                    let auth_service = rcommerce_core::services::AuthService::new(config);
+                    
+                    match create_api_key(&pool, &auth_service, customer_id, name, scopes, expires_days).await {
+                        Ok((key, full_key)) => {
+                            println!("{}", "✅ API Key created successfully!".green().bold());
+                            println!();
+                            println!("{}", "IMPORTANT: Copy this key now - it won't be shown again!".red().bold());
+                            println!();
+                            println!("  Key: {}", full_key.bright_cyan());
+                            println!();
+                            println!("  Prefix:      {}", key.key_prefix);
+                            println!("  Name:        {}", key.name);
+                            println!("  Scopes:      {}", key.scopes.join(", "));
+                            println!("  Customer ID: {}", key.customer_id.map(|id: Uuid| id.to_string()).unwrap_or_else(|| "System".to_string()));
+                            println!("  Expires:     {}", key.expires_at.map(|d| d.to_string()).unwrap_or_else(|| "Never".to_string()));
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to create API key: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                ApiKeyCommands::Get { prefix } => {
+                    match get_api_key(&pool, &prefix).await {
+                        Ok(Some(key)) => {
+                            println!("{}", "API Key Details".bold().underline());
+                            println!("  Prefix:       {}", key.key_prefix);
+                            println!("  Name:         {}", key.name);
+                            println!("  Scopes:       {}", key.scopes.join(", "));
+                            println!("  Active:       {}", if key.is_active { "✓ Yes".green() } else { "✗ No".red() });
+                            println!("  Customer ID:  {}", key.customer_id.map(|id: Uuid| id.to_string()).unwrap_or_else(|| "System".to_string()));
+                            println!("  Created:      {}", key.created_at);
+                            println!("  Updated:      {}", key.updated_at);
+                            println!("  Expires:      {}", key.expires_at.map(|d| d.to_string()).unwrap_or_else(|| "Never".to_string()));
+                            println!("  Last Used:    {}", key.last_used_at.map(|d| d.to_string()).unwrap_or_else(|| "Never".to_string()));
+                            if let Some(revoked_at) = key.revoked_at {
+                                println!("  Revoked:      {} {}", revoked_at, key.revoked_reason.unwrap_or_default().red());
+                            }
+                        }
+                        Ok(None) => {
+                            println!("{}", format!("API key with prefix '{}' not found", prefix).yellow());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to get API key: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                ApiKeyCommands::Revoke { prefix, reason } => {
+                    match revoke_api_key(&pool, &prefix, reason).await {
+                        Ok(true) => {
+                            println!("{}", format!("✅ API key '{}' revoked successfully", prefix).green());
+                        }
+                        Ok(false) => {
+                            println!("{}", format!("API key with prefix '{}' not found", prefix).yellow());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to revoke API key: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                ApiKeyCommands::Delete { prefix, force } => {
+                    if !force {
+                        println!("{}", "⚠️  WARNING: This will PERMANENTLY delete the API key!".red().bold());
+                        print!("Type 'yes' to confirm: ");
+                        use std::io::Write;
+                        std::io::stdout().flush().unwrap();
+                        
+                        let mut input = String::new();
+                        std::io::stdin().read_line(&mut input).unwrap();
+                        
+                        if input.trim() != "yes" {
+                            println!("Aborted.");
+                            return Ok(());
+                        }
+                    }
+                    
+                    match delete_api_key(&pool, &prefix).await {
+                        Ok(true) => {
+                            println!("{}", format!("✅ API key '{}' deleted permanently", prefix).green());
+                        }
+                        Ok(false) => {
+                            println!("{}", format!("API key with prefix '{}' not found", prefix).yellow());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to delete API key: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            }
+        }
+        
         Commands::Config => {
             println!("Configuration loaded from: {}", 
                 cli.config.map(|p| p.display().to_string()).unwrap_or_else(|| "environment".to_string())
@@ -317,6 +507,138 @@ async fn run_migrations(config: &Config) -> Result<()> {
     let pool = create_pool(config).await?;
     rcommerce_core::auto_migrate(&pool).await?;
     Ok(())
+}
+
+// API Key management functions
+
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
+/// API Key record from database
+#[derive(Debug, sqlx::FromRow)]
+struct ApiKeyRecord {
+    id: Uuid,
+    customer_id: Option<Uuid>,
+    key_prefix: String,
+    key_hash: String,
+    name: String,
+    scopes: Vec<String>,
+    expires_at: Option<DateTime<Utc>>,
+    last_used_at: Option<DateTime<Utc>>,
+    last_used_ip: Option<String>,
+    is_active: bool,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    revoked_at: Option<DateTime<Utc>>,
+    revoked_reason: Option<String>,
+}
+
+/// List API keys
+async fn list_api_keys(pool: &sqlx::PgPool, customer_id: Option<String>) -> Result<Vec<ApiKeyRecord>> {
+    let keys = if let Some(cid) = customer_id {
+        let cid = Uuid::parse_str(&cid).map_err(|e| rcommerce_core::Error::validation(format!("Invalid customer ID: {}", e)))?;
+        sqlx::query_as::<_, ApiKeyRecord>(
+            "SELECT * FROM api_keys WHERE customer_id = $1 ORDER BY created_at DESC"
+        )
+        .bind(cid)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, ApiKeyRecord>(
+            "SELECT * FROM api_keys ORDER BY created_at DESC"
+        )
+        .fetch_all(pool)
+        .await?
+    };
+    
+    Ok(keys)
+}
+
+/// Create a new API key
+async fn create_api_key(
+    pool: &sqlx::PgPool,
+    auth_service: &rcommerce_core::services::AuthService,
+    customer_id: Option<String>,
+    name: Option<String>,
+    scopes: String,
+    expires_days: Option<i64>,
+) -> Result<(ApiKeyRecord, String)> {
+    // Generate API key
+    let api_key = auth_service.generate_api_key();
+    let full_key = api_key.full_key.clone().unwrap();
+    
+    // Parse customer ID if provided
+    let customer_uuid = if let Some(cid) = customer_id {
+        Some(Uuid::parse_str(&cid).map_err(|e| rcommerce_core::Error::validation(format!("Invalid customer ID: {}", e)))?)
+    } else {
+        None
+    };
+    
+    // Calculate expiration
+    let expires_at = expires_days.map(|days| Utc::now() + chrono::Duration::days(days));
+    
+    // Parse scopes
+    let scopes_vec: Vec<String> = scopes.split(',').map(|s| s.trim().to_string()).collect();
+    
+    // Insert into database
+    let key = sqlx::query_as::<_, ApiKeyRecord>(
+        r#"
+        INSERT INTO api_keys (customer_id, key_prefix, key_hash, name, scopes, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+        "#
+    )
+    .bind(customer_uuid)
+    .bind(&api_key.prefix)
+    .bind(&api_key.hash)
+    .bind(name.unwrap_or_else(|| "API Key".to_string()))
+    .bind(&scopes_vec)
+    .bind(expires_at)
+    .fetch_one(pool)
+    .await?;
+    
+    Ok((key, full_key))
+}
+
+/// Get API key by prefix
+async fn get_api_key(pool: &sqlx::PgPool, prefix: &str) -> Result<Option<ApiKeyRecord>> {
+    let key = sqlx::query_as::<_, ApiKeyRecord>(
+        "SELECT * FROM api_keys WHERE key_prefix = $1"
+    )
+    .bind(prefix)
+    .fetch_optional(pool)
+    .await?;
+    
+    Ok(key)
+}
+
+/// Revoke an API key
+async fn revoke_api_key(pool: &sqlx::PgPool, prefix: &str, reason: Option<String>) -> Result<bool> {
+    let result = sqlx::query(
+        r#"
+        UPDATE api_keys 
+        SET is_active = false, revoked_at = NOW(), revoked_reason = $2
+        WHERE key_prefix = $1
+        "#
+    )
+    .bind(prefix)
+    .bind(reason)
+    .execute(pool)
+    .await?;
+    
+    Ok(result.rows_affected() > 0)
+}
+
+/// Delete an API key permanently
+async fn delete_api_key(pool: &sqlx::PgPool, prefix: &str) -> Result<bool> {
+    let result = sqlx::query(
+        "DELETE FROM api_keys WHERE key_prefix = $1"
+    )
+    .bind(prefix)
+    .execute(pool)
+    .await?;
+    
+    Ok(result.rows_affected() > 0)
 }
 
 #[cfg(test)]

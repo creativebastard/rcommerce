@@ -96,6 +96,9 @@ impl Migrator {
             (2, "carts_and_coupons", include_str!("../../migrations/002_carts_and_coupons.sql")),
             (3, "demo_products", include_str!("../../migrations/003_demo_products.sql")),
             (4, "fix_product_schema", include_str!("../../migrations/004_fix_product_schema.sql")),
+            (5, "customer_fields", include_str!("../../migrations/006_customer_fields.sql")),
+            (6, "api_keys", include_str!("../../migrations/005_api_keys.sql")),
+            (7, "fix_currency_type", include_str!("../../migrations/007_fix_currency_type.sql")),
         ];
 
         for (version, name, sql) in migrations {

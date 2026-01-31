@@ -11,6 +11,8 @@ pub use order_service::OrderService;
 pub use auth_service::AuthService;
 pub use auth_service::ApiKey;
 pub use auth_service::JwtClaims;
+pub use auth_service::AuthenticatedUser;
+pub use auth_service::TokenType;
 pub use cart_service::CartService;
 pub use coupon_service::CouponService;
 

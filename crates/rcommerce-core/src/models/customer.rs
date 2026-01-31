@@ -24,6 +24,11 @@ pub struct Customer {
     pub email_notifications: bool,
     pub sms_notifications: bool,
     pub push_notifications: bool,
+    // Authentication fields (not serialized to JSON)
+    #[serde(skip_serializing)]
+    pub password_hash: Option<String>,
+    pub is_verified: bool,
+    pub last_login_at: Option<DateTime<Utc>>,
 }
 
 /// Create customer request
