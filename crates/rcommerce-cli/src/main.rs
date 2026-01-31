@@ -399,6 +399,7 @@ async fn main() -> Result<()> {
                     match get_api_key(&pool, &prefix).await {
                         Ok(Some(key)) => {
                             println!("{}", "API Key Details".bold().underline());
+                            println!("  ID:           {}", key.id);
                             println!("  Prefix:       {}", key.key_prefix);
                             println!("  Name:         {}", key.name);
                             println!("  Scopes:       {}", key.scopes.join(", "));
@@ -408,9 +409,13 @@ async fn main() -> Result<()> {
                             println!("  Updated:      {}", key.updated_at);
                             println!("  Expires:      {}", key.expires_at.map(|d| d.to_string()).unwrap_or_else(|| "Never".to_string()));
                             println!("  Last Used:    {}", key.last_used_at.map(|d| d.to_string()).unwrap_or_else(|| "Never".to_string()));
+                            if let Some(last_ip) = key.last_used_ip {
+                                println!("  Last IP:      {}", last_ip);
+                            }
                             if let Some(revoked_at) = key.revoked_at {
                                 println!("  Revoked:      {} {}", revoked_at, key.revoked_reason.unwrap_or_default().red());
                             }
+                            println!("  Key Hash:     {}...", &key.key_hash[..16]);
                         }
                         Ok(None) => {
                             println!("{}", format!("API key with prefix '{}' not found", prefix).yellow());
