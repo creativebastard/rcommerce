@@ -1,9 +1,11 @@
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+use dialoguer::{Input, Confirm, Select, Password};
 use std::path::PathBuf;
 use tracing::info;
 
 use rcommerce_core::{Result, Config};
+use rcommerce_core::models::{ProductType, Currency};
 
 /// Security checks for CLI operations
 mod security {
@@ -443,8 +445,19 @@ async fn main() -> Result<()> {
                     }
                 }
                 ProductCommands::Create => {
-                    println!("{}", "Interactive product creation coming soon!".yellow());
-                    println!("Use the API or admin dashboard to create products.");
+                    match interactive_create_product(&pool).await {
+                        Ok(product) => {
+                            println!("{}", "\n✅ Product created successfully!".green().bold());
+                            println!("  ID:    {}", product.id);
+                            println!("  Title: {}", product.title);
+                            println!("  Slug:  {}", product.slug);
+                            println!("  Price: {} {}", product.price, product.currency);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to create product: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
                 ProductCommands::Update { id } => {
                     println!("{}", format!("Product update for '{}' coming soon!", id).yellow());
@@ -565,7 +578,18 @@ async fn main() -> Result<()> {
                     println!("{}", format!("Customer details for '{}' coming soon!", id).yellow());
                 }
                 CustomerCommands::Create => {
-                    println!("{}", "Customer creation via CLI coming soon!".yellow());
+                    match interactive_create_customer(&pool).await {
+                        Ok(customer) => {
+                            println!("{}", "\n✅ Customer created successfully!".green().bold());
+                            println!("  ID:    {}", customer.id);
+                            println!("  Name:  {} {}", customer.first_name, customer.last_name);
+                            println!("  Email: {}", customer.email);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to create customer: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
                 }
             }
         }
@@ -994,6 +1018,368 @@ fn truncate(s: &str, max_len: usize) -> String {
     } else {
         s.to_string()
     }
+}
+
+// Interactive creation functions
+
+/// Simple slugify function - converts string to URL-friendly slug
+fn slugify(input: &str) -> String {
+    input
+        .to_lowercase()
+        .replace(' ', "-")
+        .replace(|c: char| !c.is_alphanumeric() && c != '-', "")
+        .replace("--", "-")
+        .trim_matches('-')
+        .to_string()
+}
+
+/// Interactive product creation using dialoguer
+async fn interactive_create_product(pool: &sqlx::PgPool) -> Result<ProductRecord> {
+    use colored::Colorize;
+    use rust_decimal::Decimal;
+    
+    println!("{}", "\n📦 Create New Product".bold().underline());
+    println!("{}", "Press Ctrl+C to cancel at any time.\n".dimmed());
+    
+    // Product title
+    let title: String = Input::new()
+        .with_prompt("Product title")
+        .validate_with(|input: &String| {
+            if input.trim().is_empty() {
+                Err("Title is required")
+            } else if input.len() > 255 {
+                Err("Title must be less than 255 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Auto-generate slug from title
+    let default_slug = slugify(&title);
+    let slug: String = Input::new()
+        .with_prompt("URL slug")
+        .default(default_slug)
+        .validate_with(|input: &String| {
+            if input.trim().is_empty() {
+                Err("Slug is required")
+            } else if input.len() > 255 {
+                Err("Slug must be less than 255 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Product type selection
+    let product_types = vec!["Simple", "Variable", "Digital", "Bundle"];
+    let type_index = Select::new()
+        .with_prompt("Product type")
+        .items(&product_types)
+        .default(0)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Selection error: {}", e)))?;
+    let product_type = match type_index {
+        0 => ProductType::Simple,
+        1 => ProductType::Variable,
+        2 => ProductType::Digital,
+        3 => ProductType::Bundle,
+        _ => ProductType::Simple,
+    };
+    
+    // Price
+    let price_str: String = Input::new()
+        .with_prompt("Price")
+        .validate_with(|input: &String| {
+            match input.parse::<Decimal>() {
+                Ok(d) if d >= Decimal::ZERO => Ok(()),
+                Ok(_) => Err("Price must be non-negative"),
+                Err(_) => Err("Please enter a valid number"),
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    let price: Decimal = price_str.parse().unwrap();
+    
+    // Currency selection
+    let currencies = vec!["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CNY", "HKD", "SGD"];
+    let currency_index = Select::new()
+        .with_prompt("Currency")
+        .items(&currencies)
+        .default(0)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Selection error: {}", e)))?;
+    let currency = match currency_index {
+        0 => Currency::USD,
+        1 => Currency::EUR,
+        2 => Currency::GBP,
+        3 => Currency::JPY,
+        4 => Currency::AUD,
+        5 => Currency::CAD,
+        6 => Currency::CNY,
+        7 => Currency::HKD,
+        8 => Currency::SGD,
+        _ => Currency::USD,
+    };
+    
+    // SKU (optional) - use String then convert to Option
+    let sku_input: String = Input::new()
+        .with_prompt("SKU (optional)")
+        .allow_empty(true)
+        .validate_with(|input: &String| {
+            if input.len() > 100 {
+                Err("SKU must be less than 100 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    let sku = if sku_input.trim().is_empty() { None } else { Some(sku_input) };
+    
+    // Inventory quantity
+    let inventory_str: String = Input::new()
+        .with_prompt("Inventory quantity")
+        .default("0".to_string())
+        .validate_with(|input: &String| {
+            match input.parse::<i32>() {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Please enter a valid integer"),
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    let inventory_quantity: i32 = inventory_str.parse().unwrap();
+    
+    // Description (optional) - use String then convert to Option
+    let desc_input: String = Input::new()
+        .with_prompt("Description (optional)")
+        .allow_empty(true)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    let description = if desc_input.trim().is_empty() { None } else { Some(desc_input) };
+    
+    // Active status
+    let is_active = Confirm::new()
+        .with_prompt("Make product active?")
+        .default(true)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Featured status
+    let is_featured = Confirm::new()
+        .with_prompt("Mark as featured?")
+        .default(false)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Summary
+    println!("\n{}", "📋 Product Summary".bold().underline());
+    println!("  Title:       {}", title);
+    println!("  Slug:        {}", slug);
+    println!("  Type:        {:?}", product_type);
+    println!("  Price:       {} {}", price, currency);
+    println!("  SKU:         {}", sku.as_deref().unwrap_or("(none)"));
+    println!("  Inventory:   {}", inventory_quantity);
+    println!("  Description: {}", description.as_deref().unwrap_or("(none)"));
+    println!("  Active:      {}", if is_active { "Yes".green() } else { "No".red() });
+    println!("  Featured:    {}", if is_featured { "Yes".green() } else { "No".red() });
+    
+    // Final confirmation
+    let confirmed = Confirm::new()
+        .with_prompt("\nCreate this product?")
+        .default(true)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    if !confirmed {
+        return Err(rcommerce_core::Error::validation("Product creation cancelled"));
+    }
+    
+    // Insert into database
+    let product = sqlx::query_as::<_, ProductRecord>(
+        r#"
+        INSERT INTO products (
+            title, slug, description, sku, product_type, price, currency,
+            inventory_quantity, inventory_management, is_active, is_featured,
+            requires_shipping
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING id, title, slug, price, currency::text, description, is_active, inventory_quantity, created_at
+        "#
+    )
+    .bind(&title)
+    .bind(&slug)
+    .bind(&description)
+    .bind(&sku)
+    .bind(product_type)
+    .bind(price)
+    .bind(currency)
+    .bind(inventory_quantity)
+    .bind(true) // inventory_management
+    .bind(is_active)
+    .bind(is_featured)
+    .bind(!matches!(product_type, ProductType::Digital)) // requires_shipping (false for digital)
+    .fetch_one(pool)
+    .await?;
+    
+    Ok(product)
+}
+
+/// Interactive customer creation using dialoguer
+async fn interactive_create_customer(pool: &sqlx::PgPool) -> Result<CustomerRecord> {
+    use colored::Colorize;
+    
+    println!("{}", "\n👤 Create New Customer".bold().underline());
+    println!("{}", "Press Ctrl+C to cancel at any time.\n".dimmed());
+    
+    // Email
+    let email: String = Input::new()
+        .with_prompt("Email address")
+        .validate_with(|input: &String| {
+            if input.trim().is_empty() {
+                Err("Email is required")
+            } else if !input.contains('@') || !input.contains('.') {
+                Err("Please enter a valid email address")
+            } else if input.len() > 255 {
+                Err("Email must be less than 255 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // First name
+    let first_name: String = Input::new()
+        .with_prompt("First name")
+        .validate_with(|input: &String| {
+            if input.trim().is_empty() {
+                Err("First name is required")
+            } else if input.len() > 100 {
+                Err("First name must be less than 100 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Last name
+    let last_name: String = Input::new()
+        .with_prompt("Last name")
+        .validate_with(|input: &String| {
+            if input.trim().is_empty() {
+                Err("Last name is required")
+            } else if input.len() > 100 {
+                Err("Last name must be less than 100 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Phone (optional) - use String then convert to Option
+    let phone_input: String = Input::new()
+        .with_prompt("Phone number (optional)")
+        .allow_empty(true)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    let phone = if phone_input.trim().is_empty() { None } else { Some(phone_input) };
+    
+    // Currency selection
+    let currencies = vec!["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CNY", "HKD", "SGD"];
+    let currency_index = Select::new()
+        .with_prompt("Preferred currency")
+        .items(&currencies)
+        .default(0)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Selection error: {}", e)))?;
+    let currency = match currency_index {
+        0 => Currency::USD,
+        1 => Currency::EUR,
+        2 => Currency::GBP,
+        3 => Currency::JPY,
+        4 => Currency::AUD,
+        5 => Currency::CAD,
+        6 => Currency::CNY,
+        7 => Currency::HKD,
+        8 => Currency::SGD,
+        _ => Currency::USD,
+    };
+    
+    // Marketing consent
+    let accepts_marketing = Confirm::new()
+        .with_prompt("Accepts marketing emails?")
+        .default(false)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    // Password
+    let password = Password::new()
+        .with_prompt("Password")
+        .with_confirmation("Confirm password", "Passwords do not match")
+        .validate_with(|input: &String| {
+            if input.len() < 8 {
+                Err("Password must be at least 8 characters")
+            } else if input.len() > 128 {
+                Err("Password must be less than 128 characters")
+            } else {
+                Ok(())
+            }
+        })
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Password error: {}", e)))?;
+    
+    // Summary
+    println!("\n{}", "📋 Customer Summary".bold().underline());
+    println!("  Name:              {} {}", first_name, last_name);
+    println!("  Email:             {}", email);
+    println!("  Phone:             {}", phone.as_deref().unwrap_or("(none)"));
+    println!("  Currency:          {:?}", currency);
+    println!("  Accepts Marketing: {}", if accepts_marketing { "Yes".green() } else { "No".red() });
+    
+    // Final confirmation
+    let confirmed = Confirm::new()
+        .with_prompt("\nCreate this customer?")
+        .default(true)
+        .interact()
+        .map_err(|e| rcommerce_core::Error::validation(format!("Input error: {}", e)))?;
+    
+    if !confirmed {
+        return Err(rcommerce_core::Error::validation("Customer creation cancelled"));
+    }
+    
+    // Hash password
+    let password_hash = bcrypt::hash(&password, bcrypt::DEFAULT_COST)
+        .map_err(|e| rcommerce_core::Error::validation(format!("Failed to hash password: {}", e)))?;
+    
+    // Insert into database
+    let customer = sqlx::query_as::<_, CustomerRecord>(
+        r#"
+        INSERT INTO customers (
+            email, first_name, last_name, phone, accepts_marketing, 
+            currency, password_hash, is_verified
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, email, first_name, last_name, created_at
+        "#
+    )
+    .bind(&email)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&phone)
+    .bind(accepts_marketing)
+    .bind(currency)
+    .bind(&password_hash)
+    .bind(true) // is_verified
+    .fetch_one(pool)
+    .await?;
+    
+    Ok(customer)
 }
 
 #[cfg(test)]
