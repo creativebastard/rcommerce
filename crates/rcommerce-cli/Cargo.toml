@@ -73,5 +73,11 @@ bcrypt = "0.16"
 # UUID
 uuid = { workspace = true }
 
+# Decimal for prices
+rust_decimal = { workspace = true }
+
+# Unix system calls (for root check)
+libc = "0.2"
+
 # Markdown rendering for help
 comrak = "0.26"

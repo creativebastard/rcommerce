@@ -1,8 +1,64 @@
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use std::path::PathBuf;
 use tracing::info;
 
 use rcommerce_core::{Result, Config};
+
+/// Security checks for CLI operations
+mod security {
+    use colored::Colorize;
+    use std::path::PathBuf;
+    
+    /// Check if running as root
+    pub fn check_not_root() -> Result<(), String> {
+        #[cfg(unix)]
+        {
+            let uid = unsafe { libc::getuid() };
+            if uid == 0 {
+                return Err(format!("\n{}\n{}\n{}",
+                    "❌ ERROR: Running as root is not allowed!".red().bold(),
+                    "   The rcommerce CLI should not be run as root for security reasons.",
+                    "   Please run as a non-privileged user."
+                ));
+            }
+        }
+        Ok(())
+    }
+    
+    /// Check config file permissions
+    pub fn check_config_permissions(path: &PathBuf) -> Result<(), String> {
+        use std::os::unix::fs::PermissionsExt;
+        
+        let metadata = std::fs::metadata(path)
+            .map_err(|e| format!("Cannot read config file: {}", e))?;
+        
+        let permissions = metadata.permissions();
+        let mode = permissions.mode();
+        
+        // Check if world-readable (last digit in octal)
+        let world_readable = (mode & 0o004) != 0;
+        let world_writable = (mode & 0o002) != 0;
+        
+        if world_writable {
+            return Err(format!("\n{}\n{}\n{}",
+                "❌ ERROR: Config file is world-writable!".red().bold(),
+                format!("   Path: {}", path.display()),
+                "   Run: chmod 600 {}".replace("{}", &path.display().to_string())
+            ));
+        }
+        
+        if world_readable {
+            eprintln!("{}", format!("\n{}\n{}\n{}",
+                "⚠️  WARNING: Config file is world-readable".yellow().bold(),
+                format!("   Path: {}", path.display()),
+                "   Consider running: chmod 600 {}".replace("{}", &path.display().to_string())
+            ));
+        }
+        
+        Ok(())
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "rcommerce")]
@@ -208,6 +264,11 @@ async fn main() -> Result<()> {
     
     // Load configuration
     let config = if let Some(ref config_path) = cli.config {
+        // Check config file permissions
+        if let Err(e) = security::check_config_permissions(config_path) {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
         Config::load(config_path.to_str().unwrap())?
     } else {
         Config::from_env()?
@@ -319,18 +380,194 @@ async fn main() -> Result<()> {
         }
         
         Commands::Product { command } => {
-            println!("Product command: {:?}", command);
-            println!("Use the API for full CRUD operations");
+            // Security checks
+            if let Err(e) = security::check_not_root() {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+            
+            let pool = create_pool(&config).await?;
+            
+            match command {
+                ProductCommands::List => {
+                    match list_products(&pool).await {
+                        Ok(products) => {
+                            if products.is_empty() {
+                                println!("{}", "No products found".yellow());
+                            } else {
+                                println!("{}", "Products".bold().underline());
+                                println!("{:<36} {:<30} {:<10} {:<8} {:<12}", 
+                                    "ID", "Title", "Price", "Currency", "Status");
+                                println!("{}", "-".repeat(100));
+                                for p in &products {
+                                    let status = if p.is_active { "✓ Active".green() } else { "✗ Inactive".red() };
+                                    println!("{:<36} {:<30} {:<10.2} {:<8} {:<12}",
+                                        p.id.to_string(),
+                                        truncate(&p.title, 28),
+                                        p.price,
+                                        p.currency.to_string(),
+                                        status
+                                    );
+                                }
+                                println!("\nTotal: {} products", products.len());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to list products: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                ProductCommands::Get { id } => {
+                    match get_product(&pool, &id).await {
+                        Ok(Some(p)) => {
+                            println!("{}", "Product Details".bold().underline());
+                            println!("  ID:          {}", p.id);
+                            println!("  Title:       {}", p.title);
+                            println!("  Slug:        {}", p.slug);
+                            println!("  Price:       {} {}", p.price, p.currency);
+                            println!("  Status:      {}", if p.is_active { "✓ Active".green() } else { "✗ Inactive".red() });
+                            println!("  Inventory:   {}", p.inventory_quantity);
+                            println!("  Created:     {}", p.created_at);
+                            if let Some(desc) = p.description {
+                                println!("  Description: {}", truncate(&desc, 100));
+                            }
+                        }
+                        Ok(None) => {
+                            println!("{}", format!("Product '{}' not found", id).yellow());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to get product: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                ProductCommands::Create => {
+                    println!("{}", "Interactive product creation coming soon!".yellow());
+                    println!("Use the API or admin dashboard to create products.");
+                }
+                ProductCommands::Update { id } => {
+                    println!("{}", format!("Product update for '{}' coming soon!", id).yellow());
+                }
+                ProductCommands::Delete { id } => {
+                    println!("{}", "⚠️  Product deletion".red().bold());
+                    print!("Type 'yes' to delete product '{}': ", id);
+                    use std::io::Write;
+                    std::io::stdout().flush().unwrap();
+                    
+                    let mut input = String::new();
+                    std::io::stdin().read_line(&mut input).unwrap();
+                    
+                    if input.trim() != "yes" {
+                        println!("Aborted.");
+                        return Ok(());
+                    }
+                    
+                    match delete_product(&pool, &id).await {
+                        Ok(true) => println!("{}", format!("✅ Product '{}' deleted", id).green()),
+                        Ok(false) => println!("{}", format!("Product '{}' not found", id).yellow()),
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to delete product: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            }
         }
         
         Commands::Order { command } => {
-            println!("Order command: {:?}", command);
-            println!("Use the API for full CRUD operations");
+            if let Err(e) = security::check_not_root() {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+            
+            let pool = create_pool(&config).await?;
+            
+            match command {
+                OrderCommands::List => {
+                    match list_orders(&pool).await {
+                        Ok(orders) => {
+                            if orders.is_empty() {
+                                println!("{}", "No orders found".yellow());
+                            } else {
+                                println!("{}", "Orders".bold().underline());
+                                println!("{:<36} {:<20} {:<12} {:<15} {:<12}", 
+                                    "ID", "Customer", "Status", "Total", "Created");
+                                println!("{}", "-".repeat(100));
+                                for o in &orders {
+                                    println!("{:<36} {:<20} {:<12} {:<15.2} {:<12}",
+                                        o.id.to_string(),
+                                        truncate(&o.customer_email, 18),
+                                        o.status,
+                                        o.total_amount,
+                                        o.created_at.format("%Y-%m-%d")
+                                    );
+                                }
+                                println!("\nTotal: {} orders", orders.len());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to list orders: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                OrderCommands::Get { id } => {
+                    println!("{}", format!("Order details for '{}' coming soon!", id).yellow());
+                }
+                OrderCommands::Create => {
+                    println!("{}", "Order creation via CLI coming soon!".yellow());
+                }
+                OrderCommands::Update { id } => {
+                    println!("{}", format!("Order update for '{}' coming soon!", id).yellow());
+                }
+            }
         }
         
         Commands::Customer { command } => {
-            println!("Customer command: {:?}", command);
-            println!("Use the API for full CRUD operations");
+            if let Err(e) = security::check_not_root() {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+            
+            let pool = create_pool(&config).await?;
+            
+            match command {
+                CustomerCommands::List => {
+                    match list_customers(&pool).await {
+                        Ok(customers) => {
+                            if customers.is_empty() {
+                                println!("{}", "No customers found".yellow());
+                            } else {
+                                println!("{}", "Customers".bold().underline());
+                                println!("{:<36} {:<30} {:<20} {:<12}", 
+                                    "ID", "Email", "Name", "Created");
+                                println!("{}", "-".repeat(100));
+                                for c in &customers {
+                                    let name = format!("{} {}", c.first_name, c.last_name);
+                                    println!("{:<36} {:<30} {:<20} {:<12}",
+                                        c.id.to_string(),
+                                        truncate(&c.email, 28),
+                                        truncate(&name, 18),
+                                        c.created_at.format("%Y-%m-%d")
+                                    );
+                                }
+                                println!("\nTotal: {} customers", customers.len());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to list customers: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                CustomerCommands::Get { id } => {
+                    println!("{}", format!("Customer details for '{}' coming soon!", id).yellow());
+                }
+                CustomerCommands::Create => {
+                    println!("{}", "Customer creation via CLI coming soon!".yellow());
+                }
+            }
         }
         
         Commands::ApiKey { command } => {
@@ -644,6 +881,119 @@ async fn delete_api_key(pool: &sqlx::PgPool, prefix: &str) -> Result<bool> {
     .await?;
     
     Ok(result.rows_affected() > 0)
+}
+
+// Product CLI functions
+
+#[derive(Debug, sqlx::FromRow)]
+struct ProductRecord {
+    id: Uuid,
+    title: String,
+    slug: String,
+    price: rust_decimal::Decimal,
+    currency: String,
+    description: Option<String>,
+    is_active: bool,
+    inventory_quantity: i32,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// List all products
+async fn list_products(pool: &sqlx::PgPool) -> Result<Vec<ProductRecord>> {
+    let products = sqlx::query_as::<_, ProductRecord>(
+        "SELECT id, title, slug, price, currency::text, description, is_active, inventory_quantity, created_at 
+         FROM products ORDER BY created_at DESC"
+    )
+    .fetch_all(pool)
+    .await?;
+    
+    Ok(products)
+}
+
+/// Get product by ID
+async fn get_product(pool: &sqlx::PgPool, id: &str) -> Result<Option<ProductRecord>> {
+    let product_id = Uuid::parse_str(id)
+        .map_err(|e| rcommerce_core::Error::validation(format!("Invalid product ID: {}", e)))?;
+    
+    let product = sqlx::query_as::<_, ProductRecord>(
+        "SELECT id, title, slug, price, currency::text, description, is_active, inventory_quantity, created_at 
+         FROM products WHERE id = $1"
+    )
+    .bind(product_id)
+    .fetch_optional(pool)
+    .await?;
+    
+    Ok(product)
+}
+
+/// Delete product by ID
+async fn delete_product(pool: &sqlx::PgPool, id: &str) -> Result<bool> {
+    let product_id = Uuid::parse_str(id)
+        .map_err(|e| rcommerce_core::Error::validation(format!("Invalid product ID: {}", e)))?;
+    
+    let result = sqlx::query("DELETE FROM products WHERE id = $1")
+        .bind(product_id)
+        .execute(pool)
+        .await?;
+    
+    Ok(result.rows_affected() > 0)
+}
+
+// Order CLI functions
+
+#[derive(Debug, sqlx::FromRow)]
+struct OrderRecord {
+    id: Uuid,
+    customer_email: String,
+    status: String,
+    total_amount: rust_decimal::Decimal,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// List all orders
+async fn list_orders(pool: &sqlx::PgPool) -> Result<Vec<OrderRecord>> {
+    let orders = sqlx::query_as::<_, OrderRecord>(
+        "SELECT o.id, c.email as customer_email, o.status::text, o.total_amount, o.created_at 
+         FROM orders o 
+         JOIN customers c ON o.customer_id = c.id 
+         ORDER BY o.created_at DESC"
+    )
+    .fetch_all(pool)
+    .await?;
+    
+    Ok(orders)
+}
+
+// Customer CLI functions
+
+#[derive(Debug, sqlx::FromRow)]
+struct CustomerRecord {
+    id: Uuid,
+    email: String,
+    first_name: String,
+    last_name: String,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// List all customers
+async fn list_customers(pool: &sqlx::PgPool) -> Result<Vec<CustomerRecord>> {
+    let customers = sqlx::query_as::<_, CustomerRecord>(
+        "SELECT id, email, first_name, last_name, created_at 
+         FROM customers ORDER BY created_at DESC"
+    )
+    .fetch_all(pool)
+    .await?;
+    
+    Ok(customers)
+}
+
+/// Helper function to truncate strings
+fn truncate(s: &str, max_len: usize) -> String {
+    if s.len() > max_len {
+        format!("{}...", &s[..max_len.saturating_sub(3)])
+    } else {
+        s.to_string()
+    }
 }
 
 #[cfg(test)]
