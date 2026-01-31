@@ -481,6 +481,35 @@ rcommerce export orders --start-date 2024-01-01 --format json > orders.json
 rcommerce export customers --include-addresses --format csv > customers.csv
 ```
 
+### API Key Management
+
+Manage API keys for service-to-service authentication:
+
+```bash
+# List all API keys
+rcommerce api-key list -c config.toml
+rcommerce api-key list -c config.toml --customer-id <uuid>
+
+# Create new API key
+rcommerce api-key create -c config.toml \
+  --name "Production Backend" \
+  --scopes "read,write" \
+  --expires-days 90
+
+# Get API key details
+rcommerce api-key get -c config.toml <prefix>
+
+# Revoke API key
+rcommerce api-key revoke -c config.toml <prefix> \
+  --reason "Key compromised"
+
+# Delete API key permanently
+rcommerce api-key delete -c config.toml <prefix>
+rcommerce api-key delete -c config.toml <prefix> --force
+```
+
+**Note:** The full API key (prefix.secret) is shown only once during creation. Store it securely!
+
 ### User Management
 
 ```bash
@@ -494,15 +523,9 @@ rcommerce user create --email "admin@yourstore.com" \
 rcommerce user list
 rcommerce user list --role admin
 
-# Manage API keys
-rcommerce api-key create --user-id usr_123 --name "Production Key" --permissions "*"
-rcommerce api-key list --user usr_123
-rcommerce api-key revoke <key-id>
-rcommerce api-key rotate <key-id>
-
 # Manage permissions
 rcommerce permission list
-docker permission assign <user-id> "orders:write"
+rcommerce permission assign <user-id> "orders:write"
 rcommerce permission revoke <user-id> "products:delete"
 ```
 

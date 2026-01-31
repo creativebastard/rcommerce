@@ -40,44 +40,86 @@ Development: http://localhost:8080/v1
 
 ## Authentication & Authorization
 
-### API Key Authentication
+R Commerce supports two authentication methods:
 
-```http
-GET /v1/orders
-Authorization: Bearer YOUR_API_KEY
-X-API-Key: YOUR_API_KEY
+### 1. JWT Authentication (User Sessions)
+
+For customer and admin user sessions.
+
+**Login:**
+```bash
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
 ```
 
-**API Key Types:**
-- **Publishable Key**: For frontend use (read-only public data)
-- **Secret Key**: For backend use (full access)
-- **Restricted Key**: Granular permissions (e.g., read-only orders)
+**Response:**
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 86400
+}
+```
+
+**Using the token:**
+```http
+GET /api/v1/customers
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+```
+
+**Token expiration:**
+- Access token: 24 hours (configurable)
+- Refresh token: 7 days (configurable)
+
+### 2. API Key Authentication (Service-to-Service)
+
+For server-to-server authentication. Managed via CLI.
+
+```http
+GET /api/v1/orders
+Authorization: Bearer <prefix>.<secret>
+```
+
+**Creating API keys:**
+```bash
+rcommerce api-key create --name "Production Backend" --scopes "read,write"
+```
+
+**API Key Features:**
+- Prefix + secret format (e.g., `aB3dEfGh.sEcReTkEy123`)
+- Configurable scopes: `read`, `write`
+- Optional expiration
+- Revocable via CLI
 
 ### Permission Scopes
 
-```toml
-# Example API key configuration
-[api_keys."pk_live_123"]
-type = "publishable"
-permissions = ["products:read", "categories:read"]
+**JWT Tokens:**
+- Inherit permissions from user role
+- Default: `["read", "write"]` for authenticated users
 
-[api_keys."sk_live_456"]
-type = "secret"
-permissions = ["*"]
+**API Keys:**
+- Explicitly assigned at creation
+- Simple scope model: `read`, `write`, or both
 
-[api_keys."sk_restricted_789"]
-type = "restricted"
-permissions = ["orders:read", "customers:read"]
-```
+### Protected vs Public Routes
 
-**Available Scopes:**
-- `products:read`, `products:write`
-- `orders:read`, `orders:write`
-- `customers:read`, `customers:write`
-- `payments:read`, `payments:write`
-- `shipping:read`, `shipping:write`
-- `analytics:read`
-- `webhooks:read`, `webhooks:write`
+**Public (no auth required):**
+- `GET /api/v1/products`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/refresh`
+
+**Protected (JWT or API key required):**
+- `GET/POST /api/v1/customers`
+- `GET/POST /api/v1/orders`
+- All `/api/v1/carts/*` endpoints
+- All `/api/v1/payments/*` endpoints
 
 ## Common Response Formats
 

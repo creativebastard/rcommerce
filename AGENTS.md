@@ -632,10 +632,67 @@ log_slow_queries = 1000  # ms
 
 ---
 
+## Documentation Guidelines
+
+### Documentation Structure
+
+We maintain documentation in **two locations** that must be kept in sync:
+
+1. **`docs/`** - General project documentation (architecture, design specs, guides)
+2. **`docs-website/`** - User-facing documentation website (MkDocs format)
+
+### When Updating Documentation
+
+**ALWAYS update both locations when making documentation changes:**
+
+```bash
+# Example: Updating authentication documentation
+# 1. Update technical spec in docs/
+vim docs/api/01-api-design.md
+
+# 2. Update user-facing docs in docs-website/
+vim docs-website/docs/api-reference/authentication.md
+
+# 3. Update this file if adding new patterns
+vim AGENTS.md
+```
+
+### Documentation Types
+
+| Location | Purpose | Audience |
+|----------|---------|----------|
+| `docs/architecture/` | Design decisions, technical specs | Developers |
+| `docs/api/` | API design specifications | Developers |
+| `docs/deployment/` | Deployment guides | DevOps |
+| `docs-website/docs/api-reference/` | API usage docs | API users |
+| `docs-website/docs/getting-started/` | Quick start guides | New users |
+| `docs-website/docs/deployment/` | Deployment tutorials | Users |
+| `README.md` | Project overview | Everyone |
+| `AGENTS.md` | Agent guidelines | AI agents |
+
+### Adding New Documentation
+
+1. **Technical docs** (for developers): Add to `docs/`
+2. **User docs** (for API users): Add to `docs-website/docs/`
+3. **Update both** when changing:
+   - API endpoints or authentication
+   - CLI commands
+   - Configuration options
+   - Deployment procedures
+
+### Documentation Format
+
+- Use Markdown for all documentation
+- Include code examples
+- Keep language consistent between docs
+- Add table of contents for long docs
+
+---
+
 ## Documentation
 
-- `docs/` - General documentation
-- `docs-website/` - Documentation website source
+- `docs/` - General documentation (technical specs, architecture)
+- `docs-website/` - User-facing documentation website
 - `README.md` - Quick start guide
 - `CONTRIBUTING.md` - Contribution guidelines
 - `SECURITY.md` - Security policy
