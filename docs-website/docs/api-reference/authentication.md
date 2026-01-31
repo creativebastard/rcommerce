@@ -1,222 +1,237 @@
 # Authentication
 
-R Commerce uses API keys for authentication. This guide covers how to authenticate your API requests.
-
-## API Key Types
-
-### Publishable Keys
-
-- **Prefix**: `pk_`
-- **Usage**: Frontend/client-side code
-- **Permissions**: Read-only access to public data
-- **Example**: `pk_live_1234567890abcdef`
-
-### Secret Keys
-
-- **Prefix**: `sk_`
-- **Usage**: Backend/server-side code only
-- **Permissions**: Full access to all API endpoints
-- **Example**: `sk_live_1234567890abcdef`
-
-### Restricted Keys
-
-- **Prefix**: `rk_`
-- **Usage**: Specific integrations or services
-- **Permissions**: Customizable, limited scope
-- **Example**: `rk_live_1234567890abcdef`
-
-## Authenticating Requests
-
-### HTTP Header
-
-Include your API key in the `Authorization` header:
-
-```http
-GET /v1/orders
-Authorization: Bearer sk_live_1234567890abcdef
-```
-
-### Query Parameter (Not Recommended)
-
-For testing only, you can pass the key as a query parameter:
-
-```http
-GET /v1/orders?api_key=sk_live_1234567890abcdef
-```
-
-> ⚠️ **Warning**: Never use query parameter authentication in production as it may expose your API key in logs.
-
-## Permission Scopes
-
-Scopes define what actions an API key can perform:
-
-| Scope | Description |
-|-------|-------------|
-| `products:read` | Read product data |
-| `products:write` | Create and update products |
-| `orders:read` | Read order data |
-| `orders:write` | Create and update orders |
-| `customers:read` | Read customer data |
-| `customers:write` | Create and update customers |
-| `payments:read` | Read payment data |
-| `payments:write` | Process payments and refunds |
-| `shipping:read` | Read shipping data |
-| `shipping:write` | Create fulfillments |
-| `analytics:read` | Access analytics and reports |
-| `webhooks:read` | Read webhook configurations |
-| `webhooks:write` | Create and modify webhooks |
-| `*` | Full access (secret keys only) |
-
-## Creating API Keys
-
-### Via CLI
-
-```bash
-# Create a new API key
-rcommerce api-key create \
-  --name "Production Backend" \
-  --permissions "orders:write,customers:write" \
-  --expires "2025-12-31"
-
-# List all API keys
-rcommerce api-key list
-
-# Revoke an API key
-rcommerce api-key revoke sk_live_xxx
-```
-
-### Via API
-
-```bash
-curl -X POST https://api.yourstore.com/v1/api-keys \
-  -H "Authorization: Bearer sk_live_xxx" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Production Backend",
-    "permissions": ["orders:write", "customers:write"],
-    "expires_at": "2025-12-31T23:59:59Z"
-  }'
-```
+R Commerce supports two authentication methods:
+1. **JWT Tokens** - For user sessions (customers, admins)
+2. **API Keys** - For service-to-service authentication
 
 ## JWT Authentication
 
-For user sessions (e.g., admin dashboard), use JWT tokens:
+JWT (JSON Web Tokens) are used for user authentication. They are short-lived and ideal for frontend applications.
 
-### Obtaining a JWT Token
+### Login
+
+Authenticate a user and receive access and refresh tokens:
 
 ```bash
-curl -X POST https://api.yourstore.com/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@example.com",
-    "password": "your_password"
-  }'
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
 ```
 
-Response:
+**Response:**
 
 ```json
 {
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expires_at": "2024-01-24T14:13:35Z",
-    "user": {
-      "id": "usr_123",
-      "email": "admin@example.com",
-      "role": "admin"
-    }
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 86400,
+  "customer": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe"
   }
+}
+```
+
+### Register
+
+Create a new customer account:
+
+```bash
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+```
+
+### Refresh Token
+
+Get a new access token using a refresh token:
+
+```bash
+POST /api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "Bearer",
+  "expires_in": 86400
 }
 ```
 
 ### Using JWT Tokens
 
+Include the access token in the `Authorization` header:
+
 ```http
-GET /v1/orders
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+GET /api/v1/customers
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
 ```
 
-## IP Restrictions
+### Token Expiration
 
-Restrict API key usage to specific IP addresses:
+- **Access Token**: 24 hours (configurable)
+- **Refresh Token**: 7 days (configurable)
+
+## API Key Authentication
+
+API keys are used for service-to-service authentication. They are long-lived and managed via CLI.
+
+### Creating API Keys
+
+Use the CLI to create and manage API keys:
 
 ```bash
-# Create key with IP restrictions
+# Create a new API key
 rcommerce api-key create \
-  --name "Server Key" \
-  --permissions "*" \
-  --allowed-ips "203.0.113.0/24,198.51.100.10"
+  --name "Production Backend" \
+  --scopes "read,write"
+
+# Output:
+# ✅ API Key created successfully!
+# Key: aB3dEfGh.sEcReTkEy123456789
+# Prefix: aB3dEfGh
+# Scopes: read, write
+```
+
+> ⚠️ **Important**: The full key is shown only once. Store it securely!
+
+### Managing API Keys
+
+```bash
+# List all API keys
+rcommerce api-key list
+
+# Get API key details
+rcommerce api-key get <prefix>
+
+# Revoke an API key
+rcommerce api-key revoke <prefix> --reason "Key compromised"
+
+# Delete an API key permanently
+rcommerce api-key delete <prefix>
+```
+
+### Using API Keys
+
+Include the API key in the `Authorization` header:
+
+```http
+GET /api/v1/products
+Authorization: Bearer aB3dEfGh.sEcReTkEy123456789
+```
+
+## Protected Routes
+
+The following routes require authentication (JWT or API key):
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/v1/customers` | GET, POST | List/create customers |
+| `/api/v1/customers/:id` | GET, PUT, DELETE | Customer operations |
+| `/api/v1/orders` | GET, POST | List/create orders |
+| `/api/v1/orders/:id` | GET, PUT | Order operations |
+| `/api/v1/carts/*` | All | Cart operations |
+| `/api/v1/payments/*` | All | Payment operations |
+| `/api/v1/coupons` | POST | Create coupons |
+
+### Public Routes
+
+These routes do not require authentication:
+
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/v1/products` | GET | List products |
+| `/api/v1/products/:id` | GET | Get product |
+| `/api/v1/auth/register` | POST | Register |
+| `/api/v1/auth/login` | POST | Login |
+| `/api/v1/auth/refresh` | POST | Refresh token |
+| `/health` | GET | Health check |
+
+## Error Responses
+
+### Invalid Token
+
+```json
+{
+  "error": {
+    "message": "Unauthorized: Invalid token",
+    "code": 401,
+    "category": "auth"
+  }
+}
+```
+
+### Expired Token
+
+```json
+{
+  "error": {
+    "message": "Unauthorized: Token has expired",
+    "code": 401,
+    "category": "auth"
+  }
+}
+```
+
+### Missing Authorization Header
+
+```json
+{
+  "error": {
+    "message": "Unauthorized",
+    "code": 401,
+    "category": "auth"
+  }
+}
 ```
 
 ## Security Best Practices
 
-1. **Never expose secret keys** in client-side code
-2. **Use environment variables** for API keys
+1. **Never expose API keys** in client-side code
+2. **Use environment variables** for storing keys
 3. **Rotate keys regularly** (every 90 days recommended)
-4. **Use restricted keys** for specific integrations
-5. **Monitor API key usage** for suspicious activity
-6. **Revoke compromised keys** immediately
+4. **Use minimal scopes** - only grant necessary permissions
+5. **Revoke compromised keys** immediately
+6. **Use JWT for user sessions**, API keys for server-to-server
+7. **Enable HTTPS** in production
 
-## Testing Authentication
+## Configuration
 
-```bash
-# Test with curl
-curl https://api.yourstore.com/v1/orders \
-  -H "Authorization: Bearer sk_live_xxx"
+Configure JWT settings in your `config.toml`:
 
-# Expected success response
-{"data": [...], "meta": {...}}
+```toml
+[security.jwt]
+secret = "your-secure-secret-key-min-32-characters"
+expiry_hours = 24
+refresh_expiry_hours = 168  # 7 days
 
-# Expected failure response (invalid key)
-{"error": {"code": "unauthorized", "message": "Invalid API key"}}
-```
-
-## Error Responses
-
-### Invalid API Key
-
-```json
-{
-  "error": {
-    "code": "unauthorized",
-    "message": "Invalid API key",
-    "details": {
-      "request_id": "req_abc123"
-    }
-  }
-}
-```
-
-### Insufficient Permissions
-
-```json
-{
-  "error": {
-    "code": "forbidden",
-    "message": "API key lacks required permission: orders:write",
-    "details": {
-      "required": "orders:write",
-      "provided": ["orders:read"]
-    }
-  }
-}
-```
-
-### Expired API Key
-
-```json
-{
-  "error": {
-    "code": "unauthorized",
-    "message": "API key has expired",
-    "details": {
-      "expired_at": "2024-01-01T00:00:00Z"
-    }
-  }
-}
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
 ```
 
 ## Next Steps
 
-- [Error Codes](errors.md) - Complete error code reference
-- [API Overview](index.md) - Back to API documentation
+- [Customers API](customers.md) - Customer management endpoints
+- [Orders API](orders.md) - Order management endpoints
+- [Error Codes](errors.md) - Complete error reference

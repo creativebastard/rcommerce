@@ -124,6 +124,49 @@ Core tables:
 - `audit_logs`
 - `api_keys`
 
+
+## 🔐 API Authentication
+
+### JWT Authentication
+
+R Commerce uses JWT tokens for user authentication.
+
+```bash
+# Register
+POST /api/v1/auth/register
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+# Login
+POST /api/v1/auth/login
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+# Response: { "access_token": "...", "refresh_token": "..." }
+
+# Use token
+GET /api/v1/customers
+Authorization: Bearer <access_token>
+```
+
+### API Key Management (CLI)
+
+```bash
+# Create API key
+rcommerce api-key create -c config.toml --name "My App" --scopes "read,write"
+
+# List keys
+rcommerce api-key list -c config.toml
+
+# Revoke key
+rcommerce api-key revoke -c config.toml <prefix>
+```
+
 ##  Plugin System
 
 ### Payment Gateways

@@ -410,6 +410,109 @@ payment_status - ENUM ('pending', 'authorized', 'paid', 'failed', 'cancelled', '
 
 ---
 
+## Authentication & Authorization
+
+### JWT Authentication
+
+The API uses JWT (JSON Web Tokens) for user authentication.
+
+#### Auth Endpoints
+
+| Endpoint | Method | Auth Required | Description |
+|----------|--------|---------------|-------------|
+| `/api/v1/auth/register` | POST | No | Create new customer account |
+| `/api/v1/auth/login` | POST | No | Authenticate and get tokens |
+| `/api/v1/auth/refresh` | POST | No | Refresh access token |
+
+#### Token Types
+
+- **Access Token**: Short-lived (24 hours), used for API requests
+- **Refresh Token**: Long-lived (7 days), used to get new access tokens
+
+#### Using Authentication
+
+```bash
+# Register
+POST /api/v1/auth/register
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+# Login
+POST /api/v1/auth/login
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+# Response: { "access_token": "...", "refresh_token": "...", "expires_in": 86400 }
+
+# Access protected endpoint
+GET /api/v1/customers
+Authorization: Bearer <access_token>
+```
+
+#### Protected Routes
+
+These routes require JWT authentication:
+- `GET/POST /api/v1/customers`
+- `GET/POST /api/v1/orders`
+- `GET/POST /api/v1/carts/*`
+- `GET/POST /api/v1/payments/*`
+- `GET/POST /api/v1/coupons`
+
+Public routes (no auth required):
+- `GET /api/v1/products`
+- `POST /api/v1/auth/*`
+
+### API Key Authentication
+
+For service-to-service authentication, use API keys managed via CLI.
+
+#### CLI Commands
+
+```bash
+# List all API keys
+rcommerce api-key list -c config.toml
+
+# Create new API key
+rcommerce api-key create -c config.toml --name "My App" --scopes "read,write"
+# Output: Key: <prefix>.<secret> (copy this - shown only once!)
+
+# Get API key details
+rcommerce api-key get -c config.toml <prefix>
+
+# Revoke API key
+rcommerce api-key revoke -c config.toml <prefix> --reason "Compromised"
+
+# Delete API key permanently
+rcommerce api-key delete -c config.toml <prefix>
+```
+
+#### Using API Keys
+
+```bash
+# Include in header
+Authorization: Bearer <api_key>
+```
+
+### Configuration
+
+```toml
+[security.jwt]
+secret = "your-secure-secret-key"  # Change in production!
+expiry_hours = 24
+refresh_expiry_hours = 168  # 7 days
+
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
+```
+
+---
+
 ## Security Considerations
 
 ### Authentication
@@ -417,6 +520,7 @@ payment_status - ENUM ('pending', 'authorized', 'paid', 'failed', 'cancelled', '
 - API key authentication for service-to-service
 - JWT tokens for user sessions
 - Configurable token expiry
+- bcrypt password hashing (cost 12)
 
 ### Rate Limiting
 
@@ -463,6 +567,13 @@ rcommerce product get <id>
 # Order management
 rcommerce order list
 rcommerce order get <id>
+
+# API Key management
+rcommerce api-key list
+rcommerce api-key create --name "My App" --scopes "read,write"
+rcommerce api-key get <prefix>
+rcommerce api-key revoke <prefix> --reason "Compromised"
+rcommerce api-key delete <prefix>
 
 # Show configuration
 rcommerce config
