@@ -160,18 +160,17 @@ codegen-units = 1
 inherits = "release"
 lto = "thin"
 
-# cargo-dist configuration
+# Config for 'dist'
 [workspace.metadata.dist]
-# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.30.3"
 # CI backends to support
-ci = ["github"]
+ci = "github"
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
-# Whether cargo-dist should create a GitHub Release or use an existing draft
-# This uses the GitHub API, so you need to have `gh` installed and authenticated
+# Whether dist should create a Github Release or use an existing draft
 create-release = true
 # Which actions to run on pull requests
 pr-run-mode = "plan"
@@ -181,10 +180,8 @@ install-updater = true
 install-path = "CARGO_HOME"
 # Whether to enable GitHub Attestations
 github-attestations = true
-
-# Environment variables for builds
-[workspace.metadata.dist.github.env]
-SQLX_OFFLINE = "true"
+# Allow dirty working directory (custom modifications to CI)
+allow-dirty = true
 
 # This is the app we want to distribute
 [[workspace.metadata.dist.app]]
