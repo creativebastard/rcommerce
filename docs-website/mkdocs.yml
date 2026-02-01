@@ -103,7 +103,6 @@ plugins:
             launchd: launchd
             Kubernetes: Kubernetes
             Binary: 二进制
-            Operations: 运维
             Reverse Proxies: 反向代理
             Caddy: Caddy
             Nginx: Nginx
@@ -140,10 +139,19 @@ plugins:
         'getting-started/index.md': 'getting-started/quickstart.md'
         'api-reference/overview.md': 'api-reference/index.md'
         'deployment/index.md': 'deployment/docker.md'
-        'operations/index.md': 'operations/reverse-proxies/nginx.md'
         'architecture/index.md': 'architecture/overview.md'
         'development/index.md': 'development/local-setup.md'
         'migration/index.md': 'migration/shopify.md'
+        # Redirect old operations paths to deployment
+        'operations/reverse-proxies/caddy.md': 'deployment/reverse-proxies/caddy.md'
+        'operations/reverse-proxies/nginx.md': 'deployment/reverse-proxies/nginx.md'
+        'operations/reverse-proxies/haproxy.md': 'deployment/reverse-proxies/haproxy.md'
+        'operations/reverse-proxies/traefik.md': 'deployment/reverse-proxies/traefik.md'
+        'operations/scaling.md': 'deployment/scaling.md'
+        'operations/monitoring.md': 'deployment/monitoring/monitoring.md'
+        'operations/backups.md': 'deployment/backups/backups.md'
+        'operations/security.md': 'deployment/security/security.md'
+        'operations/redis.md': 'deployment/redis.md'
 
 # Extra CSS and JavaScript
 extra_css:
@@ -261,19 +269,16 @@ nav:
       - launchd: deployment/macos/launchd.md
     - Kubernetes: deployment/kubernetes.md
     - Binary: deployment/binary.md
-  
-  - Operations:
-    - Overview: operations/index.md
     - Reverse Proxies:
-      - Caddy: operations/reverse-proxies/caddy.md
-      - Nginx: operations/reverse-proxies/nginx.md
-      - HAProxy: operations/reverse-proxies/haproxy.md
-      - Traefik: operations/reverse-proxies/traefik.md
-    - Scaling: operations/scaling.md
-    - Monitoring: operations/monitoring.md
-    - Backups: operations/backups.md
-    - Security: operations/security.md
-    - Redis: operations/redis.md
+      - Caddy: deployment/reverse-proxies/caddy.md
+      - Nginx: deployment/reverse-proxies/nginx.md
+      - HAProxy: deployment/reverse-proxies/haproxy.md
+      - Traefik: deployment/reverse-proxies/traefik.md
+    - Scaling: deployment/scaling.md
+    - Monitoring: deployment/monitoring/monitoring.md
+    - Backups: deployment/backups/backups.md
+    - Security: deployment/security/security.md
+    - Redis: deployment/redis.md
   
   - Architecture:
     - Overview: architecture/overview.md
