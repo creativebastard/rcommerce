@@ -181,7 +181,7 @@ install-path = "CARGO_HOME"
 # Whether to enable GitHub Attestations
 github-attestations = true
 # Allow dirty working directory (custom modifications to CI)
-allow-dirty = true
+allow-dirty = ["ci"]
 
 # This is the app we want to distribute
 [[workspace.metadata.dist.app]]
