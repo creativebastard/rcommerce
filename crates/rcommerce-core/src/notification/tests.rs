@@ -89,6 +89,9 @@ mod notification_integration_tests {
             email_notifications: true,
             sms_notifications: false,
             push_notifications: false,
+            password_hash: None,
+            is_verified: true,
+            last_login_at: None,
         };
         
         // Create mock addresses

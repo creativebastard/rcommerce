@@ -11,7 +11,7 @@ use rcommerce_core::repository::{
     Database, create_pool,
     ProductRepository, CustomerRepository,
 };
-use rcommerce_core::services::{ProductService, CustomerService, OrderService, AuthService};
+use rcommerce_core::services::{ProductService, CustomerService, AuthService};
 use rcommerce_core::cache::RedisPool;
 use crate::state::AppState;
 
@@ -36,12 +36,12 @@ pub async fn run(config: Config) -> Result<()> {
     
     // Initialize repositories
     let product_repo = ProductRepository::new(db.clone());
-    let customer_repo = CustomerRepository::new(db);
+    let customer_repo = CustomerRepository::new(db.clone());
     
     // Initialize services
     let product_service = ProductService::new(product_repo);
     let customer_service = CustomerService::new(customer_repo);
-    let order_service = OrderService::new();
+    // Order service requires payment gateway - initialized per-request for now
     let auth_service = AuthService::new(config.clone());
     
     // Initialize Redis (optional)
@@ -51,8 +51,8 @@ pub async fn run(config: Config) -> Result<()> {
     let app_state = AppState::new(
         product_service,
         customer_service,
-        order_service,
         auth_service,
+        db,
         redis,
     );
     
