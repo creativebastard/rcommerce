@@ -15,139 +15,88 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Build for macOS (both Intel and Apple Silicon)
-  build-macos:
+  # Build for macOS Intel
+  build-macos-intel:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-apple-darwin
-          - aarch64-apple-darwin
     steps:
       - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-      
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      
-      - name: Cache cargo index
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} -p rcommerce-cli
+        run: cargo build --release -p rcommerce-cli
       
       - name: Package
         run: |
-          VERSION=${{ github.event.inputs.version || github.ref_name }}
-          TARGET=${{ matrix.target }}
+          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ -z "$VERSION" ]; then VERSION="${{ github.event.inputs.version }}"; fi
           mkdir -p release
-          cp target/${{ matrix.target }}/release/rcommerce release/rcommerce-${VERSION}-${TARGET}
-          gzip release/rcommerce-${VERSION}-${TARGET}
+          cp target/release/rcommerce release/rcommerce-${VERSION}-x86_64-macos
+          gzip release/rcommerce-${VERSION}-x86_64-macos
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.target }}
+          name: macos-x86_64
           path: release/*.gz
 
-  # Build for Linux (x86_64 and ARM64)
-  build-linux:
+  # Build for Linux x86_64
+  build-linux-amd64:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
     steps:
       - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
       
-      - name: Install cross
-        run: cargo install cross --git https://github.com/cross-rs/cross
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev
       
-      - name: Cache cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
-      - name: Build with cross
-        run: cross build --release --target ${{ matrix.target }} -p rcommerce-cli
+      - name: Build
+        run: cargo build --release -p rcommerce-cli
       
       - name: Package
         run: |
-          VERSION=${{ github.event.inputs.version || github.ref_name }}
-          TARGET=${{ matrix.target }}
+          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ -z "$VERSION" ]; then VERSION="${{ github.event.inputs.version }}"; fi
           mkdir -p release
-          cp target/${{ matrix.target }}/release/rcommerce release/rcommerce-${VERSION}-${TARGET}
-          gzip release/rcommerce-${VERSION}-${TARGET}
+          cp target/release/rcommerce release/rcommerce-${VERSION}-x86_64-linux
+          gzip release/rcommerce-${VERSION}-x86_64-linux
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.target }}
-          path: release/*.gz
-
-  # Build for FreeBSD
-  build-freebsd:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Build in FreeBSD VM
-        uses: vmactions/freebsd-vm@v1
-        with:
-          usesh: true
-          prepare: |
-            pkg install -y rust cargo postgresql15-client
-          run: |
-            cargo build --release -p rcommerce-cli
-            mkdir -p release
-            cp target/release/rcommerce release/rcommerce-${{ github.event.inputs.version || github.ref_name }}-x86_64-freebsd
-            gzip release/rcommerce-*
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: freebsd-x86_64
+          name: linux-x86_64
           path: release/*.gz
 
   # Create release with all binaries
   create-release:
-    needs: [build-macos, build-linux, build-freebsd]
+    needs: [build-macos-intel, build-linux-amd64]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: release
+          merge-multiple: true
+      
+      - name: List downloaded files
+        run: ls -la release/
       
       - name: Generate checksums
         run: |
           cd release
-          find . -name "*.gz" -exec sha256sum {} \; > SHA256SUMS.txt
+          sha256sum *.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            release/**/*.gz
+            release/*.gz
             release/SHA256SUMS.txt
           draft: true
           prerelease: false
