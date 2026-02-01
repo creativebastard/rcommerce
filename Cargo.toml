@@ -7,7 +7,7 @@ version = "0.1.0"
 authors = ["R Commerce Team"]
 edition = "2021"
 license = "MIT"
-repository = "https://gitee.com/captainjez/gocart"
+repository = "https://github.com/creativebastard/rcommerce"
 homepage = "https://rcommerce.app"
 rust-version = "1.70.0"
 
@@ -155,6 +155,34 @@ opt-level = 3
 lto = true
 codegen-units = 1
 
-# Lazy static initialization
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
 
-# System monitoring
+# cargo-dist configuration
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.30.3"
+# CI backends to support
+ci = ["github"]
+# The installers to generate for each app
+installers = ["shell", "powershell"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
+# Whether cargo-dist should create a GitHub Release or use an existing draft
+# This uses the GitHub API, so you need to have `gh` installed and authenticated
+create-release = true
+# Which actions to run on pull requests
+pr-run-mode = "plan"
+# Whether to install an updater program
+install-updater = true
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Whether to enable GitHub Attestations
+github-attestations = true
+
+# This is the app we want to distribute
+[[workspace.metadata.dist.app]]
+name = "rcommerce"
+path = "crates/rcommerce-cli"
