@@ -155,35 +155,7 @@ opt-level = 3
 lto = true
 codegen-units = 1
 
-# The profile that 'dist' will build with
+# The profile that 'dist' will build with (kept for compatibility)
 [profile.dist]
 inherits = "release"
 lto = "thin"
-
-# Config for 'dist'
-[workspace.metadata.dist]
-# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.30.3"
-# CI backends to support
-ci = "github"
-# The installers to generate for each app
-installers = ["shell", "powershell"]
-# Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
-# Whether dist should create a Github Release or use an existing draft
-create-release = true
-# Which actions to run on pull requests
-pr-run-mode = "plan"
-# Whether to install an updater program
-install-updater = true
-# Path that installers should place binaries in
-install-path = "CARGO_HOME"
-# Whether to enable GitHub Attestations
-github-attestations = true
-# Allow dirty working directory (custom modifications to CI)
-allow-dirty = ["ci"]
-
-# This is the app we want to distribute
-[[workspace.metadata.dist.app]]
-name = "rcommerce"
-path = "crates/rcommerce-cli"

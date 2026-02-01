@@ -7,6 +7,21 @@ passthrough = [
     "CARGO_TERM_COLOR",
 ]
 
-# You can add custom images here if needed
-# [target.x86_64-unknown-linux-gnu]
-# image = "ghcr.io/cross-rs/cross:x86_64-unknown-linux-gnu"
+# Linux GNU target (glibc)
+[target.x86_64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/cross:x86_64-unknown-linux-gnu"
+
+# Linux MUSL target (static linking)
+[target.x86_64-unknown-linux-musl]
+image = "ghcr.io/cross-rs/cross:x86_64-unknown-linux-musl"
+
+# Linux ARM64 target
+[target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/cross:aarch64-unknown-linux-gnu"
+
+# FreeBSD target
+[target.x86_64-unknown-freebsd]
+image = "ghcr.io/cross-rs/cross:x86_64-unknown-freebsd"
+
+# Note: macOS targets (x86_64-apple-darwin, aarch64-apple-darwin) 
+# are built natively on macOS, not using cross
