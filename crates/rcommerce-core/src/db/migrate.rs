@@ -99,6 +99,10 @@ impl Migrator {
             (5, "customer_fields", include_str!("../../migrations/006_customer_fields.sql")),
             (6, "api_keys", include_str!("../../migrations/005_api_keys.sql")),
             (7, "fix_currency_type", include_str!("../../migrations/007_fix_currency_type.sql")),
+            (8, "add_order_fields", include_str!("../../migrations/008_add_order_fields.sql")),
+            (9, "add_address_ids", include_str!("../../migrations/009_add_address_ids.sql")),
+            (10, "add_all_order_columns", include_str!("../../migrations/010_add_all_order_columns.sql")),
+            (11, "add_order_item_columns", include_str!("../../migrations/011_add_order_item_columns.sql"))
         ];
 
         for (version, name, sql) in migrations {

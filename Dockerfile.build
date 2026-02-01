@@ -1,0 +1,42 @@
+# Multi-stage Dockerfile for building R Commerce binaries
+# Usage: docker build -f Dockerfile.build --output type=local,dest=./release .
+
+# Stage 1: Build the binary
+FROM rust:1.75-bookworm as builder
+
+WORKDIR /usr/src/rcommerce
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
+COPY crates/*/Cargo.toml ./crates/*/
+
+# Copy source code
+COPY . .
+
+# Build release binary
+RUN cargo build --release -p rcommerce-cli
+
+# Stage 2: Create minimal runtime image for Linux
+FROM debian:bookworm-slim as runtime
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/src/rcommerce/target/release/rcommerce /usr/local/bin/rcommerce
+
+EXPOSE 8080
+
+ENTRYPOINT ["rcommerce"]
+CMD ["server"]
+
+# Stage 3: Export binary (for buildkit)
+FROM scratch as export
+COPY --from=builder /usr/src/rcommerce/target/release/rcommerce /

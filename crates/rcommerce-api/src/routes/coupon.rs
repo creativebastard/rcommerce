@@ -6,15 +6,15 @@
 //! - Validate coupons
 //! - Apply coupons to carts
 
+use crate::state::AppState;
 use axum::{
-    Json, Router,
-    routing::{get, post},
     extract::Path,
     http::StatusCode,
+    routing::{get, post},
+    Json, Router,
 };
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::state::AppState;
 
 /// Request body for creating a coupon
 #[derive(Debug, Deserialize)]
@@ -36,7 +36,7 @@ pub async fn create_coupon(
     Json(request): Json<CreateCouponRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let coupon_id = Uuid::new_v4();
-    
+
     Ok(Json(serde_json::json!({
         "id": coupon_id,
         "code": request.code,
@@ -89,7 +89,9 @@ pub async fn list_coupons() -> Result<Json<serde_json::Value>, StatusCode> {
 }
 
 /// Get coupon by ID (admin only)
-pub async fn get_coupon(Path(coupon_id): Path<Uuid>) -> Result<Json<serde_json::Value>, StatusCode> {
+pub async fn get_coupon(
+    Path(coupon_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
     Ok(Json(serde_json::json!({
         "id": coupon_id,
         "code": "SUMMER2026",
@@ -153,7 +155,7 @@ pub async fn validate_coupon(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     // Simulate validation
     let is_valid = request.code != "INVALID";
-    
+
     if is_valid {
         Ok(Json(serde_json::json!({
             "valid": true,
@@ -178,7 +180,9 @@ pub async fn validate_coupon(
 }
 
 /// Get coupon statistics (admin only)
-pub async fn get_coupon_stats(Path(coupon_id): Path<Uuid>) -> Result<Json<serde_json::Value>, StatusCode> {
+pub async fn get_coupon_stats(
+    Path(coupon_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
     Ok(Json(serde_json::json!({
         "coupon_id": coupon_id,
         "code": "SUMMER2026",
@@ -205,7 +209,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         // Coupon CRUD
         .route("/coupons", get(list_coupons).post(create_coupon))
-        .route("/coupons/:coupon_id", get(get_coupon).put(update_coupon).delete(delete_coupon))
+        .route(
+            "/coupons/:coupon_id",
+            get(get_coupon).put(update_coupon).delete(delete_coupon),
+        )
         // Coupon validation
         .route("/coupons/validate", post(validate_coupon))
         // Coupon stats

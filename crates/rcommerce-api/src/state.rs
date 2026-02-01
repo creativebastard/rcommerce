@@ -1,6 +1,6 @@
-use rcommerce_core::services::{ProductService, CustomerService, AuthService};
-use rcommerce_core::repository::Database;
 use rcommerce_core::cache::RedisPool;
+use rcommerce_core::repository::Database;
+use rcommerce_core::services::{AuthService, CustomerService, ProductService};
 
 #[derive(Clone)]
 pub struct AppState {

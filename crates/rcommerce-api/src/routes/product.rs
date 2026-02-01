@@ -1,28 +1,38 @@
-use axum::{Json, Router, routing::get, extract::{Path, State}};
+use axum::{
+    extract::{Path, State},
+    routing::get,
+    Json, Router,
+};
 use uuid::Uuid;
 
 use crate::state::AppState;
 
 /// List products from database
-pub async fn list_products(
-    State(state): State<AppState>,
-) -> Json<serde_json::Value> {
-    match state.product_service.list_products(None, rcommerce_core::services::PaginationParams::default()).await {
+pub async fn list_products(State(state): State<AppState>) -> Json<serde_json::Value> {
+    match state
+        .product_service
+        .list_products(None, rcommerce_core::services::PaginationParams::default())
+        .await
+    {
         Ok(product_list) => {
-            let products: Vec<serde_json::Value> = product_list.products.into_iter().map(|p| {
-                serde_json::json!({
-                    "id": p.id,
-                    "title": p.title,
-                    "slug": p.slug,
-                    "price": p.price,
-                    "currency": p.currency,
-                    "description": p.description,
-                    "is_active": p.is_active,
-                    "inventory_quantity": p.inventory_quantity,
-                    "created_at": p.created_at
+            let products: Vec<serde_json::Value> = product_list
+                .products
+                .into_iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "id": p.id,
+                        "title": p.title,
+                        "slug": p.slug,
+                        "price": p.price,
+                        "currency": p.currency,
+                        "description": p.description,
+                        "is_active": p.is_active,
+                        "inventory_quantity": p.inventory_quantity,
+                        "created_at": p.created_at
+                    })
                 })
-            }).collect();
-            
+                .collect();
+
             Json(serde_json::json!({
                 "products": products,
                 "meta": {
@@ -62,7 +72,7 @@ pub async fn get_product(
             }));
         }
     };
-    
+
     match state.product_service.get_product(product_id).await {
         Ok(Some(product_detail)) => {
             let p = product_detail.product;
@@ -104,11 +114,9 @@ pub async fn get_product(
                 }
             }))
         }
-        Ok(None) => {
-            Json(serde_json::json!({
-                "error": "Product not found"
-            }))
-        }
+        Ok(None) => Json(serde_json::json!({
+            "error": "Product not found"
+        })),
         Err(e) => {
             tracing::error!("Failed to get product: {}", e);
             Json(serde_json::json!({

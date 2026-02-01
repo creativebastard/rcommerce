@@ -1,5 +1,5 @@
-use axum::{Json, Router, routing::get, extract::State};
 use crate::state::AppState;
+use axum::{extract::State, routing::get, Json, Router};
 
 /// Get admin dashboard stats
 pub async fn get_stats(State(_state): State<AppState>) -> Json<serde_json::Value> {

@@ -7,13 +7,13 @@
 //! - Cart merging
 //! - Coupon application
 
+use crate::state::AppState;
 use axum::{
-    Json, Router,
-    routing::{get, post, put},
     extract::Path,
     http::StatusCode,
+    routing::{get, post, put},
+    Json, Router,
 };
-use crate::state::AppState;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ use uuid::Uuid;
 pub async fn create_guest_cart() -> Result<Json<serde_json::Value>, StatusCode> {
     let cart_id = Uuid::new_v4();
     let session_token = format!("sess_{}", Uuid::new_v4().to_string().replace("-", ""));
-    
+
     Ok(Json(serde_json::json!({
         "id": cart_id,
         "session_token": session_token,
@@ -41,7 +41,7 @@ pub async fn create_guest_cart() -> Result<Json<serde_json::Value>, StatusCode> 
 pub async fn get_customer_cart() -> Result<Json<serde_json::Value>, StatusCode> {
     let cart_id = Uuid::new_v4();
     let customer_id = Uuid::new_v4();
-    
+
     Ok(Json(serde_json::json!({
         "id": cart_id,
         "customer_id": customer_id,
@@ -109,7 +109,7 @@ pub async fn add_item_to_cart(
     let unit_price = rust_decimal::Decimal::from(50);
     let quantity = request.quantity;
     let subtotal = unit_price * rust_decimal::Decimal::from(quantity);
-    
+
     Ok(Json(serde_json::json!({
         "id": item_id,
         "cart_id": cart_id,
@@ -144,7 +144,7 @@ pub async fn update_cart_item(
     let unit_price = rust_decimal::Decimal::from(50);
     let quantity = request.quantity;
     let subtotal = unit_price * rust_decimal::Decimal::from(quantity);
-    
+
     Ok(Json(serde_json::json!({
         "id": item_id,
         "cart_id": cart_id,
@@ -157,9 +157,7 @@ pub async fn update_cart_item(
 }
 
 /// Remove item from cart
-pub async fn remove_cart_item(
-    Path((_cart_id, _item_id)): Path<(Uuid, Uuid)>,
-) -> StatusCode {
+pub async fn remove_cart_item(Path((_cart_id, _item_id)): Path<(Uuid, Uuid)>) -> StatusCode {
     // In real implementation, remove item from database
     StatusCode::NO_CONTENT
 }
@@ -182,7 +180,7 @@ pub async fn merge_carts(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let customer_cart_id = Uuid::new_v4();
     let guest_cart_id = Uuid::new_v4();
-    
+
     Ok(Json(serde_json::json!({
         "message": "Carts merged successfully",
         "guest_cart_id": guest_cart_id,
@@ -231,7 +229,9 @@ pub async fn apply_coupon(
 }
 
 /// Remove coupon from cart
-pub async fn remove_coupon(Path(cart_id): Path<Uuid>) -> Result<Json<serde_json::Value>, StatusCode> {
+pub async fn remove_coupon(
+    Path(cart_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
     Ok(Json(serde_json::json!({
         "id": cart_id,
         "coupon_code": null,
@@ -258,10 +258,19 @@ pub fn router() -> Router<AppState> {
         // Cart by ID
         .route("/carts/:cart_id", get(get_cart).delete(delete_cart))
         // Cart items
-        .route("/carts/:cart_id/items", post(add_item_to_cart).delete(clear_cart))
-        .route("/carts/:cart_id/items/:item_id", put(update_cart_item).delete(remove_cart_item))
+        .route(
+            "/carts/:cart_id/items",
+            post(add_item_to_cart).delete(clear_cart),
+        )
+        .route(
+            "/carts/:cart_id/items/:item_id",
+            put(update_cart_item).delete(remove_cart_item),
+        )
         // Cart merge
         .route("/carts/merge", post(merge_carts))
         // Coupons
-        .route("/carts/:cart_id/coupon", post(apply_coupon).delete(remove_coupon))
+        .route(
+            "/carts/:cart_id/coupon",
+            post(apply_coupon).delete(remove_coupon),
+        )
 }

@@ -4,9 +4,9 @@
 //! Frontend never communicates directly with payment providers.
 
 use axum::{
+    extract::{Path, State},
+    routing::{delete, get, post},
     Json, Router,
-    routing::{get, post, delete},
-    extract::{State, Path},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -35,80 +35,78 @@ pub async fn get_payment_methods(
     Json(request): Json<GetPaymentMethodsRequest>,
 ) -> Json<Vec<GetPaymentMethodsResponse>> {
     // Parse amount
-    let _amount = request.amount.parse::<rust_decimal::Decimal>()
+    let _amount = request
+        .amount
+        .parse::<rust_decimal::Decimal>()
         .unwrap_or_else(|_| rust_decimal::Decimal::ZERO);
-    
+
     // In a real implementation, we'd query the payment service
     // For now, return mock data
-    let response = vec![
-        GetPaymentMethodsResponse {
-            gateway_id: "stripe".to_string(),
-            gateway_name: "Stripe".to_string(),
-            payment_methods: vec![
-                PaymentMethodConfig {
-                    method_type: PaymentMethodType::Card,
-                    enabled: true,
-                    display_name: "Credit/Debit Card".to_string(),
-                    requires_redirect: false,
-                    supports_3ds: true,
-                    supports_tokenization: true,
-                    supports_recurring: true,
-                    required_fields: vec![
-                        FieldDefinition {
-                            name: "number".to_string(),
-                            label: "Card Number".to_string(),
-                            field_type: FieldType::CardNumber,
-                            required: true,
-                            pattern: Some(r"^[\d\s]{13,19}$".to_string()),
-                            placeholder: Some("1234 5678 9012 3456".to_string()),
-                            help_text: None,
-                        },
-                        FieldDefinition {
-                            name: "exp_month".to_string(),
-                            label: "Expiry Month".to_string(),
-                            field_type: FieldType::ExpiryDate,
-                            required: true,
-                            pattern: Some(r"^(0[1-9]|1[0-2])$".to_string()),
-                            placeholder: Some("MM".to_string()),
-                            help_text: None,
-                        },
-                        FieldDefinition {
-                            name: "exp_year".to_string(),
-                            label: "Expiry Year".to_string(),
-                            field_type: FieldType::ExpiryDate,
-                            required: true,
-                            pattern: Some(r"^20[2-9][0-9]$".to_string()),
-                            placeholder: Some("YYYY".to_string()),
-                            help_text: None,
-                        },
-                        FieldDefinition {
-                            name: "cvc".to_string(),
-                            label: "CVC".to_string(),
-                            field_type: FieldType::Cvc,
-                            required: true,
-                            pattern: Some(r"^\d{3,4}$".to_string()),
-                            placeholder: Some("123".to_string()),
-                            help_text: Some("3 or 4 digit code on back of card".to_string()),
-                        },
-                        FieldDefinition {
-                            name: "name".to_string(),
-                            label: "Cardholder Name".to_string(),
-                            field_type: FieldType::CardholderName,
-                            required: true,
-                            pattern: None,
-                            placeholder: Some("John Doe".to_string()),
-                            help_text: None,
-                        },
-                    ],
-                    optional_fields: vec![],
-                    supported_currencies: vec![],
-                    min_amount: Some(rust_decimal::Decimal::new(50, 2)),
-                    max_amount: None,
+    let response = vec![GetPaymentMethodsResponse {
+        gateway_id: "stripe".to_string(),
+        gateway_name: "Stripe".to_string(),
+        payment_methods: vec![PaymentMethodConfig {
+            method_type: PaymentMethodType::Card,
+            enabled: true,
+            display_name: "Credit/Debit Card".to_string(),
+            requires_redirect: false,
+            supports_3ds: true,
+            supports_tokenization: true,
+            supports_recurring: true,
+            required_fields: vec![
+                FieldDefinition {
+                    name: "number".to_string(),
+                    label: "Card Number".to_string(),
+                    field_type: FieldType::CardNumber,
+                    required: true,
+                    pattern: Some(r"^[\d\s]{13,19}$".to_string()),
+                    placeholder: Some("1234 5678 9012 3456".to_string()),
+                    help_text: None,
+                },
+                FieldDefinition {
+                    name: "exp_month".to_string(),
+                    label: "Expiry Month".to_string(),
+                    field_type: FieldType::ExpiryDate,
+                    required: true,
+                    pattern: Some(r"^(0[1-9]|1[0-2])$".to_string()),
+                    placeholder: Some("MM".to_string()),
+                    help_text: None,
+                },
+                FieldDefinition {
+                    name: "exp_year".to_string(),
+                    label: "Expiry Year".to_string(),
+                    field_type: FieldType::ExpiryDate,
+                    required: true,
+                    pattern: Some(r"^20[2-9][0-9]$".to_string()),
+                    placeholder: Some("YYYY".to_string()),
+                    help_text: None,
+                },
+                FieldDefinition {
+                    name: "cvc".to_string(),
+                    label: "CVC".to_string(),
+                    field_type: FieldType::Cvc,
+                    required: true,
+                    pattern: Some(r"^\d{3,4}$".to_string()),
+                    placeholder: Some("123".to_string()),
+                    help_text: Some("3 or 4 digit code on back of card".to_string()),
+                },
+                FieldDefinition {
+                    name: "name".to_string(),
+                    label: "Cardholder Name".to_string(),
+                    field_type: FieldType::CardholderName,
+                    required: true,
+                    pattern: None,
+                    placeholder: Some("John Doe".to_string()),
+                    help_text: None,
                 },
             ],
-        },
-    ];
-    
+            optional_fields: vec![],
+            supported_currencies: vec![],
+            min_amount: Some(rust_decimal::Decimal::new(50, 2)),
+            max_amount: None,
+        }],
+    }];
+
     Json(response)
 }
 
@@ -137,10 +135,10 @@ pub async fn initiate_payment(
     // 3. Call initiate_payment on the gateway
     // 4. Store payment record in database
     // 5. Return response
-    
+
     // For demo, return a mock success response
     let payment_id = format!("pay_{}", Uuid::new_v4());
-    
+
     Json(InitiatePaymentResponse::Success {
         payment_id: payment_id.clone(),
         transaction_id: format!("txn_{}", Uuid::new_v4()),
@@ -171,7 +169,7 @@ pub async fn complete_payment_action(
     Json(_request): Json<CompletePaymentActionApiRequest>,
 ) -> Json<CompletePaymentActionResponse> {
     // In a real implementation, this would complete the payment action
-    
+
     Json(CompletePaymentActionResponse::Success {
         payment_id,
         transaction_id: format!("txn_{}", Uuid::new_v4()),
@@ -215,10 +213,12 @@ pub async fn refund_payment(
     Path(payment_id): Path<String>,
     Json(request): Json<RefundRequest>,
 ) -> Json<RefundResponse> {
-    let amount = request.amount.as_ref()
+    let amount = request
+        .amount
+        .as_ref()
         .and_then(|a| a.parse::<rust_decimal::Decimal>().ok())
         .unwrap_or_else(|| rust_decimal::Decimal::new(9999, 2));
-    
+
     Json(RefundResponse {
         refund_id: format!("ref_{}", Uuid::new_v4()),
         payment_id,
@@ -261,17 +261,15 @@ pub async fn get_saved_payment_methods(
     State(_state): State<AppState>,
     Path(_customer_id): Path<String>,
 ) -> Json<Vec<PaymentMethodInfo>> {
-    Json(vec![
-        PaymentMethodInfo {
-            method_type: PaymentMethodType::Card,
-            last_four: Some("4242".to_string()),
-            card_brand: Some("visa".to_string()),
-            exp_month: Some("12".to_string()),
-            exp_year: Some("2025".to_string()),
-            cardholder_name: Some("John Doe".to_string()),
-            token: Some(format!("tok_{}", Uuid::new_v4())),
-        },
-    ])
+    Json(vec![PaymentMethodInfo {
+        method_type: PaymentMethodType::Card,
+        last_four: Some("4242".to_string()),
+        card_brand: Some("visa".to_string()),
+        exp_month: Some("12".to_string()),
+        exp_year: Some("2025".to_string()),
+        cardholder_name: Some("John Doe".to_string()),
+        token: Some(format!("tok_{}", Uuid::new_v4())),
+    }])
 }
 
 /// Delete a saved payment method
@@ -298,7 +296,7 @@ pub async fn handle_webhook(
     // 2. Parse the webhook event
     // 3. Update payment status in database
     // 4. Trigger any necessary actions (order confirmation, emails, etc.)
-    
+
     Json(serde_json::json!({
         "success": true,
         "gateway": gateway_id,
@@ -306,8 +304,13 @@ pub async fn handle_webhook(
     }))
 }
 
-/// Router for payment routes (mounted at /api/v1)
+/// Router for payment routes (mounted at /api/v1) - excludes webhooks
 pub fn router() -> Router<AppState> {
+    payment_routes()
+}
+
+/// Payment routes that require authentication
+pub fn payment_routes() -> Router<AppState> {
     Router::new()
         // Get available payment methods
         .route("/payments/methods", post(get_payment_methods))
@@ -316,15 +319,19 @@ pub fn router() -> Router<AppState> {
         // Get payment status
         .route("/payments/:payment_id", get(get_payment_status))
         // Complete payment action (3DS, redirect)
-        .route("/payments/:payment_id/complete", post(complete_payment_action))
+        .route(
+            "/payments/:payment_id/complete",
+            post(complete_payment_action),
+        )
         // Refund a payment
         .route("/payments/:payment_id/refund", post(refund_payment))
         // Save payment method
         .route("/payment-methods", post(save_payment_method))
         // Get saved payment methods
-        .route("/customers/:customer_id/payment-methods", get(get_saved_payment_methods))
+        .route(
+            "/customers/:customer_id/payment-methods",
+            get(get_saved_payment_methods),
+        )
         // Delete payment method
         .route("/payment-methods/:token", delete(delete_payment_method))
-        // Webhook handler
-        .route("/webhooks/:gateway_id", post(handle_webhook))
 }

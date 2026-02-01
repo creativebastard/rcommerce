@@ -1,27 +1,31 @@
-use axum::{Router, routing::get, middleware};
+use axum::{
+    middleware,
+    routing::{get, post},
+    Router,
+};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
-use crate::middleware::{auth_middleware, admin_middleware};
+use crate::middleware::{admin_middleware, auth_middleware};
 
-use rcommerce_core::{Result, Config};
-use rcommerce_core::repository::{
-    Database, create_pool,
-    ProductRepository, CustomerRepository,
-};
-use rcommerce_core::services::{ProductService, CustomerService, AuthService};
-use rcommerce_core::cache::RedisPool;
 use crate::state::AppState;
+use rcommerce_core::cache::RedisPool;
+use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository};
+use rcommerce_core::services::{AuthService, CustomerService, ProductService};
+use rcommerce_core::{Config, Result};
 
 pub async fn run(config: Config) -> Result<()> {
     let addr = SocketAddr::from((
-        config.server.host.parse::<std::net::IpAddr>()
+        config
+            .server
+            .host
+            .parse::<std::net::IpAddr>()
             .map_err(|e| rcommerce_core::Error::Config(format!("Invalid host: {}", e)))?,
-        config.server.port
+        config.server.port,
     ));
-    
+
     // Initialize database connection
     info!("Connecting to PostgreSQL database...");
     let pool = create_pool(
@@ -31,37 +35,32 @@ pub async fn run(config: Config) -> Result<()> {
         &config.database.username,
         &config.database.password,
         config.database.pool_size,
-    ).await?;
+    )
+    .await?;
     let db = Database::new(pool);
-    
+
     // Initialize repositories
     let product_repo = ProductRepository::new(db.clone());
     let customer_repo = CustomerRepository::new(db.clone());
-    
+
     // Initialize services
     let product_service = ProductService::new(product_repo);
     let customer_service = CustomerService::new(customer_repo);
     // Order service requires payment gateway - initialized per-request for now
     let auth_service = AuthService::new(config.clone());
-    
+
     // Initialize Redis (optional)
     let redis = init_redis(&config).await;
-    
+
     // Create app state
-    let app_state = AppState::new(
-        product_service,
-        customer_service,
-        auth_service,
-        db,
-        redis,
-    );
-    
+    let app_state = AppState::new(product_service, customer_service, auth_service, db, redis);
+
     // Configure CORS for demo frontend
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
-    
+
     // Build main router with API v1 routes
     let app = Router::new()
         .route("/health", get(health_check))
@@ -70,7 +69,7 @@ pub async fn run(config: Config) -> Result<()> {
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(app_state);
-    
+
     info!("R Commerce API server listening on {}", addr);
     info!("Available routes:");
     info!("  GET  /health                      - Health check");
@@ -93,38 +92,46 @@ pub async fn run(config: Config) -> Result<()> {
     info!("  GET  /api/v1/payments/:id         - Get payment status");
     info!("  POST /api/v1/payments/:id/complete - Complete payment");
     info!("  POST /api/v1/payments/:id/refund  - Refund payment");
-    
+
     // Start server
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .map_err(|e| rcommerce_core::Error::Network(e.to_string()))?;
-    
+
     axum::serve(listener, app)
         .await
         .map_err(|e| rcommerce_core::Error::Network(e.to_string()))?;
-    
+
     Ok(())
 }
 
 /// Initialize Redis connection pool (optional)
 async fn init_redis(config: &Config) -> Option<RedisPool> {
     // Check if Redis URL is configured
-    let redis_url = config.cache.redis_url.clone()
+    let redis_url = config
+        .cache
+        .redis_url
+        .clone()
         .or_else(|| std::env::var("REDIS_URL").ok());
-    
+
     if let Some(url) = redis_url {
         info!("Connecting to Redis at {}...", url);
         match RedisPool::new(rcommerce_core::cache::RedisConfig {
             url,
             pool_size: config.cache.redis_pool_size as usize,
             ..Default::default()
-        }).await {
+        })
+        .await
+        {
             Ok(pool) => {
                 info!("Redis connected successfully");
                 Some(pool)
             }
             Err(e) => {
-                tracing::warn!("Failed to connect to Redis: {}. Continuing without cache.", e);
+                tracing::warn!(
+                    "Failed to connect to Redis: {}. Continuing without cache.",
+                    e
+                );
                 None
             }
         }
@@ -139,42 +146,54 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
     // Public routes (no auth required)
     let public_routes = Router::new()
         .merge(crate::routes::product_router())
-        .merge(crate::routes::auth_router());
-    
+        .merge(crate::routes::auth_router())
+        // Webhooks are public (signature verification handles security)
+        .route(
+            "/webhooks/:gateway_id",
+            post(crate::routes::payment::handle_webhook),
+        );
+
     // Protected routes (auth required) - middleware applied to each router individually
     let protected_routes = Router::new()
         .merge(crate::routes::customer_router())
         .merge(crate::routes::order_router())
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router())
-        .merge(crate::routes::payment_router())
-        .route_layer(middleware::from_fn_with_state(app_state.clone(), auth_middleware));
-    
+        // Payment routes except webhooks
+        .merge(crate::routes::payment::payment_routes())
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            auth_middleware,
+        ));
+
     // Admin routes (admin auth required)
     let admin_routes = Router::new()
         .nest("/admin", crate::routes::admin_router())
         .route_layer(middleware::from_fn_with_state(app_state, admin_middleware));
-    
+
     Router::new()
         .merge(public_routes)
         .merge(protected_routes)
         .merge(admin_routes)
 }
 
-
-
 async fn health_check() -> &'static str {
     "OK"
 }
 
-async fn root() -> &'static str {
-    "R Commerce API v0.1.0 - Phase 1 MVP"
+async fn root() -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({
+        "name": "R Commerce API",
+        "version": "0.1.0",
+        "status": "operational",
+        "phase": "Phase 1 MVP"
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_health_check() {
         let response = health_check().await;

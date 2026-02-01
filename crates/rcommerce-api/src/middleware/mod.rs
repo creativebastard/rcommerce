@@ -1,15 +1,15 @@
 //! Middleware modules for the R Commerce API
 
 use axum::{
+    body::Body,
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
     response::Response,
-    body::Body,
 };
 
-use rcommerce_core::services::AuthService;
 use crate::state::AppState;
+use rcommerce_core::services::AuthService;
 
 /// Authentication middleware - validates JWT tokens
 pub async fn auth_middleware(
@@ -18,7 +18,7 @@ pub async fn auth_middleware(
     next: Next,
 ) -> Result<Response, StatusCode> {
     tracing::debug!("Auth middleware checking request");
-    
+
     // Get Authorization header
     let auth_header = request
         .headers()
@@ -27,12 +27,14 @@ pub async fn auth_middleware(
 
     let token = match auth_header {
         Some(header) => {
-            tracing::debug!("Found Authorization header: {}", &header[..header.len().min(50)]);
-            AuthService::extract_bearer_token(header)
-                .ok_or_else(|| {
-                    tracing::warn!("Invalid Authorization header format");
-                    StatusCode::UNAUTHORIZED
-                })?
+            tracing::debug!(
+                "Found Authorization header: {}",
+                &header[..header.len().min(50)]
+            );
+            AuthService::extract_bearer_token(header).ok_or_else(|| {
+                tracing::warn!("Invalid Authorization header format");
+                StatusCode::UNAUTHORIZED
+            })?
         }
         None => {
             tracing::warn!("No Authorization header found");
@@ -89,13 +91,16 @@ pub async fn admin_middleware(
         .and_then(|h| h.to_str().ok());
 
     let token = match auth_header {
-        Some(header) => AuthService::extract_bearer_token(header)
-            .ok_or(StatusCode::UNAUTHORIZED)?,
+        Some(header) => {
+            AuthService::extract_bearer_token(header).ok_or(StatusCode::UNAUTHORIZED)?
+        }
         None => return Err(StatusCode::UNAUTHORIZED),
     };
 
     // Verify token
-    let claims = state.auth_service.verify_token(token)
+    let claims = state
+        .auth_service
+        .verify_token(token)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     // Check for admin permission

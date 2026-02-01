@@ -1,12 +1,9 @@
-use axum::{Json, Router, routing::post, extract::State};
+use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::state::AppState;
-use rcommerce_core::{
-    Error,
-    models::CreateCustomerRequest,
-};
+use rcommerce_core::{models::CreateCustomerRequest, Error};
 
 /// Login request
 #[derive(Debug, Deserialize)]
@@ -71,28 +68,31 @@ pub async fn login(
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, Error> {
     // Find customer by email
-    let customer = state.customer_service
+    let customer = state
+        .customer_service
         .find_by_email(&payload.email)
         .await?
         .ok_or_else(|| Error::unauthorized("Invalid email or password"))?;
 
     // Verify password
-    let password_hash = customer.password_hash
+    let password_hash = customer
+        .password_hash
         .as_ref()
         .ok_or_else(|| Error::unauthorized("Invalid email or password"))?;
-    
-    let valid = state.auth_service
+
+    let valid = state
+        .auth_service
         .verify_password(&payload.password, password_hash)?;
-    
+
     if !valid {
         return Err(Error::unauthorized("Invalid email or password"));
     }
 
     // Generate tokens
-    let access_token = state.auth_service
+    let access_token = state
+        .auth_service
         .generate_access_token(customer.id, &customer.email)?;
-    let refresh_token = state.auth_service
-        .generate_refresh_token(customer.id)?;
+    let refresh_token = state.auth_service.generate_refresh_token(customer.id)?;
 
     Ok(Json(LoginResponse {
         access_token,
@@ -112,7 +112,7 @@ pub async fn login(
 pub async fn register(
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<Json<RegisterResponse>, Error> {
+) -> Result<(StatusCode, Json<RegisterResponse>), Error> {
     // Validate password strength
     if payload.password.len() < 8 {
         return Err(Error::validation("Password must be at least 8 characters"));
@@ -122,7 +122,8 @@ pub async fn register(
     let password_hash = state.auth_service.hash_password(&payload.password)?;
 
     // Create customer with password
-    let customer = state.customer_service
+    let customer = state
+        .customer_service
         .create_customer_with_password(
             CreateCustomerRequest {
                 email: payload.email,
@@ -136,15 +137,18 @@ pub async fn register(
         )
         .await?;
 
-    Ok(Json(RegisterResponse {
-        customer: CustomerInfo {
-            id: customer.id,
-            email: customer.email,
-            first_name: customer.first_name,
-            last_name: customer.last_name,
-        },
-        message: "Registration successful. Please log in.".to_string(),
-    }))
+    Ok((
+        StatusCode::CREATED,
+        Json(RegisterResponse {
+            customer: CustomerInfo {
+                id: customer.id,
+                email: customer.email,
+                first_name: customer.first_name,
+                last_name: customer.last_name,
+            },
+            message: "Registration successful. Please log in.".to_string(),
+        }),
+    ))
 }
 
 /// Refresh access token
@@ -154,14 +158,15 @@ pub async fn refresh_token(
 ) -> Result<Json<RefreshTokenResponse>, Error> {
     // Verify refresh token
     let claims = state.auth_service.verify_token(&payload.refresh_token)?;
-    
+
     // Ensure it's a refresh token
     if claims.token_type != rcommerce_core::services::TokenType::Refresh {
         return Err(Error::unauthorized("Invalid token type"));
     }
 
     // Generate new access token
-    let access_token = state.auth_service
+    let access_token = state
+        .auth_service
         .generate_access_token(claims.sub, &claims.email)?;
 
     Ok(Json(RefreshTokenResponse {
