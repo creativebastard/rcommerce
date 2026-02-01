@@ -18,6 +18,8 @@ jobs:
   # Build for macOS Intel
   build-macos-intel:
     runs-on: macos-latest
+    env:
+      SQLX_OFFLINE: true
     steps:
       - uses: actions/checkout@v4
       
@@ -41,29 +43,31 @@ jobs:
           name: macos-x86_64
           path: release/*.gz
 
-  # Build for Linux x86_64
+  # Build for Linux x86_64 using cross
   build-linux-amd64:
     runs-on: ubuntu-latest
+    env:
+      SQLX_OFFLINE: true
     steps:
       - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
       
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
       
       - name: Build
-        run: cargo build --release -p rcommerce-cli
+        run: cross build --release --target x86_64-unknown-linux-gnu -p rcommerce-cli
       
       - name: Package
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           if [ -z "$VERSION" ]; then VERSION="${{ github.event.inputs.version }}"; fi
           mkdir -p release
-          cp target/release/rcommerce release/rcommerce-${VERSION}-x86_64-linux
+          cp target/x86_64-unknown-linux-gnu/release/rcommerce release/rcommerce-${VERSION}-x86_64-linux
           gzip release/rcommerce-${VERSION}-x86_64-linux
       
       - name: Upload artifact
@@ -81,7 +85,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release
-          merge-multiple: true
+          merge_multiple: true
       
       - name: List downloaded files
         run: ls -la release/

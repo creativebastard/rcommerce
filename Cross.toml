@@ -1,0 +1,9 @@
+[build]
+# Use the default cross images which have OpenSSL and other common deps pre-installed
+# SQLX_OFFLINE=true is set in the workflow to skip compile-time query checks
+
+[build.env]
+passthrough = [
+    "SQLX_OFFLINE",
+    "CARGO_TERM_COLOR",
+]
