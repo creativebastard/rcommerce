@@ -2,55 +2,59 @@
 
 A high-performance, Rust-based headless e-commerce platform designed for multi-platform deployment and enterprise-scale operations.
 
-##  Features
+## ✨ Features
 
 - **Headless Architecture**: API-first design for maximum flexibility
 - **Multi-Platform Support**: FreeBSD (Jails), Linux (Systemd/Docker), macOS (LaunchDaemon)
 - **Performance**: Sub-10ms API response, 10-50MB memory footprint, ~20MB binary
-- **Database Flexibility**: PostgreSQL, MySQL, SQLite support via SQLx
+- **PostgreSQL Database**: Optimized for PostgreSQL 14+ with advanced features
+- **Redis Caching**: Optional Redis support for high-performance caching
 - **Extensible Plugin System**: Payment gateways, shipping providers, storage backends
-- **Enterprise Ready**: Audit logs, API key auth, rate limiting, comprehensive logging
+- **Enterprise Ready**: Audit logs, API key auth, rate limiting, WebSocket support, comprehensive logging
+- **Interactive CLI**: Full-featured CLI with interactive prompts for product and customer creation
 
-##  Project Structure
+## 📁 Project Structure
 
 ```
 crates/
 ├── rcommerce-core/     # Core library - models, traits, config, repositories
 ├── rcommerce-api/      # HTTP API server (Axum)
-└── rcommerce-cli/      # Command-line management tool
+└── rcommerce-cli/      # Command-line management tool with interactive prompts
 ```
 
 ### Core Modules
 
-- **Models**: Product, Customer, Order, Address, Payment, etc.
+- **Models**: Product, Customer, Order, Address, Payment, API Keys, etc.
 - **Config**: Multi-format configuration (TOML, env vars)
 - **Traits**: Repository pattern, plugin architecture
 - **Repositories**: PostgreSQL repository implementations
 - **Error Handling**: Comprehensive error types with HTTP mapping
+- **WebSocket**: Real-time updates and notifications
+- **Cache**: Redis and in-memory caching support
 
-## ️ Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   API Layer     │───▶│  Service Layer   │───▶│ Repository Layer│
 │  (Axum/Tokio)   │    │  (Business Logic)│    │  (PostgreSQL)   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │   Plugin System  │
-                    │ (Payments, Ship, │
-                    │  Storage, etc.)  │
-                    └──────────────────┘
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  WebSocket      │    │   Plugin System  │    │   Redis Cache   │
+│  (Real-time)    │    │ (Payments, Ship, │    │   (Optional)    │
+│                 │    │  Storage, etc.)  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## ️ Development
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Rust 1.75+
-- PostgreSQL 14+ (or MySQL/SQLite)
-- Node.js (for client testing)
+- PostgreSQL 14+
+- (Optional) Redis 7+ for caching
 
 ### Building
 
@@ -93,37 +97,45 @@ format = "Json"
 [media]
 storage_type = "Local"
 local_path = "./uploads"
+
+[cache]
+cache_type = "Redis"  # Or "Memory" for in-memory
+redis_url = "redis://localhost:6379"
+max_size_mb = 100
 ```
 
 Run with:
 
 ```bash
 export RCOMMERCE_CONFIG=./config.toml
-cargo run --bin rcommerce
+cargo run --bin rcommerce server
 ```
 
-## ️ Database Setup
+## 🛢️ Database Setup
 
-### PostgreSQL
+### PostgreSQL (Required)
 
 ```bash
 # Create database
 createdb rcommerce
 
-# Run migrations (manual for now)
-psql rcommerce < crates/rcommerce-core/migrations/001_initial_schema.sql
+# Run migrations via CLI
+rcommerce db migrate -c config.toml
+
+# Or seed with demo data
+rcommerce db seed -c config.toml
 ```
 
 ### Schema
 
 Core tables:
-- `products`, `product_variants`, `product_images`
-- `customers`, `addresses`
-- `orders`, `order_items`, `fulfillments`
-- `payments`
+- `products`, `product_variants`, `product_images`, `product_attributes`
+- `customers`, `addresses`, `customer_groups`
+- `orders`, `order_items`, `fulfillments`, `order_notes`
+- `payments`, `payment_methods`
 - `audit_logs`
 - `api_keys`
-
+- `jobs` (background job processing)
 
 ## 🔐 API Authentication
 
@@ -165,9 +177,93 @@ rcommerce api-key list -c config.toml
 
 # Revoke key
 rcommerce api-key revoke -c config.toml <prefix>
+
+# Delete key permanently
+rcommerce api-key delete -c config.toml <prefix>
 ```
 
-##  Plugin System
+## 🖥️ CLI Reference
+
+The R Commerce CLI provides interactive prompts for common operations:
+
+### Interactive Product Creation
+
+```bash
+rcommerce product create -c config.toml
+```
+
+This will prompt for:
+- Product title and URL slug
+- Product type (Simple/Variable/Digital/Bundle)
+- Price and currency
+- SKU and inventory quantity
+- Description
+- Active/featured status
+
+### Interactive Customer Creation
+
+```bash
+rcommerce customer create -c config.toml
+```
+
+This will prompt for:
+- Email address
+- First and last name
+- Phone number (optional)
+- Preferred currency
+- Marketing consent
+- Password with confirmation
+
+### Database Operations
+
+```bash
+# Run migrations
+rcommerce db migrate -c config.toml
+
+# Check database status
+rcommerce db status -c config.toml
+
+# Reset database (with confirmation)
+rcommerce db reset -c config.toml
+
+# Seed with demo data
+rcommerce db seed -c config.toml
+```
+
+### Product Management
+
+```bash
+# List all products
+rcommerce product list -c config.toml
+
+# Get product details
+rcommerce product get -c config.toml <product-id>
+
+# Delete product (with confirmation)
+rcommerce product delete -c config.toml <product-id>
+```
+
+### Order Management
+
+```bash
+# List all orders
+rcommerce order list -c config.toml
+
+# Get order details
+rcommerce order get -c config.toml <order-id>
+```
+
+### Customer Management
+
+```bash
+# List all customers
+rcommerce customer list -c config.toml
+
+# Get customer details
+rcommerce customer get -c config.toml <customer-id>
+```
+
+## 🔌 Plugin System
 
 ### Payment Gateways
 - Stripe
@@ -184,14 +280,17 @@ rcommerce api-key revoke -c config.toml <prefix>
 - Google Cloud Storage
 - Azure Blob Storage
 
-##  Performance Targets
+## 📊 Performance Targets
 
-- **Binary Size**: ~20MB (release build)
-- **Memory Usage**: 10-50MB runtime
-- **API Response**: Sub-10ms average
-- **Concurrent Users**: 10,000+ per instance
+| Metric | Target |
+|--------|--------|
+| Binary Size | ~20MB (release build) |
+| Memory Usage | 10-50MB runtime |
+| API Response | Sub-10ms average |
+| Concurrent Users | 10,000+ per instance |
+| Startup Time | < 1 second |
 
-##  Testing
+## 🧪 Testing
 
 ```bash
 # Unit tests
@@ -204,38 +303,40 @@ cargo test --test 'integration'
 cargo tarpaulin --workspace
 ```
 
-##  Roadmap
+## 🗺️ Roadmap
 
-### Phase 0: Foundation 
--  Core data models
--  Repository pattern
--  Configuration system
--  Error handling
--  Database migrations
--  Basic repositories
+### Phase 0: Foundation ✅
+- ✅ Core data models
+- ✅ Repository pattern
+- ✅ Configuration system
+- ✅ Error handling
+- ✅ Database migrations
+- ✅ Basic repositories
 
-### Phase 1: MVP (Current)
-- API server setup (Axum)
-- Product CRUD endpoints
-- Customer management
-- Order lifecycle
-- Basic authentication
+### Phase 1: MVP (Current) ✅
+- ✅ API server setup (Axum)
+- ✅ Product CRUD endpoints
+- ✅ Customer management
+- ✅ Order lifecycle
+- ✅ Basic authentication
+- ✅ Interactive CLI
+- ✅ API key management
 
-### Phase 2: Core E-Commerce
-- Payment integration
-- Shipping calculation
-- Tax calculation
-- Email notifications
-- Inventory management
+### Phase 2: Core E-Commerce 🚧
+- 🚧 Payment integration
+- 🚧 Shipping calculation
+- 🚧 Tax calculation
+- 🚧 Email notifications
+- ✅ Inventory management
 
-### Phase 3: Advanced Features
-- Multi-tenancy
-- Plugin system
-- Cache layer
-- Search (Meilisearch/Typesense)
-- Analytics
+### Phase 3: Advanced Features 📋
+- 📋 Multi-tenancy
+- 📋 Plugin system
+- ✅ Cache layer (Redis)
+- 📋 Search (Meilisearch/Typesense)
+- 📋 Analytics
 
-##  Documentation
+## 📚 Documentation
 
 Full documentation is available at **[docs.rcommerce.app](https://docs.rcommerce.app)**
 
@@ -244,7 +345,33 @@ Full documentation is available at **[docs.rcommerce.app](https://docs.rcommerce
 - [Deployment](https://docs.rcommerce.app/deployment/)
 - [Plugins](https://docs.rcommerce.app/plugins/)
 
-##  Contributing
+## 🚀 Deployment
+
+### Supported Platforms
+
+- **Docker**: Full Docker Compose setup with PostgreSQL and Redis
+- **Linux**: Systemd service with security hardening
+- **FreeBSD**: Jails and rc.d scripts
+- **macOS**: LaunchDaemon configuration
+- **Kubernetes**: (Coming soon)
+
+### Quick Docker Deployment
+
+```bash
+# Clone repository
+git clone https://gitee.com/captainjez/gocart.git
+cd gocart
+
+# Start with Docker Compose
+docker-compose up -d
+
+# Check health
+curl http://localhost:8080/health
+```
+
+See [deployment documentation](docs/deployment/) for detailed platform-specific guides.
+
+## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -256,7 +383,7 @@ Quick start:
 5. Push to branch (`git push origin feature/amazing-feature`)
 6. Open Pull Request
 
-##  License
+## 📄 License
 
 R Commerce is dual-licensed:
 
@@ -277,7 +404,7 @@ See [LICENSE.md](LICENSE.md) for details.
 
 Contact [sales@rcommerce.app](mailto:sales@rcommerce.app) for commercial licensing.
 
-##  Support
+## 🆘 Support
 
 - GitHub Issues: [Issue Tracker](https://gitee.com/captainjez/gocart/issues)
 - Documentation: [docs.rcommerce.app](https://docs.rcommerce.app)

@@ -1,6 +1,6 @@
 # CLI Reference
 
-The R Commerce CLI (`rcommerce`) provides commands for server management, database operations, and API key administration.
+The R Commerce CLI (`rcommerce`) provides commands for server management, database operations, API key administration, and interactive product/customer creation.
 
 ## Global Options
 
@@ -11,6 +11,7 @@ Options:
   -c, --config <CONFIG>        Configuration file path
   -l, --log-level <LOG_LEVEL>  Set log level (debug, info, warn, error)
   -h, --help                   Print help
+  -V, --version                Print version
 ```
 
 ## Commands
@@ -217,11 +218,140 @@ rcommerce api-key delete -c config.toml aB3dEfGh --force
 rcommerce product <COMMAND>
 
 Commands:
-  list    List products
-  create  Create a product
-  get     Get product details
-  update  Update a product
-  delete  Delete a product
+  list       List products
+  create     Create a product (interactive)
+  get        Get product details
+  update     Update a product
+  delete     Delete a product
+```
+
+#### List Products
+
+```bash
+rcommerce product list -c config.toml
+```
+
+Output:
+```
+Products
+ID                                    Title                          Price      Currency   Status
+----------------------------------------------------------------------------------------------------
+550e8400-e29b-41d4-a716-446655440000  Premium T-Shirt                29.99      USD        ✓ Active
+550e8400-e29b-41d4-a716-446655440001  Wireless Headphones            149.99     USD        ✓ Active
+
+Total: 2 products
+```
+
+#### Create Product (Interactive)
+
+```bash
+rcommerce product create -c config.toml
+```
+
+This command launches an interactive prompt that guides you through product creation:
+
+```
+📦 Create New Product
+Press Ctrl+C to cancel at any time.
+
+Product title: Premium T-Shirt
+URL slug [premium-t-shirt]: premium-t-shirt
+Product type:
+  > Simple
+    Variable
+    Digital
+    Bundle
+Price: 29.99
+Currency:
+  > USD
+    EUR
+    GBP
+    JPY
+    AUD
+    CAD
+    CNY
+    HKD
+    SGD
+SKU (optional): TSHIRT-001
+Inventory quantity [0]: 100
+Description (optional): High quality cotton t-shirt
+Make product active? [Y/n]: y
+Mark as featured? [y/N]: n
+
+📋 Product Summary
+  Title:       Premium T-Shirt
+  Slug:        premium-t-shirt
+  Type:        Simple
+  Price:       29.99 USD
+  SKU:         TSHIRT-001
+  Inventory:   100
+  Description: High quality cotton t-shirt
+  Active:      Yes
+  Featured:    No
+
+Create this product? [Y/n]: y
+
+✅ Product created successfully!
+  ID:    550e8400-e29b-41d4-a716-446655440000
+  Title: Premium T-Shirt
+  Slug:  premium-t-shirt
+  Price: 29.99 USD
+```
+
+**Interactive prompts include:**
+- Product title (required, max 255 chars)
+- URL slug (auto-generated from title, editable)
+- Product type selection (Simple/Variable/Digital/Bundle)
+- Price (numeric validation)
+- Currency selection (USD/EUR/GBP/JPY/AUD/CAD/CNY/HKD/SGD)
+- SKU (optional, max 100 chars)
+- Inventory quantity (default: 0)
+- Description (optional)
+- Active status (default: Yes)
+- Featured status (default: No)
+
+#### Get Product Details
+
+```bash
+rcommerce product get -c config.toml <product-id>
+```
+
+**Example:**
+
+```bash
+rcommerce product get -c config.toml 550e8400-e29b-41d4-a716-446655440000
+```
+
+Output:
+```
+Product Details
+  ID:          550e8400-e29b-41d4-a716-446655440000
+  Title:       Premium T-Shirt
+  Slug:        premium-t-shirt
+  Price:       29.99 USD
+  Status:      ✓ Active
+  Inventory:   100
+  Created:     2024-01-31 10:30:00 UTC
+  Description: High quality cotton t-shirt
+```
+
+#### Delete Product
+
+```bash
+rcommerce product delete -c config.toml <product-id>
+```
+
+**Example:**
+
+```bash
+rcommerce product delete -c config.toml 550e8400-e29b-41d4-a716-446655440000
+```
+
+This will prompt for confirmation:
+```
+⚠️  Product deletion
+Type 'yes' to delete product '550e8400-e29b-41d4-a716-446655440000': yes
+✅ Product '550e8400-e29b-41d4-a716-446655440000' deleted
 ```
 
 ### Order Management
@@ -230,10 +360,27 @@ Commands:
 rcommerce order <COMMAND>
 
 Commands:
-  list    List orders
-  get     Get order details
-  create  Create a test order
-  update  Update order status
+  list       List orders
+  get        Get order details
+  create     Create a test order
+  update     Update order status
+```
+
+#### List Orders
+
+```bash
+rcommerce order list -c config.toml
+```
+
+Output:
+```
+Orders
+ID                                    Customer             Status       Total           Created
+----------------------------------------------------------------------------------------------------
+550e8400-e29b-41d4-a716-446655440000  john@example.com     pending      149.99          2024-01-31
+550e8400-e29b-41d4-a716-446655440001  jane@example.com     completed    299.98          2024-01-30
+
+Total: 2 orders
 ```
 
 ### Customer Management
@@ -242,9 +389,86 @@ Commands:
 rcommerce customer <COMMAND>
 
 Commands:
-  list    List customers
-  get     Get customer details
-  create  Create a customer
+  list       List customers
+  get        Get customer details
+  create     Create a customer (interactive)
+```
+
+#### List Customers
+
+```bash
+rcommerce customer list -c config.toml
+```
+
+Output:
+```
+Customers
+ID                                    Email                          Name                 Created
+----------------------------------------------------------------------------------------------------
+550e8400-e29b-41d4-a716-446655440000  john@example.com               John Doe             2024-01-31
+550e8400-e29b-41d4-a716-446655440001  jane@example.com               Jane Smith           2024-01-30
+
+Total: 2 customers
+```
+
+#### Create Customer (Interactive)
+
+```bash
+rcommerce customer create -c config.toml
+```
+
+This command launches an interactive prompt that guides you through customer creation:
+
+```
+👤 Create New Customer
+Press Ctrl+C to cancel at any time.
+
+Email address: john@example.com
+First name: John
+Last name: Doe
+Phone number (optional): +1234567890
+Preferred currency:
+  > USD
+    EUR
+    GBP
+    JPY
+    AUD
+    CAD
+    CNY
+    HKD
+    SGD
+Accepts marketing emails? [y/N]: n
+Password: ********
+Confirm password: ********
+
+📋 Customer Summary
+  Name:              John Doe
+  Email:             john@example.com
+  Phone:             +1234567890
+  Currency:          USD
+  Accepts Marketing: No
+
+Create this customer? [Y/n]: y
+
+✅ Customer created successfully!
+  ID:    550e8400-e29b-41d4-a716-446655440000
+  Name:  John Doe
+  Email: john@example.com
+```
+
+**Interactive prompts include:**
+- Email address (required, validated)
+- First name (required, max 100 chars)
+- Last name (required, max 100 chars)
+- Phone number (optional)
+- Preferred currency selection
+- Marketing consent (default: No)
+- Password (min 8 chars, with confirmation)
+
+#### Get Customer Details
+
+```bash
+rcommerce customer get -c config.toml <customer-id>
 ```
 
 ### Configuration
@@ -273,6 +497,42 @@ The CLI respects these environment variables:
 | 2 | Invalid arguments |
 | 3 | Database error |
 | 4 | Configuration error |
+
+## Security Features
+
+The CLI includes several security features:
+
+### Root User Prevention
+
+The CLI will refuse to run as the root user for security reasons:
+
+```
+❌ ERROR: Running as root is not allowed!
+   The rcommerce CLI should not be run as root for security reasons.
+   Please run as a non-privileged user.
+```
+
+### Config File Permissions
+
+The CLI warns if your config file has overly permissive permissions:
+
+```
+⚠️  WARNING: Config file is world-readable
+   Path: /etc/rcommerce/config.toml
+   Consider running: chmod 600 /etc/rcommerce/config.toml
+```
+
+## Interactive Features
+
+The CLI uses the `dialoguer` crate to provide interactive prompts for:
+
+- **Input validation**: Real-time validation with helpful error messages
+- **Selection menus**: Arrow key navigation for enums and options
+- **Confirmation prompts**: Yes/no confirmations with defaults
+- **Password input**: Hidden input with confirmation matching
+- **Summary preview**: Review all data before final submission
+
+Press `Ctrl+C` at any time during interactive prompts to cancel the operation.
 
 ## See Also
 
