@@ -253,7 +253,7 @@ CREATE TYPE currency AS ENUM (
 
 ### Key Tables
 
-See the [full schema documentation](../../docs/architecture/02-data-modeling.md) for complete SQL definitions.
+See the [full schema documentation](https://github.com/creativebastard/rcommerce/blob/main/docs/architecture/02-data-modeling.md) for complete SQL definitions.
 
 ## Relationships
 

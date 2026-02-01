@@ -198,7 +198,7 @@ Production deployment guides for Docker, Kubernetes, and bare metal.
 
 <div markdown>
 
-### [Operations](operations/index.md)
+### [Operations](deployment/index.md)
 
 Scaling, monitoring, backups, reverse proxies, and security.
 

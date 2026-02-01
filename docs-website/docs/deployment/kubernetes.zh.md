@@ -36,4 +36,4 @@ kubectl apply -f k8s/rcommerce.yaml
 kubectl apply -f k8s/ingress.yaml
 ```
 
-请参阅 [扩展](../operations/scaling.md) 了解 HPA 配置。
+请参阅 [扩展](./scaling.md) 了解 HPA 配置。

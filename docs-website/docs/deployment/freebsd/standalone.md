@@ -425,5 +425,5 @@ chmod +x /usr/local/bin/backup-rcommerce.sh
 
 - [Jail Deployment](jails.md) - Deploy with iocage jails
 - [rc.d Service](rc.d.md) - Service management details
-- [Nginx Reverse Proxy](../../operations/reverse-proxies/nginx.md)
-- [Operations Overview](../../operations/index.md)
+- [Nginx Reverse Proxy](../../deployment/reverse-proxies/nginx.md)
+- [Operations Overview](../../deployment/index.md)

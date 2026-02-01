@@ -330,4 +330,4 @@ sysrc iocage_enable=YES
 
 - [独立 FreeBSD 部署](standalone.md) - 不使用 jails 部署
 - [rc.d 服务](rc.d.md) - 传统 rc.d 服务管理
-- [运维概览](../../operations/index.md)
+- [运维概览](../../deployment/index.md)

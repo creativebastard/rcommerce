@@ -425,5 +425,5 @@ chmod +x /usr/local/bin/backup-rcommerce.sh
 
 - [Jail 部署](jails.md) - 使用 iocage jails 部署
 - [rc.d 服务](rc.d.md) - 服务管理详情
-- [Nginx 反向代理](../../operations/reverse-proxies/nginx.md)
-- [运维概览](../../operations/index.md)
+- [Nginx 反向代理](../../deployment/reverse-proxies/nginx.md)
+- [运维概览](../../deployment/index.md)

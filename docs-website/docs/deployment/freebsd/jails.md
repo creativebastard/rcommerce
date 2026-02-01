@@ -330,4 +330,4 @@ sysrc iocage_enable=YES
 
 - [Standalone FreeBSD Deployment](standalone.md) - Deploy without jails
 - [rc.d Service](rc.d.md) - Traditional rc.d service management
-- [Operations Overview](../../operations/index.md)
+- [Operations Overview](../../deployment/index.md)
