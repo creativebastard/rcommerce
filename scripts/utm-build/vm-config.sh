@@ -1,18 +1,95 @@
 #!/bin/bash
 # VM configuration for UTM-based builds
+# Compatible with Bash 3.2 (macOS default)
 
-# VM Definitions
+# VM Definitions - using functions instead of associative arrays
 # Format: TARGET|VM_NAME|OS_TYPE|ARCH|DOWNLOAD_URL|ISO_FILENAME|SETUP_SCRIPT
 
-declare -A VMS=(
-    ["ubuntu-x64"]="x86_64-unknown-linux-gnu|rcommerce-ubuntu-x64|linux|x86_64|https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso|ubuntu-22.04.3-live-server-amd64.iso|setup-debian.sh"
+get_vm_target() {
+    case "$1" in
+        "ubuntu-x64") echo "x86_64-unknown-linux-gnu" ;;
+        "alpine-x64") echo "x86_64-unknown-linux-musl" ;;
+        "ubuntu-arm") echo "aarch64-unknown-linux-gnu" ;;
+        "freebsd-x64") echo "x86_64-unknown-freebsd" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_name() {
+    case "$1" in
+        "ubuntu-x64") echo "rcommerce-ubuntu-x64" ;;
+        "alpine-x64") echo "rcommerce-alpine-x64" ;;
+        "ubuntu-arm") echo "rcommerce-ubuntu-arm" ;;
+        "freebsd-x64") echo "rcommerce-freebsd-x64" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_os() {
+    case "$1" in
+        "ubuntu-x64"|"alpine-x64"|"ubuntu-arm") echo "linux" ;;
+        "freebsd-x64") echo "freebsd" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_arch() {
+    case "$1" in
+        "ubuntu-x64"|"alpine-x64"|"freebsd-x64") echo "x86_64" ;;
+        "ubuntu-arm") echo "arm64" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_url() {
+    case "$1" in
+        "ubuntu-x64") echo "https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso" ;;
+        "alpine-x64") echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-standard-3.18.4-x86_64.iso" ;;
+        "ubuntu-arm") echo "https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/jammy-live-server-arm64.iso" ;;
+        "freebsd-x64") echo "https://download.freebsd.org/ftp/releases/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-amd64-disc1.iso" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_iso() {
+    case "$1" in
+        "ubuntu-x64") echo "ubuntu-22.04.3-live-server-amd64.iso" ;;
+        "alpine-x64") echo "alpine-standard-3.18.4-x86_64.iso" ;;
+        "ubuntu-arm") echo "jammy-live-server-arm64.iso" ;;
+        "freebsd-x64") echo "FreeBSD-14.0-RELEASE-amd64-disc1.iso" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_setup() {
+    case "$1" in
+        "ubuntu-x64"|"ubuntu-arm") echo "setup-debian.sh" ;;
+        "alpine-x64") echo "setup-alpine.sh" ;;
+        "freebsd-x64") echo "setup-freebsd.sh" ;;
+        *) echo "" ;;
+    esac
+}
+
+get_vm_info() {
+    local key=$1
+    local field=$2
     
-    ["alpine-x64"]="x86_64-unknown-linux-musl|rcommerce-alpine-x64|linux|x86_64|https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-standard-3.18.4-x86_64.iso|alpine-standard-3.18.4-x86_64.iso|setup-alpine.sh"
-    
-    ["ubuntu-arm"]="aarch64-unknown-linux-gnu|rcommerce-ubuntu-arm|linux|arm64|https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/jammy-live-server-arm64.iso|jammy-live-server-arm64.iso|setup-debian.sh"
-    
-    ["freebsd-x64"]="x86_64-unknown-freebsd|rcommerce-freebsd-x64|freebsd|x86_64|https://download.freebsd.org/ftp/releases/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-amd64-disc1.iso|FreeBSD-14.0-RELEASE-amd64-disc1.iso|setup-freebsd.sh"
-)
+    case $field in
+        target) get_vm_target "$key" ;;
+        name) get_vm_name "$key" ;;
+        os) get_vm_os "$key" ;;
+        arch) get_vm_arch "$key" ;;
+        url) get_vm_url "$key" ;;
+        iso) get_vm_iso "$key" ;;
+        setup) get_vm_setup "$key" ;;
+        *) echo "" ;;
+    esac
+}
+
+# List all VM keys
+list_vm_keys() {
+    echo "ubuntu-x64 alpine-x64 ubuntu-arm freebsd-x64"
+}
 
 # VM Hardware specs
 VM_CPU_COUNT=4
@@ -27,31 +104,6 @@ SSH_PORT=22
 # Directories
 UTM_DIR="$HOME/Library/Containers/com.utmapp.UTM/Data/Documents"
 ISO_CACHE_DIR="$HOME/.cache/rcommerce/iso"
-
-# Get VM info by key
-get_vm_info() {
-    local key=$1
-    local field=$2
-    
-    local info="${VMS[$key]}"
-    IFS='|' read -r TARGET VM_NAME OS_TYPE ARCH DOWNLOAD_URL ISO_FILENAME SETUP_SCRIPT <<< "$info"
-    
-    case $field in
-        target) echo "$TARGET" ;;
-        name) echo "$VM_NAME" ;;
-        os) echo "$OS_TYPE" ;;
-        arch) echo "$ARCH" ;;
-        url) echo "$DOWNLOAD_URL" ;;
-        iso) echo "$ISO_FILENAME" ;;
-        setup) echo "$SETUP_SCRIPT" ;;
-        *) echo "" ;;
-    esac
-}
-
-# List all VM keys
-list_vm_keys() {
-    echo "${!VMS[@]}"
-}
 
 # Check if UTM is installed
 check_utm() {
