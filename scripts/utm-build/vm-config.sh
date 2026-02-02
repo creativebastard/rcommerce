@@ -46,7 +46,7 @@ get_vm_url() {
         "ubuntu-x64") echo "https://releases.ubuntu.com/22.04/ubuntu-22.04.3-live-server-amd64.iso" ;;
         "alpine-x64") echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-standard-3.18.4-x86_64.iso" ;;
         "ubuntu-arm") echo "https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/jammy-live-server-arm64.iso" ;;
-        "freebsd-x64") echo "https://download.freebsd.org/ftp/releases/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-amd64-disc1.iso" ;;
+        "freebsd-x64") echo "https://download.freebsd.org/releases/ISO-IMAGES/14.3/FreeBSD-14.3-RELEASE-amd64-disc1.iso" ;;
         *) echo "" ;;
     esac
 }
@@ -56,7 +56,7 @@ get_vm_iso() {
         "ubuntu-x64") echo "ubuntu-22.04.3-live-server-amd64.iso" ;;
         "alpine-x64") echo "alpine-standard-3.18.4-x86_64.iso" ;;
         "ubuntu-arm") echo "jammy-live-server-arm64.iso" ;;
-        "freebsd-x64") echo "FreeBSD-14.0-RELEASE-amd64-disc1.iso" ;;
+        "freebsd-x64") echo "FreeBSD-14.3-RELEASE-amd64-disc1.iso" ;;
         *) echo "" ;;
     esac
 }
