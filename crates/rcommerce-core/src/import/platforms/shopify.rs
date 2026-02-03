@@ -145,11 +145,17 @@ impl PlatformImporter for ShopifyImporter {
             }
         };
 
+        let dry_run = config.options.dry_run;
+        
         progress(ImportProgress {
             stage: "products".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching products from Shopify...".to_string(),
+            message: if dry_run { 
+                "Fetching products from Shopify (DRY RUN)...".to_string() 
+            } else { 
+                "Fetching products from Shopify...".to_string() 
+            },
         });
 
         // Fetch products from Shopify
@@ -162,7 +168,11 @@ impl PlatformImporter for ShopifyImporter {
             stage: "products".to_string(),
             current: 0,
             total: shopify_products.len(),
-            message: format!("Importing {} products...", shopify_products.len()),
+            message: if dry_run {
+                format!("Validating {} products (DRY RUN)...", shopify_products.len())
+            } else {
+                format!("Importing {} products...", shopify_products.len())
+            },
         });
 
         let mut stats = ImportStats {
@@ -176,13 +186,31 @@ impl PlatformImporter for ShopifyImporter {
                 stage: "products".to_string(),
                 current: i + 1,
                 total: shopify_products.len(),
-                message: format!("Importing: {}", shopify_product.title),
+                message: if dry_run {
+                    format!("Validating: {}", shopify_product.title)
+                } else {
+                    format!("Importing: {}", shopify_product.title)
+                },
             });
 
-            // Transform Shopify product to R Commerce product
-            // In real implementation, this would insert into database
-            // For now, just count as created
-            stats.created += 1;
+            // Validate the product
+            if shopify_product.title.is_empty() {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Product {} has no title",
+                    shopify_product.id
+                ));
+                continue;
+            }
+
+            if dry_run {
+                // In dry run mode, just validate and count what would be imported
+                stats.created += 1;
+            } else {
+                // In real implementation, this would insert into database
+                // For now, just count as created
+                stats.created += 1;
+            }
         }
 
         Ok(stats)
@@ -193,6 +221,7 @@ impl PlatformImporter for ShopifyImporter {
         config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let (shop_domain, access_token) = match &config.source {
             crate::import::types::SourceConfig::Platform {
                 api_url,
@@ -210,7 +239,11 @@ impl PlatformImporter for ShopifyImporter {
             stage: "customers".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching customers from Shopify...".to_string(),
+            message: if dry_run {
+                "Fetching customers from Shopify (DRY RUN)...".to_string()
+            } else {
+                "Fetching customers from Shopify...".to_string()
+            },
         });
 
         let url = self.api_url(&shop_domain, "customers");
@@ -223,15 +256,34 @@ impl PlatformImporter for ShopifyImporter {
             ..Default::default()
         };
 
-        for (i, _customer) in shopify_customers.iter().enumerate() {
+        for (i, customer) in shopify_customers.iter().enumerate() {
             progress(ImportProgress {
                 stage: "customers".to_string(),
                 current: i + 1,
                 total: shopify_customers.len(),
-                message: format!("Importing customer {}/{}", i + 1, shopify_customers.len()),
+                message: if dry_run {
+                    format!("Validating customer {}/{}", i + 1, shopify_customers.len())
+                } else {
+                    format!("Importing customer {}/{}", i + 1, shopify_customers.len())
+                },
             });
 
-            stats.created += 1;
+            // Validate customer
+            if customer.email.is_empty() {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Customer {} has no email",
+                    customer.id
+                ));
+                continue;
+            }
+
+            if dry_run {
+                stats.created += 1;
+            } else {
+                // In real implementation, insert into database
+                stats.created += 1;
+            }
         }
 
         Ok(stats)
@@ -242,6 +294,7 @@ impl PlatformImporter for ShopifyImporter {
         config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let (shop_domain, access_token) = match &config.source {
             crate::import::types::SourceConfig::Platform {
                 api_url,
@@ -259,7 +312,11 @@ impl PlatformImporter for ShopifyImporter {
             stage: "orders".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching orders from Shopify...".to_string(),
+            message: if dry_run {
+                "Fetching orders from Shopify (DRY RUN)...".to_string()
+            } else {
+                "Fetching orders from Shopify...".to_string()
+            },
         });
 
         let url = self.api_url(&shop_domain, "orders");
@@ -272,15 +329,34 @@ impl PlatformImporter for ShopifyImporter {
             ..Default::default()
         };
 
-        for (i, _order) in shopify_orders.iter().enumerate() {
+        for (i, order) in shopify_orders.iter().enumerate() {
             progress(ImportProgress {
                 stage: "orders".to_string(),
                 current: i + 1,
                 total: shopify_orders.len(),
-                message: format!("Importing order {}/{}", i + 1, shopify_orders.len()),
+                message: if dry_run {
+                    format!("Validating order {}/{}", i + 1, shopify_orders.len())
+                } else {
+                    format!("Importing order {}/{}", i + 1, shopify_orders.len())
+                },
             });
 
-            stats.created += 1;
+            // Validate order
+            if order.email.is_empty() {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Order {} has no customer email",
+                    order.id
+                ));
+                continue;
+            }
+
+            if dry_run {
+                stats.created += 1;
+            } else {
+                // In real implementation, insert into database
+                stats.created += 1;
+            }
         }
 
         Ok(stats)

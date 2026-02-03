@@ -55,9 +55,10 @@ impl FileImporter for JsonImporter {
         &self,
         file_path: &Path,
         entity_type: EntityType,
-        _config: &ImportConfig,
+        config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let content = tokio::fs::read_to_string(file_path).await?;
         let json: Value = serde_json::from_str(&content)?;
         let records = Self::extract_array(json)?;
@@ -67,7 +68,11 @@ impl FileImporter for JsonImporter {
             stage: entity_type.to_string(),
             current: 0,
             total,
-            message: format!("Importing {} {} records from JSON...", total, entity_type),
+            message: if dry_run {
+                format!("Validating {} {} records from JSON (DRY RUN)...", total, entity_type)
+            } else {
+                format!("Importing {} {} records from JSON...", total, entity_type)
+            },
         });
 
         let mut stats = ImportStats {
@@ -80,36 +85,113 @@ impl FileImporter for JsonImporter {
                 stage: entity_type.to_string(),
                 current: i + 1,
                 total,
-                message: format!("Processing record {}/{}", i + 1, total),
+                message: if dry_run {
+                    format!("Validating record {}/{}", i + 1, total)
+                } else {
+                    format!("Processing record {}/{}", i + 1, total)
+                },
             });
 
             // Validate record structure based on entity type
-            let is_valid = match entity_type {
+            let validation_result = match entity_type {
                 EntityType::Products => {
-                    record.get("title").is_some() && record.get("price").is_some()
+                    validate_json_product(record)
                 }
                 EntityType::Customers => {
-                    record.get("email").is_some()
+                    validate_json_customer(record)
                 }
                 EntityType::Orders => {
-                    record.get("order_number").is_some() || record.get("id").is_some()
+                    validate_json_order(record)
                 }
             };
 
-            if is_valid {
-                // In real implementation, insert into database
-                stats.created += 1;
-            } else {
-                stats.errors += 1;
-                stats.error_details.push(format!(
-                    "Record {}: Missing required fields",
-                    i + 1
-                ));
+            match validation_result {
+                Ok(()) => {
+                    if dry_run {
+                        stats.created += 1;
+                    } else {
+                        // In real implementation, insert into database
+                        stats.created += 1;
+                    }
+                }
+                Err(e) => {
+                    stats.errors += 1;
+                    stats.error_details.push(format!(
+                        "Record {}: {}",
+                        i + 1, e
+                    ));
+                }
             }
         }
 
         Ok(stats)
     }
+}
+
+/// Validate a JSON product record
+fn validate_json_product(record: &Value) -> ImportResult<()> {
+    if record.get("title").is_none() {
+        return Err(ImportError::Validation(
+            "Product title is required".to_string()
+        ));
+    }
+    
+    if let Some(title) = record.get("title") {
+        let title_str = title.as_str().unwrap_or("");
+        if title_str.is_empty() {
+            return Err(ImportError::Validation(
+                "Product title cannot be empty".to_string()
+            ));
+        }
+    }
+    
+    if record.get("price").is_none() {
+        return Err(ImportError::Validation(
+            "Product price is required".to_string()
+        ));
+    }
+    
+    if let Some(price) = record.get("price") {
+        let price_str = price.as_str().unwrap_or("0");
+        if price_str.parse::<f64>().unwrap_or(-1.0) < 0.0 {
+            return Err(ImportError::Validation(
+                "Product price must be a non-negative number".to_string()
+            ));
+        }
+    }
+    
+    Ok(())
+}
+
+/// Validate a JSON customer record
+fn validate_json_customer(record: &Value) -> ImportResult<()> {
+    if record.get("email").is_none() {
+        return Err(ImportError::Validation(
+            "Customer email is required".to_string()
+        ));
+    }
+    
+    if let Some(email) = record.get("email") {
+        let email_str = email.as_str().unwrap_or("");
+        if email_str.is_empty() || !email_str.contains('@') {
+            return Err(ImportError::Validation(
+                "Valid customer email is required".to_string()
+            ));
+        }
+    }
+    
+    Ok(())
+}
+
+/// Validate a JSON order record
+fn validate_json_order(record: &Value) -> ImportResult<()> {
+    if record.get("order_number").is_none() && record.get("id").is_none() {
+        return Err(ImportError::Validation(
+            "Order number or ID is required".to_string()
+        ));
+    }
+    
+    Ok(())
 }
 
 /// Example JSON structures for each entity type

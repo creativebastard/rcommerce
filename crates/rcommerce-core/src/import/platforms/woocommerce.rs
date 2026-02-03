@@ -98,6 +98,7 @@ impl PlatformImporter for WooCommerceImporter {
         config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let (base_url, consumer_key, consumer_secret) = match &config.source {
             crate::import::types::SourceConfig::Platform {
                 api_url,
@@ -122,7 +123,11 @@ impl PlatformImporter for WooCommerceImporter {
             stage: "products".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching products from WooCommerce...".to_string(),
+            message: if dry_run {
+                "Fetching products from WooCommerce (DRY RUN)...".to_string()
+            } else {
+                "Fetching products from WooCommerce...".to_string()
+            },
         });
 
         let url = self.api_url(&base_url, "products");
@@ -140,10 +145,29 @@ impl PlatformImporter for WooCommerceImporter {
                 stage: "products".to_string(),
                 current: i + 1,
                 total: wc_products.len(),
-                message: format!("Importing: {}", product.name),
+                message: if dry_run {
+                    format!("Validating: {}", product.name)
+                } else {
+                    format!("Importing: {}", product.name)
+                },
             });
 
-            stats.created += 1;
+            // Validate product
+            if product.name.is_empty() {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Product {} has no name",
+                    product.id
+                ));
+                continue;
+            }
+
+            if dry_run {
+                stats.created += 1;
+            } else {
+                // In real implementation, insert into database
+                stats.created += 1;
+            }
         }
 
         Ok(stats)
@@ -154,6 +178,7 @@ impl PlatformImporter for WooCommerceImporter {
         config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let (base_url, consumer_key, consumer_secret) = match &config.source {
             crate::import::types::SourceConfig::Platform {
                 api_url,
@@ -178,7 +203,11 @@ impl PlatformImporter for WooCommerceImporter {
             stage: "customers".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching customers from WooCommerce...".to_string(),
+            message: if dry_run {
+                "Fetching customers from WooCommerce (DRY RUN)...".to_string()
+            } else {
+                "Fetching customers from WooCommerce...".to_string()
+            },
         });
 
         let url = self.api_url(&base_url, "customers");
@@ -191,15 +220,34 @@ impl PlatformImporter for WooCommerceImporter {
             ..Default::default()
         };
 
-        for (i, _customer) in wc_customers.iter().enumerate() {
+        for (i, customer) in wc_customers.iter().enumerate() {
             progress(ImportProgress {
                 stage: "customers".to_string(),
                 current: i + 1,
                 total: wc_customers.len(),
-                message: format!("Importing customer {}/{}", i + 1, wc_customers.len()),
+                message: if dry_run {
+                    format!("Validating customer {}/{}", i + 1, wc_customers.len())
+                } else {
+                    format!("Importing customer {}/{}", i + 1, wc_customers.len())
+                },
             });
 
-            stats.created += 1;
+            // Validate customer
+            if customer.email.is_empty() {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Customer {} has no email",
+                    customer.id
+                ));
+                continue;
+            }
+
+            if dry_run {
+                stats.created += 1;
+            } else {
+                // In real implementation, insert into database
+                stats.created += 1;
+            }
         }
 
         Ok(stats)
@@ -210,6 +258,7 @@ impl PlatformImporter for WooCommerceImporter {
         config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let (base_url, consumer_key, consumer_secret) = match &config.source {
             crate::import::types::SourceConfig::Platform {
                 api_url,
@@ -234,7 +283,11 @@ impl PlatformImporter for WooCommerceImporter {
             stage: "orders".to_string(),
             current: 0,
             total: 1,
-            message: "Fetching orders from WooCommerce...".to_string(),
+            message: if dry_run {
+                "Fetching orders from WooCommerce (DRY RUN)...".to_string()
+            } else {
+                "Fetching orders from WooCommerce...".to_string()
+            },
         });
 
         let url = self.api_url(&base_url, "orders");
@@ -247,15 +300,34 @@ impl PlatformImporter for WooCommerceImporter {
             ..Default::default()
         };
 
-        for (i, _order) in wc_orders.iter().enumerate() {
+        for (i, order) in wc_orders.iter().enumerate() {
             progress(ImportProgress {
                 stage: "orders".to_string(),
                 current: i + 1,
                 total: wc_orders.len(),
-                message: format!("Importing order {}/{}", i + 1, wc_orders.len()),
+                message: if dry_run {
+                    format!("Validating order {}/{}", i + 1, wc_orders.len())
+                } else {
+                    format!("Importing order {}/{}", i + 1, wc_orders.len())
+                },
             });
 
-            stats.created += 1;
+            // Validate order
+            if order.id == 0 {
+                stats.errors += 1;
+                stats.error_details.push(format!(
+                    "Order at index {} has invalid ID",
+                    i
+                ));
+                continue;
+            }
+
+            if dry_run {
+                stats.created += 1;
+            } else {
+                // In real implementation, insert into database
+                stats.created += 1;
+            }
         }
 
         Ok(stats)

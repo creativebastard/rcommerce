@@ -50,9 +50,10 @@ impl FileImporter for CsvImporter {
         &self,
         file_path: &Path,
         entity_type: EntityType,
-        _config: &ImportConfig,
+        config: &ImportConfig,
         progress: &(dyn Fn(ImportProgress) + Send + Sync),
     ) -> ImportResult<ImportStats> {
+        let dry_run = config.options.dry_run;
         let file = std::fs::File::open(file_path)?;
         let mut reader = ReaderBuilder::new()
             .has_headers(true)
@@ -69,7 +70,11 @@ impl FileImporter for CsvImporter {
             stage: entity_type.to_string(),
             current: 0,
             total: total_rows,
-            message: format!("Importing {} {} records from CSV...", total_rows, entity_type),
+            message: if dry_run {
+                format!("Validating {} {} records from CSV (DRY RUN)...", total_rows, entity_type)
+            } else {
+                format!("Importing {} {} records from CSV...", total_rows, entity_type)
+            },
         });
 
         // Re-create reader since we consumed it
@@ -93,14 +98,29 @@ impl FileImporter for CsvImporter {
                 stage: entity_type.to_string(),
                 current: i + 1,
                 total: total_rows,
-                message: format!("Processing row {}/{}", i + 1, total_rows),
+                message: if dry_run {
+                    format!("Validating row {}/{}", i + 1, total_rows)
+                } else {
+                    format!("Processing row {}/{}", i + 1, total_rows)
+                },
             });
 
             // Convert to JSON and process
             match Self::record_to_value(&record, &headers) {
                 Ok(_value) => {
-                    // In real implementation, validate and insert into database
-                    stats.created += 1;
+                    // Validate the data
+                    if let Err(e) = validate_csv_record(&_value, &entity_type) {
+                        stats.errors += 1;
+                        stats.error_details.push(format!("Row {}: {}", i + 1, e));
+                        continue;
+                    }
+
+                    if dry_run {
+                        stats.created += 1;
+                    } else {
+                        // In real implementation, insert into database
+                        stats.created += 1;
+                    }
                 }
                 Err(e) => {
                     stats.errors += 1;
@@ -111,6 +131,58 @@ impl FileImporter for CsvImporter {
 
         Ok(stats)
     }
+}
+
+/// Validate a CSV record based on entity type
+fn validate_csv_record(value: &Value, entity_type: &EntityType) -> ImportResult<()> {
+    match entity_type {
+        EntityType::Products => {
+            if let Some(obj) = value.as_object() {
+                if let Some(title) = obj.get("title") {
+                    let title_str = title.as_str().unwrap_or("");
+                    if title_str.is_empty() {
+                        return Err(ImportError::Validation(
+                            "Product title is required".to_string()
+                        ));
+                    }
+                }
+                if let Some(price) = obj.get("price") {
+                    let price_str = price.as_str().unwrap_or("0");
+                    if price_str.parse::<f64>().unwrap_or(-1.0) < 0.0 {
+                        return Err(ImportError::Validation(
+                            "Product price must be a non-negative number".to_string()
+                        ));
+                    }
+                }
+            }
+        }
+        EntityType::Customers => {
+            if let Some(obj) = value.as_object() {
+                if let Some(email) = obj.get("email") {
+                    let email_str = email.as_str().unwrap_or("");
+                    if email_str.is_empty() || !email_str.contains('@') {
+                        return Err(ImportError::Validation(
+                            "Valid customer email is required".to_string()
+                        ));
+                    }
+                }
+            }
+        }
+        EntityType::Orders => {
+            if let Some(obj) = value.as_object() {
+                if let Some(order_num) = obj.get("order_number") {
+                    let order_str = order_num.as_str().unwrap_or("");
+                    if order_str.is_empty() {
+                        return Err(ImportError::Validation(
+                            "Order number is required".to_string()
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(())
 }
 
 /// Expected CSV columns for each entity type
