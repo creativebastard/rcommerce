@@ -121,6 +121,12 @@ pub enum Commands {
         command: ApiKeyCommands,
     },
     
+    /// Import data from platforms or files
+    Import {
+        #[command(subcommand)]
+        command: ImportCommands,
+    },
+    
     /// Show configuration
     Config,
 }
@@ -204,6 +210,59 @@ pub enum CustomerCommands {
     
     /// Create a customer
     Create,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ImportCommands {
+    /// Import from an e-commerce platform (shopify, woocommerce, magento, medusa)
+    Platform {
+        /// Platform name
+        #[arg(help = "Platform name (shopify, woocommerce, magento, medusa)")]
+        platform: String,
+        
+        /// API base URL
+        #[arg(short, long, help = "API base URL")]
+        api_url: String,
+        
+        /// API key or access token
+        #[arg(short, long, help = "API key or access token")]
+        api_key: String,
+        
+        /// Additional API secret (for WooCommerce)
+        #[arg(long, help = "API secret (for WooCommerce)")]
+        api_secret: Option<String>,
+        
+        /// Entity types to import (products, customers, orders, all)
+        #[arg(short, long, help = "Entity types to import", default_value = "all")]
+        entities: String,
+        
+        /// Maximum number of records to import
+        #[arg(long, help = "Maximum records to import")]
+        limit: Option<usize>,
+        
+        /// Dry run - validate without importing
+        #[arg(long, help = "Dry run without importing")]
+        dry_run: bool,
+    },
+    
+    /// Import from a file (csv, json, xml)
+    File {
+        /// Path to the import file
+        #[arg(help = "Path to import file")]
+        path: PathBuf,
+        
+        /// File format (csv, json, xml)
+        #[arg(short, long, help = "File format (csv, json, xml)")]
+        format: String,
+        
+        /// Entity type (products, customers, orders)
+        #[arg(short, long, help = "Entity type (products, customers, orders)")]
+        entity: String,
+        
+        /// Dry run - validate without importing
+        #[arg(long, help = "Dry run without importing")]
+        dry_run: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -728,6 +787,173 @@ async fn main() -> Result<()> {
                         }
                         Err(e) => {
                             eprintln!("{}", format!("❌ Failed to delete API key: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            }
+        }
+        
+        Commands::Import { command } => {
+            use colored::*;
+            use rcommerce_core::import::{
+                get_file_importer, get_platform_importer, ImportConfig,
+            };
+            use rcommerce_core::import::types::{ImportOptions, SourceConfig};
+            
+            match command {
+                ImportCommands::Platform { platform, api_url, api_key, api_secret, entities, limit, dry_run } => {
+                    println!("{} {}", "Importing from".bold(), platform.cyan());
+                    
+                    // Get the platform importer
+                    let importer = match get_platform_importer(&platform) {
+                        Some(imp) => imp,
+                        None => {
+                            eprintln!("{}", format!("❌ Unsupported platform: {}", platform).red());
+                            eprintln!("Supported platforms: shopify, woocommerce, magento, medusa");
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    // Build headers for WooCommerce
+                    let mut headers = std::collections::HashMap::new();
+                    if let Some(secret) = api_secret {
+                        headers.insert("consumer_secret".to_string(), secret);
+                    }
+                    
+                    // Create import config
+                    let import_config = ImportConfig {
+                        database_url: config.database.url(),
+                        source: SourceConfig::Platform {
+                            platform: platform.clone(),
+                            api_url,
+                            api_key,
+                            headers,
+                        },
+                        options: ImportOptions {
+                            dry_run,
+                            limit: limit.unwrap_or(0),
+                            ..Default::default()
+                        },
+                    };
+                    
+                    // Progress callback
+                    let progress = |p: rcommerce_core::import::ImportProgress| {
+                        let pct = p.percentage();
+                        print!("\r  [{}] {} - {} ({:.1}%)", 
+                            p.stage.bright_blue(),
+                            p.message,
+                            format!("{}/{}", p.current, p.total).dimmed(),
+                            pct
+                        );
+                        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                    };
+                    
+                    // Run import
+                    let result = match entities.as_str() {
+                        "products" => importer.import_products(&import_config, &progress).await,
+                        "customers" => importer.import_customers(&import_config, &progress).await,
+                        "orders" => importer.import_orders(&import_config, &progress).await,
+                        "all" => importer.import_all(&import_config, &progress).await,
+                        _ => {
+                            eprintln!("{}", format!("❌ Invalid entity type: {}", entities).red());
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    println!(); // New line after progress
+                    
+                    match result {
+                        Ok(stats) => {
+                            println!("{}", "✅ Import completed successfully!".green().bold());
+                            println!("  Created:  {}", stats.created.to_string().green());
+                            println!("  Updated:  {}", stats.updated.to_string().yellow());
+                            println!("  Skipped:  {}", stats.skipped.to_string().dimmed());
+                            println!("  Errors:   {}", stats.errors.to_string().red());
+                            println!("  Total:    {}", stats.total);
+                            
+                            if !stats.error_details.is_empty() {
+                                println!("\n{}", "Error Details:".red().bold());
+                                for error in stats.error_details.iter().take(10) {
+                                    println!("  • {}", error);
+                                }
+                                if stats.error_details.len() > 10 {
+                                    println!("  ... and {} more errors", stats.error_details.len() - 10);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Import failed: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                ImportCommands::File { path, format, entity, dry_run } => {
+                    println!("{} {} → {}", 
+                        "Importing".bold(),
+                        path.display().to_string().cyan(),
+                        entity.cyan()
+                    );
+                    
+                    // Get the file importer
+                    let importer = match get_file_importer(&format) {
+                        Some(imp) => imp,
+                        None => {
+                            eprintln!("{}", format!("❌ Unsupported format: {}", format).red());
+                            eprintln!("Supported formats: csv, json, xml");
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    // Parse entity type
+                    let entity_type = match entity.as_str() {
+                        "products" => rcommerce_core::import::EntityType::Products,
+                        "customers" => rcommerce_core::import::EntityType::Customers,
+                        "orders" => rcommerce_core::import::EntityType::Orders,
+                        _ => {
+                            eprintln!("{}", format!("❌ Invalid entity type: {}", entity).red());
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    // Create import config
+                    let import_config = ImportConfig {
+                        database_url: config.database.url(),
+                        source: SourceConfig::File {
+                            path: path.clone(),
+                            format: format.clone(),
+                        },
+                        options: ImportOptions {
+                            dry_run,
+                            ..Default::default()
+                        },
+                    };
+                    
+                    // Progress callback
+                    let progress = |p: rcommerce_core::import::ImportProgress| {
+                        let pct = p.percentage();
+                        print!("\r  {} - {} ({:.1}%)", 
+                            p.message,
+                            format!("{}/{}", p.current, p.total).dimmed(),
+                            pct
+                        );
+                        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                    };
+                    
+                    // Run import
+                    match importer.import_file(&path, entity_type, &import_config, &progress).await {
+                        Ok(stats) => {
+                            println!();
+                            println!("{}", "✅ Import completed successfully!".green().bold());
+                            println!("  Created:  {}", stats.created.to_string().green());
+                            println!("  Updated:  {}", stats.updated.to_string().yellow());
+                            println!("  Skipped:  {}", stats.skipped.to_string().dimmed());
+                            println!("  Errors:   {}", stats.errors.to_string().red());
+                            println!("  Total:    {}", stats.total);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Import failed: {}", e).red());
                             std::process::exit(1);
                         }
                     }

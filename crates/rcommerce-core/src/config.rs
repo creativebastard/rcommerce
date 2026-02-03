@@ -259,6 +259,29 @@ pub struct DatabaseConfig {
     pub sqlite_path: String,
 }
 
+impl DatabaseConfig {
+    /// Build database connection URL
+    pub fn url(&self) -> String {
+        match self.db_type {
+            DatabaseType::Postgres => {
+                format!(
+                    "postgres://{}:{}@{}:{}/{}",
+                    self.username, self.password, self.host, self.port, self.database
+                )
+            }
+            DatabaseType::Mysql => {
+                format!(
+                    "mysql://{}:{}@{}:{}/{}",
+                    self.username, self.password, self.host, self.port, self.database
+                )
+            }
+            DatabaseType::Sqlite => {
+                format!("sqlite://{}", self.sqlite_path)
+            }
+        }
+    }
+}
+
 impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {

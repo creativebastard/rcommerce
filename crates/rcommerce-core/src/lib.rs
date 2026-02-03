@@ -15,6 +15,7 @@ pub mod websocket;
 pub mod cache;
 pub mod jobs;
 pub mod performance;
+pub mod import;
 
 // Re-export commonly used types
 pub use error::{Error, Result};

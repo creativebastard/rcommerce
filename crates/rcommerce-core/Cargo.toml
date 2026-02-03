@@ -78,6 +78,10 @@ redis = { version = "1.0", default-features = false, features = ["tokio-rustls-c
 
 # Concurrent data structures
 dashmap = { workspace = true }
+
+# Import functionality
+csv = "1.3"
+quick-xml = { version = "0.31", features = ["serialize"] }
 arc-swap = { workspace = true }
 
 # URL parsing
