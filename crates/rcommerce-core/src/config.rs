@@ -30,6 +30,9 @@ pub struct Config {
     
     #[serde(default)]
     pub features: FeatureFlags,
+    
+    #[serde(default)]
+    pub import: ImportConfig,
 }
 
 impl Default for Config {
@@ -44,6 +47,7 @@ impl Default for Config {
             notifications: NotificationConfig::default(),
             rate_limiting: RateLimitConfig::default(),
             features: FeatureFlags::default(),
+            import: ImportConfig::default(),
         }
     }
 }
@@ -754,6 +758,98 @@ impl Default for FeatureFlags {
             experimental: false,
         }
     }
+}
+
+/// Import configuration for platform API keys and settings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportConfig {
+    /// Shopify API configuration
+    #[serde(default)]
+    pub shopify: Option<PlatformImportConfig>,
+    
+    /// WooCommerce API configuration
+    #[serde(default)]
+    pub woocommerce: Option<PlatformImportConfig>,
+    
+    /// Magento API configuration
+    #[serde(default)]
+    pub magento: Option<PlatformImportConfig>,
+    
+    /// Medusa API configuration
+    #[serde(default)]
+    pub medusa: Option<PlatformImportConfig>,
+    
+    /// Default import options
+    #[serde(default)]
+    pub default_options: DefaultImportOptions,
+}
+
+impl Default for ImportConfig {
+    fn default() -> Self {
+        Self {
+            shopify: None,
+            woocommerce: None,
+            magento: None,
+            medusa: None,
+            default_options: DefaultImportOptions::default(),
+        }
+    }
+}
+
+/// Platform-specific import configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlatformImportConfig {
+    /// API base URL
+    pub api_url: String,
+    
+    /// API key or access token
+    pub api_key: String,
+    
+    /// API secret (for WooCommerce)
+    #[serde(default)]
+    pub api_secret: Option<String>,
+    
+    /// Additional headers
+    #[serde(default)]
+    pub headers: std::collections::HashMap<String, String>,
+    
+    /// Default entity types to import
+    #[serde(default = "default_import_entities")]
+    pub entities: Vec<String>,
+}
+
+/// Default import options
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DefaultImportOptions {
+    /// Default batch size
+    #[serde(default = "default_batch_size")]
+    pub batch_size: usize,
+    
+    /// Skip existing records by default
+    #[serde(default = "default_true")]
+    pub skip_existing: bool,
+    
+    /// Continue on error by default
+    #[serde(default = "default_true")]
+    pub continue_on_error: bool,
+}
+
+impl Default for DefaultImportOptions {
+    fn default() -> Self {
+        Self {
+            batch_size: 100,
+            skip_existing: true,
+            continue_on_error: true,
+        }
+    }
+}
+
+fn default_import_entities() -> Vec<String> {
+    vec!["all".to_string()]
+}
+
+fn default_batch_size() -> usize {
+    100
 }
 
 #[cfg(test)]

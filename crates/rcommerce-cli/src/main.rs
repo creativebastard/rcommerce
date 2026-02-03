@@ -220,12 +220,12 @@ pub enum ImportCommands {
         #[arg(help = "Platform name (shopify, woocommerce, magento, medusa)")]
         platform: String,
         
-        /// API base URL
-        #[arg(short, long, help = "API base URL")]
+        /// API base URL (or set in config file)
+        #[arg(short, long, help = "API base URL (or set in config file)", default_value = "")]
         api_url: String,
         
-        /// API key or access token
-        #[arg(short, long, help = "API key or access token")]
+        /// API key or access token (or set in config file)
+        #[arg(short, long, help = "API key or access token (or set in config file)", default_value = "")]
         api_key: String,
         
         /// Additional API secret (for WooCommerce)
@@ -797,7 +797,7 @@ async fn main() -> Result<()> {
         Commands::Import { command } => {
             use colored::*;
             use rcommerce_core::import::{
-                get_file_importer, get_platform_importer, ImportConfig,
+                get_file_importer, get_platform_importer, ImportConfig as ImportToolConfig,
             };
             use rcommerce_core::import::types::{ImportOptions, SourceConfig};
             
@@ -815,24 +815,75 @@ async fn main() -> Result<()> {
                         }
                     };
                     
+                    // Try to get config from file if not provided via CLI
+                    let platform_config = match platform.as_str() {
+                        "shopify" => config.import.shopify.as_ref(),
+                        "woocommerce" => config.import.woocommerce.as_ref(),
+                        "magento" => config.import.magento.as_ref(),
+                        "medusa" => config.import.medusa.as_ref(),
+                        _ => None,
+                    };
+                    
+                    // Use CLI values or fall back to config file values
+                    let final_api_url = if api_url.is_empty() {
+                        platform_config.map(|c| c.api_url.clone()).unwrap_or_default()
+                    } else {
+                        api_url
+                    };
+                    
+                    let final_api_key = if api_key.is_empty() {
+                        platform_config.map(|c| c.api_key.clone()).unwrap_or_default()
+                    } else {
+                        api_key
+                    };
+                    
+                    let final_api_secret = api_secret.or_else(|| {
+                        platform_config.and_then(|c| c.api_secret.clone())
+                    });
+                    
+                    let final_entities = if entities == "all" {
+                        platform_config.map(|c| c.entities.join(",")).unwrap_or_else(|| "all".to_string())
+                    } else {
+                        entities
+                    };
+                    
+                    // Validate we have required values
+                    if final_api_url.is_empty() {
+                        eprintln!("{}", "❌ API URL is required. Provide via --api-url or config file.".red());
+                        std::process::exit(1);
+                    }
+                    if final_api_key.is_empty() {
+                        eprintln!("{}", "❌ API key is required. Provide via --api-key or config file.".red());
+                        std::process::exit(1);
+                    }
+                    
                     // Build headers for WooCommerce
                     let mut headers = std::collections::HashMap::new();
-                    if let Some(secret) = api_secret {
-                        headers.insert("consumer_secret".to_string(), secret);
+                    if let Some(ref secret) = final_api_secret {
+                        headers.insert("consumer_secret".to_string(), secret.clone());
+                    }
+                    // Add any additional headers from config
+                    if let Some(pc) = platform_config {
+                        for (key, value) in &pc.headers {
+                            headers.insert(key.clone(), value.clone());
+                        }
                     }
                     
                     // Create import config
-                    let import_config = ImportConfig {
+                    let import_config = ImportToolConfig {
                         database_url: config.database.url(),
                         source: SourceConfig::Platform {
                             platform: platform.clone(),
-                            api_url,
-                            api_key,
+                            api_url: final_api_url,
+                            api_key: final_api_key,
                             headers,
                         },
                         options: ImportOptions {
                             dry_run,
                             limit: limit.unwrap_or(0),
+                            batch_size: config.import.default_options.batch_size,
+                            skip_existing: config.import.default_options.skip_existing,
+                            continue_on_error: config.import.default_options.continue_on_error,
                             ..Default::default()
                         },
                     };
@@ -850,13 +901,13 @@ async fn main() -> Result<()> {
                     };
                     
                     // Run import
-                    let result = match entities.as_str() {
+                    let result = match final_entities.as_str() {
                         "products" => importer.import_products(&import_config, &progress).await,
                         "customers" => importer.import_customers(&import_config, &progress).await,
                         "orders" => importer.import_orders(&import_config, &progress).await,
                         "all" => importer.import_all(&import_config, &progress).await,
                         _ => {
-                            eprintln!("{}", format!("❌ Invalid entity type: {}", entities).red());
+                            eprintln!("{}", format!("❌ Invalid entity type: {}", final_entities).red());
                             std::process::exit(1);
                         }
                     };
@@ -918,7 +969,7 @@ async fn main() -> Result<()> {
                     };
                     
                     // Create import config
-                    let import_config = ImportConfig {
+                    let import_config = ImportToolConfig {
                         database_url: config.database.url(),
                         source: SourceConfig::File {
                             path: path.clone(),
@@ -926,6 +977,9 @@ async fn main() -> Result<()> {
                         },
                         options: ImportOptions {
                             dry_run,
+                            batch_size: config.import.default_options.batch_size,
+                            skip_existing: config.import.default_options.skip_existing,
+                            continue_on_error: config.import.default_options.continue_on_error,
                             ..Default::default()
                         },
                     };
