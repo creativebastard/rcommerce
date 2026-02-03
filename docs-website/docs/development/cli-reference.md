@@ -479,7 +479,216 @@ Display the loaded configuration:
 rcommerce config -c config.toml
 ```
 
-## Environment Variables
+### Import
+
+Import data from external platforms or files:
+
+```bash
+rcommerce import <COMMAND>
+
+Commands:
+  platform   Import from ecommerce platforms (Shopify, WooCommerce, etc.)
+  file       Import from file (CSV, JSON, XML)
+```
+
+#### Import from Platform
+
+Import data directly from supported ecommerce platforms:
+
+```bash
+rcommerce import platform [OPTIONS] --platform <PLATFORM> --api-url <URL> --api-key <KEY>
+
+Options:
+  -p, --platform <PLATFORM>    Platform type: shopify, woocommerce, magento, medusa
+  -u, --api-url <URL>          API endpoint URL
+  -k, --api-key <KEY>          API key or access token
+  -s, --api-secret <SECRET>    API secret (if required)
+  -e, --entities <ENTITIES>    Comma-separated list: products,customers,orders [default: all]
+  -l, --limit <LIMIT>          Maximum records to import per entity
+      --dry-run                Validate data without importing
+```
+
+**Supported Platforms:**
+
+| Platform | Status | Authentication | Entities |
+|----------|--------|----------------|----------|
+| Shopify | ✅ Full | API Key + Password | Products, Customers, Orders |
+| WooCommerce | ✅ Full | Consumer Key + Secret | Products, Customers, Orders |
+| Magento | 🚧 Planned | OAuth/API Token | Products, Customers, Orders |
+| Medusa | 🚧 Planned | API Token | Products, Customers, Orders |
+
+**Examples:**
+
+```bash
+# Import all data from Shopify
+rcommerce import platform \
+  -c config.toml \
+  --platform shopify \
+  --api-url https://your-store.myshopify.com \
+  --api-key YOUR_API_KEY \
+  --api-secret YOUR_API_PASSWORD
+
+# Import only products and customers (dry run)
+rcommerce import platform \
+  -c config.toml \
+  --platform shopify \
+  --api-url https://your-store.myshopify.com \
+  --api-key YOUR_API_KEY \
+  --api-secret YOUR_API_PASSWORD \
+  --entities products,customers \
+  --dry-run
+
+# Import from WooCommerce with limit
+rcommerce import platform \
+  -c config.toml \
+  --platform woocommerce \
+  --api-url https://your-store.com/wp-json/wc/v3 \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET \
+  --limit 100
+```
+
+**Dry Run Mode:**
+
+Use `--dry-run` to validate data without actually importing:
+
+```bash
+rcommerce import platform --platform shopify ... --dry-run
+```
+
+Output:
+```
+🧪 DRY RUN MODE - No data will be imported
+Fetching products from Shopify (DRY RUN)...
+Validating: Premium T-Shirt
+Validating: Wireless Headphones
+...
+
+Import Summary (DRY RUN)
+========================
+Entity: products
+  Total:     150
+  Created:   150
+  Updated:   0
+  Skipped:   0
+  Errors:    0
+
+✅ Validation complete. Run without --dry-run to import.
+```
+
+#### Import from File
+
+Import data from CSV, JSON, or XML files:
+
+```bash
+rcommerce import file [OPTIONS] --file <PATH> --format <FORMAT> --entity <ENTITY>
+
+Options:
+  -f, --file <PATH>        Path to import file
+  -F, --format <FORMAT>    File format: csv, json, xml
+  -e, --entity <ENTITY>    Entity type: products, customers, orders
+  -l, --limit <LIMIT>      Maximum records to import
+      --dry-run            Validate data without importing
+```
+
+**File Format Support:**
+
+| Format | Status | Description |
+|--------|--------|-------------|
+| CSV | ✅ Full | Comma-separated values with headers |
+| JSON | ✅ Full | JSON array of objects |
+| XML | 🚧 Planned | XML document format |
+
+**CSV Format:**
+
+Expected columns for each entity type:
+
+**Products:**
+```csv
+id,title,slug,description,price,compare_at_price,sku,inventory_quantity,status,product_type
+TSHIRT-001,Premium T-Shirt,premium-t-shirt,High quality cotton,29.99,39.99,TSHIRT-001,100,active,physical
+```
+
+**Customers:**
+```csv
+id,email,first_name,last_name,phone,address1,city,state,postal_code,country
+cust-001,john@example.com,John,Doe,+1234567890,123 Main St,New York,NY,10001,US
+```
+
+**Orders:**
+```csv
+id,order_number,customer_id,email,status,total,subtotal,tax_total,shipping_total
+ORD-001,1001,cust-001,john@example.com,confirmed,59.98,54.99,4.99,0.00
+```
+
+**JSON Format:**
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "Premium T-Shirt",
+    "slug": "premium-t-shirt",
+    "description": "High quality cotton t-shirt",
+    "price": "29.99",
+    "sku": "TSHIRT-001",
+    "inventory_quantity": 100,
+    "status": "active"
+  }
+]
+```
+
+**Examples:**
+
+```bash
+# Import products from CSV
+rcommerce import file \
+  -c config.toml \
+  --file products.csv \
+  --format csv \
+  --entity products
+
+# Import customers from JSON (dry run)
+rcommerce import file \
+  -c config.toml \
+  --file customers.json \
+  --format json \
+  --entity customers \
+  --dry-run
+
+# Import with limit
+rcommerce import file \
+  -c config.toml \
+  --file orders.csv \
+  --format csv \
+  --entity orders \
+  --limit 50
+```
+
+#### Import Configuration
+
+Import settings can also be configured in `config.toml`:
+
+```toml
+[import]
+# Default batch size for imports
+batch_size = 100
+
+# Continue on error (skip failed records)
+continue_on_error = true
+
+# Skip existing records (based on unique identifiers)
+skip_existing = true
+
+[import.shopify]
+api_version = "2024-01"
+# Store-specific settings
+
+[import.woocommerce]
+verify_ssl = true
+```
+
+### Environment Variables
 
 The CLI respects these environment variables:
 

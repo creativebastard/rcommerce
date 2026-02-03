@@ -102,7 +102,71 @@ R commerce provides compatibility layers that allow you to:
 
 ## Migration Tools
 
-### CLI Migration Tool
+### Built-in Import Tool (Recommended)
+
+R Commerce includes a built-in import tool accessible via the CLI:
+
+```bash
+# Import from Shopify
+rcommerce import platform \
+  -c config.toml \
+  --platform shopify \
+  --api-url https://your-store.myshopify.com \
+  --api-key YOUR_API_KEY \
+  --api-secret YOUR_API_PASSWORD \
+  --entities products,customers,orders
+
+# Import from WooCommerce
+rcommerce import platform \
+  -c config.toml \
+  --platform woocommerce \
+  --api-url https://your-store.com/wp-json/wc/v3 \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET
+
+# Import from CSV file
+rcommerce import file \
+  -c config.toml \
+  --file products.csv \
+  --format csv \
+  --entity products
+```
+
+#### Dry Run Mode
+
+Always test your migration first with `--dry-run`:
+
+```bash
+rcommerce import platform \
+  --platform shopify \
+  --api-url https://your-store.myshopify.com \
+  --api-key YOUR_API_KEY \
+  --api-secret YOUR_API_PASSWORD \
+  --dry-run
+```
+
+This validates all data and shows what would be imported without modifying your database.
+
+#### Supported Platforms
+
+| Platform | Status | Authentication | Entities |
+|----------|--------|----------------|----------|
+| Shopify | ✅ Full | API Key + Password | Products, Customers, Orders |
+| WooCommerce | ✅ Full | Consumer Key + Secret | Products, Customers, Orders |
+| Magento | 🚧 Planned | OAuth/API Token | Products, Customers, Orders |
+| Medusa | 🚧 Planned | API Token | Products, Customers, Orders |
+
+#### Supported File Formats
+
+| Format | Status | Use Case |
+|--------|--------|----------|
+| CSV | ✅ Full | Spreadsheet exports, bulk uploads |
+| JSON | ✅ Full | API exports, structured data |
+| XML | 🚧 Planned | Legacy system exports |
+
+### Legacy CLI Migration Tool
+
+For advanced migration scenarios, the standalone migration tool is also available:
 
 ```bash
 # Install migration tool

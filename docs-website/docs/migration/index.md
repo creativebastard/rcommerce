@@ -68,6 +68,63 @@ Migrate in stages over time with zero or minimal downtime.
 
 **Best for:** Large stores, high-traffic stores, complex integrations
 
+## Import Tool
+
+R Commerce includes a built-in import tool for migrating from popular platforms:
+
+### Quick Start
+
+```bash
+# Import from Shopify
+rcommerce import platform \
+  -c config.toml \
+  --platform shopify \
+  --api-url https://your-store.myshopify.com \
+  --api-key YOUR_API_KEY \
+  --api-secret YOUR_API_PASSWORD
+
+# Import from WooCommerce
+rcommerce import platform \
+  -c config.toml \
+  --platform woocommerce \
+  --api-url https://your-store.com/wp-json/wc/v3 \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET
+```
+
+### Supported Platforms
+
+| Platform | Status | Entities |
+|----------|--------|----------|
+| Shopify | ✅ Full | Products, Customers, Orders |
+| WooCommerce | ✅ Full | Products, Customers, Orders |
+| Magento | 🚧 Planned | Products, Customers, Orders |
+| Medusa | 🚧 Planned | Products, Customers, Orders |
+
+### File Import
+
+Import from exported files:
+
+```bash
+# CSV import
+rcommerce import file -c config.toml --file products.csv --format csv --entity products
+
+# JSON import
+rcommerce import file -c config.toml --file customers.json --format json --entity customers
+```
+
+### Dry Run Mode
+
+Always validate first with `--dry-run`:
+
+```bash
+rcommerce import platform ... --dry-run
+```
+
+This validates all data without modifying your database.
+
+See the [CLI Reference](../development/cli-reference.md#import) for complete documentation.
+
 ## Migration Checklist
 
 ### Pre-Migration
@@ -78,11 +135,12 @@ Migrate in stages over time with zero or minimal downtime.
 - [ ] Choose migration strategy
 - [ ] Create migration timeline
 - [ ] Prepare rollback plan
+- [ ] Test import with `--dry-run`
 
 ### Migration Execution
-- [ ] Migrate products and categories
-- [ ] Migrate customers
-- [ ] Migrate orders (optional, for reporting)
+- [ ] Import products and categories
+- [ ] Import customers
+- [ ] Import orders (optional, for reporting)
 - [ ] Set up payment gateways
 - [ ] Configure shipping
 - [ ] Set up tax rules
