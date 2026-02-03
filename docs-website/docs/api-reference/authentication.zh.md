@@ -136,6 +136,33 @@ GET /v1/orders
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
+## 受保护的路由
+
+以下路由需要认证（JWT 或 API 密钥）：
+
+| 路由 | 方法 | 描述 |
+|------|------|------|
+| `/api/v1/products` | GET | 列出产品 |
+| `/api/v1/products/:id` | GET | 获取产品 |
+| `/api/v1/customers` | GET, POST | 列出/创建客户 |
+| `/api/v1/orders` | GET, POST | 列出/创建订单 |
+| `/api/v1/carts/*` | 全部 | 购物车操作 |
+| `/api/v1/payments/*` | 全部 | 支付操作 |
+
+> **注意：** 产品端点需要认证，以防止未经授权的数据抓取和保护产品信息。
+
+### 公开路由
+
+以下路由不需要认证：
+
+| 路由 | 方法 | 描述 |
+|------|------|------|
+| `/api/v1/auth/register` | POST | 注册 |
+| `/api/v1/auth/login` | POST | 登录 |
+| `/api/v1/auth/refresh` | POST | 刷新令牌 |
+| `/api/v1/webhooks/*` | POST |  webhook 端点（HMAC 验证） |
+| `/health` | GET | 健康检查 |
+
 ## IP 限制
 
 将 API 密钥使用限制为特定 IP 地址：

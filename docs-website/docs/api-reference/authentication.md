@@ -146,6 +146,8 @@ The following routes require authentication (JWT or API key):
 
 | Route | Method | Description |
 |-------|--------|-------------|
+| `/api/v1/products` | GET | List products |
+| `/api/v1/products/:id` | GET | Get product |
 | `/api/v1/customers` | GET, POST | List/create customers |
 | `/api/v1/customers/:id` | GET, PUT, DELETE | Customer operations |
 | `/api/v1/orders` | GET, POST | List/create orders |
@@ -154,17 +156,18 @@ The following routes require authentication (JWT or API key):
 | `/api/v1/payments/*` | All | Payment operations |
 | `/api/v1/coupons` | POST | Create coupons |
 
+> **Note:** Product endpoints require authentication to prevent unauthorized data scraping and protect product information.
+
 ### Public Routes
 
 These routes do not require authentication:
 
 | Route | Method | Description |
 |-------|--------|-------------|
-| `/api/v1/products` | GET | List products |
-| `/api/v1/products/:id` | GET | Get product |
 | `/api/v1/auth/register` | POST | Register |
 | `/api/v1/auth/login` | POST | Login |
 | `/api/v1/auth/refresh` | POST | Refresh token |
+| `/api/v1/webhooks/*` | POST | Webhook endpoints (HMAC verified) |
 | `/health` | GET | Health check |
 
 ## Error Responses

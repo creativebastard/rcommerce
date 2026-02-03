@@ -110,16 +110,20 @@ rcommerce api-key create --name "Production Backend" --scopes "read,write"
 ### Protected vs Public Routes
 
 **Public (no auth required):**
-- `GET /api/v1/products`
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/refresh`
+- `POST /api/v1/webhooks/*` (HMAC signature verified)
 
 **Protected (JWT or API key required):**
+- `GET/POST /api/v1/products` - *Authentication required to prevent unauthorized scraping*
+- `GET /api/v1/products/:id`
 - `GET/POST /api/v1/customers`
 - `GET/POST /api/v1/orders`
 - All `/api/v1/carts/*` endpoints
 - All `/api/v1/payments/*` endpoints
+
+> **Note:** Product endpoints require authentication to protect against data scraping and unauthorized access to product information.
 
 ## Common Response Formats
 
