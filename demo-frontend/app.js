@@ -23,10 +23,35 @@ async function loadProducts() {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
 
+    // Check authentication first
+    if (!isAuthenticated()) {
+        grid.innerHTML = `
+            <div class="auth-required">
+                <p>Please login to view products</p>
+                <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+            </div>`;
+        return;
+    }
+
     grid.innerHTML = '<p class="loading">Loading products...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/products`);
+        const response = await fetch(`${API_BASE_URL}/products`, {
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        
+        if (response.status === 401) {
+            logout();
+            grid.innerHTML = `
+                <div class="auth-required">
+                    <p>Session expired. Please login again.</p>
+                    <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                </div>`;
+            return;
+        }
+        
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const data = await response.json();
@@ -175,6 +200,13 @@ async function checkout() {
         return;
     }
     
+    // Check if user is authenticated
+    if (!isAuthenticated()) {
+        showMessage('Please login to complete your order', 'error');
+        showLoginModal();
+        return;
+    }
+    
     try {
         const orderData = {
             items: cart.map(i => ({ product_id: i.productId, quantity: i.quantity, price: i.price })),
@@ -183,7 +215,10 @@ async function checkout() {
         
         const response = await fetch(`${API_BASE_URL}/orders`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
             body: JSON.stringify(orderData)
         });
         
@@ -193,10 +228,15 @@ async function checkout() {
             saveCart();
             updateCartCount();
             renderCart();
+        } else if (response.status === 401) {
+            showMessage('Session expired. Please login again.', 'error');
+            logout();
+            showLoginModal();
         } else {
-            throw new Error('Order failed');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Order failed');
         }
     } catch (error) {
-        showMessage('Order failed. Please try again.', 'error');
+        showMessage(error.message || 'Order failed. Please try again.', 'error');
     }
 }

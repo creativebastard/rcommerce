@@ -113,8 +113,32 @@
 
             const container = document.getElementById('productDetail');
             
+            // Check authentication first
+            if (!isAuthenticated()) {
+                container.innerHTML = `
+                    <div class="auth-required">
+                        <p>Please login to view product details</p>
+                        <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                    </div>`;
+                return;
+            }
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    logout();
+                    container.innerHTML = `
+                        <div class="auth-required">
+                            <p>Session expired. Please login again.</p>
+                            <button class="btn btn-primary" onclick="showLoginModal()">Login</button>
+                        </div>`;
+                    return;
+                }
                 
                 if (!response.ok) {
                     throw new Error('Product not found');

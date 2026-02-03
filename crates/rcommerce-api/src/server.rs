@@ -145,7 +145,6 @@ async fn init_redis(config: &Config) -> Option<RedisPool> {
 fn api_routes(app_state: AppState) -> Router<AppState> {
     // Public routes (no auth required)
     let public_routes = Router::new()
-        .merge(crate::routes::product_router())
         .merge(crate::routes::auth_router())
         // Webhooks are public (signature verification handles security)
         .route(
@@ -155,6 +154,7 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
 
     // Protected routes (auth required) - middleware applied to each router individually
     let protected_routes = Router::new()
+        .merge(crate::routes::product_router())
         .merge(crate::routes::customer_router())
         .merge(crate::routes::order_router())
         .merge(crate::routes::cart_router())
