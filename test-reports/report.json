@@ -4,7 +4,7 @@
     "passed": 12,
     "failed": 0,
     "skipped": 6,
-    "duration_ms": 712
+    "duration_ms": 558
   },
   "tests": [
     {
@@ -54,7 +54,7 @@
     {
       "name": "Data Generation",
       "status": "passed",
-      "duration_ms": 15,
+      "duration_ms": 14,
       "description": "Generates dummy data",
       "steps": [
         {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:53942/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:56842/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -309,7 +309,7 @@
     {
       "name": "Add Item to Cart",
       "status": "passed",
-      "duration_ms": 0,
+      "duration_ms": 1,
       "description": "Add product to cart",
       "steps": [
         {
@@ -350,7 +350,7 @@
     {
       "name": "Cart Merge",
       "status": "passed",
-      "duration_ms": 0,
+      "duration_ms": 1,
       "description": "Merge guest cart into customer cart",
       "steps": [
         {
@@ -377,7 +377,7 @@
       "created_items": [
         {
           "type": "MergedCart",
-          "id": "96e6555b-0922-4f69-a07f-eb34b606b132",
+          "id": "6ef8ef98-b148-4a85-afa2-2264e4c0c3e2",
           "details": "2 items after merge"
         }
       ],
@@ -396,12 +396,12 @@
         }
       ],
       "raw_request": "POST /api/v1/carts/merge\nAuthorization: Bearer ***\n\n{\"session_token\":\"sess_...\"}",
-      "raw_response": "{\"guest_cart\":\"550e8400-e29b-41d4-a716-446655440999\",\"customer_cart\":\"96e6555b-0922-4f69-a07f-eb34b606b132\",\"total_items\":2}"
+      "raw_response": "{\"guest_cart\":\"550e8400-e29b-41d4-a716-446655440999\",\"customer_cart\":\"6ef8ef98-b148-4a85-afa2-2264e4c0c3e2\",\"total_items\":2}"
     },
     {
       "name": "Coupon Application",
       "status": "passed",
-      "duration_ms": 0,
+      "duration_ms": 1,
       "description": "Apply discount coupon to cart",
       "steps": [
         {

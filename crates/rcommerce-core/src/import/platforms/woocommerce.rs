@@ -335,6 +335,8 @@ impl PlatformImporter for WooCommerceImporter {
 }
 
 // WooCommerce API response types
+// These are used for API deserialization - fields are read by serde
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceProduct {
     id: u64,
@@ -361,6 +363,7 @@ struct WooCommerceProduct {
     attributes: Vec<WooCommerceAttribute>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceCategory {
     id: u64,
@@ -368,6 +371,7 @@ struct WooCommerceCategory {
     slug: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceImage {
     id: u64,
@@ -376,6 +380,7 @@ struct WooCommerceImage {
     alt: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceAttribute {
     id: u64,
@@ -383,6 +388,7 @@ struct WooCommerceAttribute {
     options: Vec<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceCustomer {
     id: u64,
@@ -396,6 +402,7 @@ struct WooCommerceCustomer {
     shipping: Option<WooCommerceAddress>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceAddress {
     #[serde(rename = "first_name")]
@@ -413,6 +420,7 @@ struct WooCommerceAddress {
     phone: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceOrder {
     id: u64,
@@ -433,6 +441,7 @@ struct WooCommerceOrder {
     line_items: Vec<WooCommerceLineItem>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct WooCommerceLineItem {
     id: u64,

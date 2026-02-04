@@ -7,7 +7,7 @@ use crate::import::{
 };
 use async_trait::async_trait;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::time::Duration;
 
 const SHOPIFY_API_VERSION: &str = "2024-01";
@@ -43,7 +43,7 @@ impl ShopifyImporter {
         limit: usize,
     ) -> ImportResult<Vec<T>> {
         let mut results = Vec::new();
-        let mut page_info: Option<String> = None;
+        let page_info: Option<String> = None;
         let batch_size = 250.min(limit);
 
         loop {
@@ -364,6 +364,8 @@ impl PlatformImporter for ShopifyImporter {
 }
 
 // Shopify API response types
+// These are used for API deserialization - fields are read by serde
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct ShopifyProduct {
     id: u64,
@@ -380,6 +382,7 @@ struct ShopifyProduct {
     images: Vec<ShopifyImage>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct ShopifyVariant {
     id: u64,
@@ -392,6 +395,7 @@ struct ShopifyVariant {
     inventory_quantity: i32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct ShopifyImage {
     id: u64,
@@ -400,6 +404,7 @@ struct ShopifyImage {
     alt_text: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct ShopifyCustomer {
     id: u64,
@@ -412,6 +417,7 @@ struct ShopifyCustomer {
     created_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct ShopifyOrder {
     id: u64,
