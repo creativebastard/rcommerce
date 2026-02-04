@@ -119,6 +119,9 @@ plugins:
             Order Management: 订单管理
             Notifications: 通知
             Media Storage: 媒体存储
+            Guides: 指南
+            API Keys: API 密钥
+            Scopes: 权限范围
             Development: 开发
             Local Setup: 本地设置
             Contributing: 贡献
@@ -237,6 +240,7 @@ nav:
   - API Reference:
     - Overview: api-reference/index.md
     - Authentication: api-reference/authentication.md
+    - Scopes: api-reference/scopes.md
     - Error Codes: api-reference/errors.md
     - Products: api-reference/products.md
     - Orders: api-reference/orders.md
@@ -287,6 +291,9 @@ nav:
     - Order Management: architecture/order-management.md
     - Notifications: architecture/notifications.md
     - Media Storage: architecture/media-storage.md
+  
+  - Guides:
+    - API Keys: guides/api-keys.md
   
   - Development:
     - Overview: development/index.md

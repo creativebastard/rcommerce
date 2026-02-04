@@ -4,6 +4,7 @@ pub mod order_service;
 pub mod auth_service;
 pub mod cart_service;
 pub mod coupon_service;
+pub mod api_key_scopes;
 
 pub use product_service::ProductService;
 pub use customer_service::CustomerService;
@@ -15,6 +16,7 @@ pub use auth_service::AuthenticatedUser;
 pub use auth_service::TokenType;
 pub use cart_service::CartService;
 pub use coupon_service::CouponService;
+pub use api_key_scopes::{Scope, ScopeChecker, Resource, Action, presets as scope_presets};
 
 use crate::Result;
 

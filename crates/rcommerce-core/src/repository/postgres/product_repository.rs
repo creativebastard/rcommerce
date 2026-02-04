@@ -73,37 +73,69 @@ impl PostgresProductRepository {
     }
     
     pub async fn update_with_request(&self, id: Uuid, request: UpdateProductRequest) -> Result<Product> {
-        let mut query = String::from("UPDATE products SET ");
         let mut sets = Vec::new();
+        let mut param_count = 0;
         
-        if let Some(title) = request.title {
-            sets.push(format!("title = '{}'", title.replace("'", "''")));
+        // Track which fields are present
+        let has_title = request.title.is_some();
+        let has_slug = request.slug.is_some();
+        let has_description = request.description.is_some();
+        let has_price = request.price.is_some();
+        let has_is_active = request.is_active.is_some();
+        
+        if has_title {
+            param_count += 1;
+            sets.push(format!("title = ${}", param_count));
         }
-        if let Some(slug) = request.slug {
-            sets.push(format!("slug = '{}'", slug.replace("'", "''")));
+        if has_slug {
+            param_count += 1;
+            sets.push(format!("slug = ${}", param_count));
         }
-        if let Some(description) = request.description {
-            if let Some(desc) = description {
-                sets.push(format!("description = '{}'", desc.replace("'", "''")));
-            } else {
-                sets.push("description = NULL".to_string());
-            }
+        if has_description {
+            param_count += 1;
+            sets.push(format!("description = ${}", param_count));
         }
-        if let Some(price) = request.price {
-            sets.push(format!("price = {}", price));
+        if has_price {
+            param_count += 1;
+            sets.push(format!("price = ${}", param_count));
         }
-        if let Some(is_active) = request.is_active {
-            sets.push(format!("is_active = {}", is_active));
+        if has_is_active {
+            param_count += 1;
+            sets.push(format!("is_active = ${}", param_count));
         }
         
         if sets.is_empty() {
             return Err(crate::Error::Validation("No fields to update".to_string()));
         }
         
-        query.push_str(&sets.join(", "));
-        query.push_str(&format!(", updated_at = NOW() WHERE id = '{}' RETURNING *", id));
+        let id_idx = param_count + 1;
+        let query = format!(
+            "UPDATE products SET {}, updated_at = NOW() WHERE id = ${} RETURNING *",
+            sets.join(", "),
+            id_idx
+        );
         
-        let product = sqlx::query_as::<_, Product>(&query)
+        // Build query with explicit binds
+        let mut query_builder = sqlx::query_as::<_, Product>(&query);
+        
+        if let Some(title) = request.title {
+            query_builder = query_builder.bind(title);
+        }
+        if let Some(slug) = request.slug {
+            query_builder = query_builder.bind(slug);
+        }
+        if let Some(description) = request.description {
+            query_builder = query_builder.bind(description);
+        }
+        if let Some(price) = request.price {
+            query_builder = query_builder.bind(price);
+        }
+        if let Some(is_active) = request.is_active {
+            query_builder = query_builder.bind(is_active);
+        }
+        query_builder = query_builder.bind(id);
+        
+        let product = query_builder
             .fetch_one(self.db.pool())
             .await?;
         
@@ -163,6 +195,12 @@ impl ProductRepositoryTrait for PostgresProductRepository {
         sort: Option<&SortParams>,
     ) -> Result<Vec<Product>> {
         let mut query = String::from("SELECT * FROM products WHERE 1=1");
+        let mut param_count = 0;
+        
+        // Track which parameters we need to bind
+        let has_category = filter.category_id.is_some();
+        let has_price_min = filter.price_min.is_some();
+        let has_price_max = filter.price_max.is_some();
         
         if let Some(status) = filter.status {
             match status {
@@ -176,34 +214,62 @@ impl ProductRepositoryTrait for PostgresProductRepository {
             }
         }
         
-        if let Some(category_id) = filter.category_id {
+        if has_category {
+            param_count += 1;
             query.push_str(&format!(
-                " AND id IN (SELECT product_id FROM product_category_relations WHERE category_id = '{}')",
-                category_id
+                " AND id IN (SELECT product_id FROM product_category_relations WHERE category_id = ${})",
+                param_count
             ));
         }
         
-        if let Some(price_min) = filter.price_min {
-            query.push_str(&format!(" AND price >= {}", price_min));
+        if has_price_min {
+            param_count += 1;
+            query.push_str(&format!(" AND price >= ${}", param_count));
         }
         
-        if let Some(price_max) = filter.price_max {
-            query.push_str(&format!(" AND price <= {}", price_max));
+        if has_price_max {
+            param_count += 1;
+            query.push_str(&format!(" AND price <= ${}", param_count));
         }
         
+        // Add sorting - validate sort field against whitelist
         if let Some(sort) = sort {
+            let allowed_columns = ["id", "title", "slug", "price", "created_at", "updated_at", "inventory_quantity"];
+            if !allowed_columns.contains(&sort.field.as_str()) {
+                return Err(crate::Error::validation("Invalid sort field"));
+            }
             let direction = match sort.direction {
                 SortDirection::Asc => "ASC",
                 SortDirection::Desc => "DESC",
             };
+            // Use the validated field directly in the query string
+            // This is safe because we've validated it against a whitelist
             query.push_str(&format!(" ORDER BY {} {}", sort.field, direction));
         } else {
             query.push_str(" ORDER BY created_at DESC");
         }
         
-        query.push_str(&format!(" LIMIT {} OFFSET {}", pagination.per_page, pagination.offset()));
+        // Add pagination
+        let limit_idx = param_count + 1;
+        let offset_idx = param_count + 2;
+        query.push_str(&format!(" LIMIT ${} OFFSET ${}", limit_idx, offset_idx));
         
-        let products = sqlx::query_as::<_, Product>(&query)
+        // Build query with explicit binds
+        let mut query_builder = sqlx::query_as::<_, Product>(&query);
+        
+        if let Some(category_id) = filter.category_id {
+            query_builder = query_builder.bind(category_id);
+        }
+        if let Some(price_min) = filter.price_min {
+            query_builder = query_builder.bind(price_min);
+        }
+        if let Some(price_max) = filter.price_max {
+            query_builder = query_builder.bind(price_max);
+        }
+        query_builder = query_builder.bind(pagination.per_page);
+        query_builder = query_builder.bind(pagination.offset());
+        
+        let products = query_builder
             .fetch_all(self.db.pool())
             .await?;
         
@@ -223,9 +289,9 @@ impl ProductRepositoryTrait for PostgresProductRepository {
             query.push_str(" AND id IN (SELECT product_id FROM product_category_relations WHERE category_id = $1)");
         }
         
-        let row = if filter.category_id.is_some() {
+        let row = if let Some(category_id) = filter.category_id {
             sqlx::query(&query)
-                .bind(filter.category_id.unwrap())
+                .bind(category_id)
                 .fetch_one(self.db.pool())
                 .await?
         } else {

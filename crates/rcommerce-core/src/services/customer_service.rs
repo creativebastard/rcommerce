@@ -65,6 +65,11 @@ impl CustomerService {
         self.repository.find_by_email(email).await
     }
     
+    /// Get customer by ID
+    pub async fn find_by_id(&self, id: Uuid) -> Result<Option<Customer>> {
+        self.repository.find_by_id(id).await
+    }
+    
     /// Get customer by ID with addresses
     pub async fn get_customer(&self, id: Uuid) -> Result<Option<CustomerDetail>> {
         let customer = match self.repository.find_by_id(id).await? {

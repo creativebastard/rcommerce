@@ -219,18 +219,37 @@ impl OrderService {
     /// List orders with filtering
     pub async fn list_orders(&self, filter: super::OrderFilter) -> Result<Vec<Order>> {
         let mut query = String::from("SELECT * FROM orders WHERE 1=1");
+        let mut param_count = 0;
         
-        if let Some(customer_id) = filter.customer_id {
-            query.push_str(&format!(" AND customer_id = '{}'", customer_id));
+        // Track which parameters we need to bind
+        let has_customer = filter.customer_id.is_some();
+        let has_status = filter.status.is_some();
+        
+        if has_customer {
+            param_count += 1;
+            query.push_str(&format!(" AND customer_id = ${}", param_count));
         }
         
-        if let Some(status) = filter.status {
-            query.push_str(&format!(" AND status = '{}'", format!("{:?}", status).to_lowercase()));
+        if has_status {
+            param_count += 1;
+            query.push_str(&format!(" AND status = ${}", param_count));
         }
         
         query.push_str(" ORDER BY created_at DESC");
         
-        let orders = sqlx::query_as::<_, Order>(&query)
+        // Build query with explicit binds
+        let mut query_builder = sqlx::query_as::<_, Order>(&query);
+        
+        if let Some(customer_id) = filter.customer_id {
+            query_builder = query_builder.bind(customer_id);
+        }
+        if let Some(status) = filter.status {
+            // Convert status to lowercase string for the database
+            let status_str = format!("{:?}", status).to_lowercase();
+            query_builder = query_builder.bind(status_str);
+        }
+        
+        let orders = query_builder
             .fetch_all(self.db.pool())
             .await?;
         

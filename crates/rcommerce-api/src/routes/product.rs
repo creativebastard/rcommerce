@@ -127,6 +127,15 @@ pub async fn get_product(
 }
 
 /// Router for product routes
+/// 
+/// Public routes:
+/// - GET /products - List products (public read)
+/// - GET /products/:id - Get product details (public read)
+/// 
+/// Protected routes (require products:write scope):
+/// - POST /products - Create product
+/// - PUT /products/:id - Update product
+/// - DELETE /products/:id - Delete product
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/products", get(list_products))

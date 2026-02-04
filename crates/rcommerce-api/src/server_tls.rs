@@ -272,7 +272,7 @@ fn build_tls_router(app_state: AppState, tls_config: TlsConfig) -> Router {
 /// Create application state
 async fn create_app_state(config: &Config) -> Result<AppState> {
     use rcommerce_core::cache::RedisPool;
-    use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository};
+    use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository};
     use rcommerce_core::services::{AuthService, CustomerService, ProductService};
 
     // Initialize database
@@ -286,11 +286,12 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     )
     .await?;
 
-    let db = Database::new(pool);
+    let db = Database::new(pool.clone());
 
     // Initialize repositories
     let product_repo = ProductRepository::new(db.clone());
     let customer_repo = CustomerRepository::new(db.clone());
+    let api_key_repo = PostgresApiKeyRepository::new(pool);
 
     // Initialize services
     let product_service = ProductService::new(product_repo);
@@ -325,6 +326,7 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         auth_service,
         db,
         redis,
+        api_key_repo,
     ))
 }
 

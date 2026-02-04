@@ -1,7 +1,8 @@
-use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
+use axum::{extract::State, http::StatusCode, middleware, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::middleware::auth_rate_limit_middleware;
 use crate::state::AppState;
 use rcommerce_core::{models::CreateCustomerRequest, Error};
 
@@ -88,10 +89,10 @@ pub async fn login(
         return Err(Error::unauthorized("Invalid email or password"));
     }
 
-    // Generate tokens
+    // Generate tokens with role-based permissions
     let access_token = state
         .auth_service
-        .generate_access_token(customer.id, &customer.email)?;
+        .generate_access_token(customer.id, &customer.email, &customer.role)?;
     let refresh_token = state.auth_service.generate_refresh_token(customer.id)?;
 
     Ok(Json(LoginResponse {
@@ -164,10 +165,17 @@ pub async fn refresh_token(
         return Err(Error::unauthorized("Invalid token type"));
     }
 
-    // Generate new access token
+    // Fetch customer to get their current role
+    let customer = state
+        .customer_service
+        .find_by_id(claims.sub)
+        .await?
+        .ok_or_else(|| Error::unauthorized("Customer not found"))?;
+
+    // Generate new access token with role-based permissions
     let access_token = state
         .auth_service
-        .generate_access_token(claims.sub, &claims.email)?;
+        .generate_access_token(claims.sub, &customer.email, &customer.role)?;
 
     Ok(Json(RefreshTokenResponse {
         access_token,
@@ -176,10 +184,11 @@ pub async fn refresh_token(
     }))
 }
 
-/// Router for auth routes
+/// Router for auth routes with rate limiting
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/refresh", post(refresh_token))
+        .layer(middleware::from_fn(auth_rate_limit_middleware))
 }

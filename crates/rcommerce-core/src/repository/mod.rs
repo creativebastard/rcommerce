@@ -5,13 +5,15 @@
 pub mod traits;
 pub mod postgres;
 
-// Cart and Coupon repositories
+// Cart, Coupon, and API Key repositories
 pub mod cart_repository;
 pub mod coupon_repository;
+pub mod api_key_repository;
 
-// Re-export cart and coupon traits
+// Re-export cart, coupon, and api_key traits
 pub use cart_repository::CartRepository;
 pub use coupon_repository::CouponRepository;
+pub use api_key_repository::{ApiKeyRepository, ApiKeyRecord, CreateApiKeyRequest, PostgresApiKeyRepository};
 
 // PostgreSQL exports
 pub use postgres::{

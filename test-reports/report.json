@@ -4,7 +4,7 @@
     "passed": 12,
     "failed": 0,
     "skipped": 6,
-    "duration_ms": 558
+    "duration_ms": 561
   },
   "tests": [
     {
@@ -35,7 +35,7 @@
     {
       "name": "Schema Verification",
       "status": "passed",
-      "duration_ms": 1,
+      "duration_ms": 0,
       "description": "Verifies tables exist",
       "steps": [
         {
@@ -54,7 +54,7 @@
     {
       "name": "Data Generation",
       "status": "passed",
-      "duration_ms": 14,
+      "duration_ms": 12,
       "description": "Generates dummy data",
       "steps": [
         {
@@ -98,7 +98,7 @@
     {
       "name": "Create Order",
       "status": "passed",
-      "duration_ms": 2,
+      "duration_ms": 1,
       "description": "Creates order via API",
       "steps": [
         {
@@ -116,7 +116,7 @@
       ],
       "assertions": [
       ],
-      "raw_request": "GET http://127.0.0.1:56842/api/v1/orders",
+      "raw_request": "GET http://127.0.0.1:57440/api/v1/orders",
       "raw_response": "Order ID: order-123"
     },
     {
@@ -350,7 +350,7 @@
     {
       "name": "Cart Merge",
       "status": "passed",
-      "duration_ms": 1,
+      "duration_ms": 0,
       "description": "Merge guest cart into customer cart",
       "steps": [
         {
@@ -377,7 +377,7 @@
       "created_items": [
         {
           "type": "MergedCart",
-          "id": "6ef8ef98-b148-4a85-afa2-2264e4c0c3e2",
+          "id": "29c300e6-1ecd-4d14-a9b0-ac8cc08e4543",
           "details": "2 items after merge"
         }
       ],
@@ -396,12 +396,12 @@
         }
       ],
       "raw_request": "POST /api/v1/carts/merge\nAuthorization: Bearer ***\n\n{\"session_token\":\"sess_...\"}",
-      "raw_response": "{\"guest_cart\":\"550e8400-e29b-41d4-a716-446655440999\",\"customer_cart\":\"6ef8ef98-b148-4a85-afa2-2264e4c0c3e2\",\"total_items\":2}"
+      "raw_response": "{\"guest_cart\":\"550e8400-e29b-41d4-a716-446655440999\",\"customer_cart\":\"29c300e6-1ecd-4d14-a9b0-ac8cc08e4543\",\"total_items\":2}"
     },
     {
       "name": "Coupon Application",
       "status": "passed",
-      "duration_ms": 1,
+      "duration_ms": 0,
       "description": "Apply discount coupon to cart",
       "steps": [
         {

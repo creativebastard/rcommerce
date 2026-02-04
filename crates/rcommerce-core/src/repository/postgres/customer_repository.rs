@@ -72,27 +72,53 @@ impl PostgresCustomerRepository {
     }
     
     pub async fn update_with_request(&self, id: Uuid, request: UpdateCustomerRequest) -> Result<Customer> {
-        let mut query = String::from("UPDATE customers SET ");
         let mut sets = Vec::new();
+        let mut param_count = 0;
         
-        if let Some(email) = request.email {
-            sets.push(format!("email = '{}'", email.replace("'", "''")));
+        // Track which fields are present
+        let has_email = request.email.is_some();
+        let has_first_name = request.first_name.is_some();
+        let has_last_name = request.last_name.is_some();
+        
+        if has_email {
+            param_count += 1;
+            sets.push(format!("email = ${}", param_count));
         }
-        if let Some(first_name) = request.first_name {
-            sets.push(format!("first_name = '{}'", first_name.replace("'", "''")));
+        if has_first_name {
+            param_count += 1;
+            sets.push(format!("first_name = ${}", param_count));
         }
-        if let Some(last_name) = request.last_name {
-            sets.push(format!("last_name = '{}'", last_name.replace("'", "''")));
+        if has_last_name {
+            param_count += 1;
+            sets.push(format!("last_name = ${}", param_count));
         }
         
         if sets.is_empty() {
             return Err(crate::Error::Validation("No fields to update".to_string()));
         }
         
-        query.push_str(&sets.join(", "));
-        query.push_str(&format!(", updated_at = NOW() WHERE id = '{}' RETURNING *", id));
+        let id_idx = param_count + 1;
+        let query = format!(
+            "UPDATE customers SET {}, updated_at = NOW() WHERE id = ${} RETURNING *",
+            sets.join(", "),
+            id_idx
+        );
         
-        let customer = sqlx::query_as::<_, Customer>(&query)
+        // Build query with explicit binds
+        let mut query_builder = sqlx::query_as::<_, Customer>(&query);
+        
+        if let Some(email) = request.email {
+            query_builder = query_builder.bind(email);
+        }
+        if let Some(first_name) = request.first_name {
+            query_builder = query_builder.bind(first_name);
+        }
+        if let Some(last_name) = request.last_name {
+            query_builder = query_builder.bind(last_name);
+        }
+        query_builder = query_builder.bind(id);
+        
+        let customer = query_builder
             .fetch_one(self.db.pool())
             .await?;
         
@@ -160,29 +186,53 @@ impl CustomerRepositoryTrait for PostgresCustomerRepository {
     }
     
     async fn update(&self, id: Uuid, request: UpdateCustomerRequest) -> Result<Customer> {
-        let mut query = String::from("UPDATE customers SET ");
         let mut sets = Vec::new();
+        let mut param_count = 0;
         
-        if let Some(email) = request.email {
-            sets.push(format!("email = '{}'", email.replace("'", "''")));
+        // Track which fields are present
+        let has_email = request.email.is_some();
+        let has_first_name = request.first_name.is_some();
+        let has_last_name = request.last_name.is_some();
+        
+        if has_email {
+            param_count += 1;
+            sets.push(format!("email = ${}", param_count));
         }
-        if let Some(first_name) = request.first_name {
-            sets.push(format!("first_name = '{}'", first_name.replace("'", "''")));
+        if has_first_name {
+            param_count += 1;
+            sets.push(format!("first_name = ${}", param_count));
         }
-        if let Some(last_name) = request.last_name {
-            sets.push(format!("last_name = '{}'", last_name.replace("'", "''")));
+        if has_last_name {
+            param_count += 1;
+            sets.push(format!("last_name = ${}", param_count));
         }
         
         if sets.is_empty() {
             return Err(crate::Error::Validation("No fields to update".to_string()));
         }
         
-        query.push_str(&sets.join(", "));
-        query.push_str(&format!(", updated_at = NOW() WHERE id = '{}' RETURNING *",
-            id
-        ));
+        let id_idx = param_count + 1;
+        let query = format!(
+            "UPDATE customers SET {}, updated_at = NOW() WHERE id = ${} RETURNING *",
+            sets.join(", "),
+            id_idx
+        );
         
-        let customer = sqlx::query_as::<_, Customer>(&query)
+        // Build query with explicit binds
+        let mut query_builder = sqlx::query_as::<_, Customer>(&query);
+        
+        if let Some(email) = request.email {
+            query_builder = query_builder.bind(email);
+        }
+        if let Some(first_name) = request.first_name {
+            query_builder = query_builder.bind(first_name);
+        }
+        if let Some(last_name) = request.last_name {
+            query_builder = query_builder.bind(last_name);
+        }
+        query_builder = query_builder.bind(id);
+        
+        let customer = query_builder
             .fetch_one(self.db.pool())
             .await?;
         

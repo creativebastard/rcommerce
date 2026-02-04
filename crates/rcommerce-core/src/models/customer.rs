@@ -5,6 +5,28 @@ use sqlx::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
+/// Customer role for access control
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(rename_all = "snake_case")]
+pub enum CustomerRole {
+    #[default]
+    Customer,
+    Manager,
+    Admin,
+}
+
+impl CustomerRole {
+    /// Get permissions for this role
+    pub fn permissions(&self) -> Vec<String> {
+        match self {
+            CustomerRole::Customer => vec!["read".to_string()],
+            CustomerRole::Manager => vec!["read".to_string(), "write".to_string()],
+            CustomerRole::Admin => vec!["read".to_string(), "write".to_string(), "admin".to_string()],
+        }
+    }
+}
+
 /// Customer entity
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Customer {
@@ -29,6 +51,8 @@ pub struct Customer {
     pub password_hash: Option<String>,
     pub is_verified: bool,
     pub last_login_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing)]
+    pub role: CustomerRole,
 }
 
 /// Create customer request

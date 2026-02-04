@@ -63,8 +63,8 @@ impl AuthService {
         Ok(hash_hex == stored_hash)
     }
     
-    /// Generate JWT access token for a customer
-    pub fn generate_access_token(&self, customer_id: Uuid, email: &str) -> Result<String> {
+    /// Generate JWT access token for a customer with role-based permissions
+    pub fn generate_access_token(&self, customer_id: Uuid, email: &str, role: &crate::models::CustomerRole) -> Result<String> {
         let expiry_hours = self.config.security.jwt.expiry_hours as i64;
         let expiration = Utc::now()
             .checked_add_signed(Duration::hours(expiry_hours))
@@ -75,7 +75,7 @@ impl AuthService {
             sub: customer_id,
             email: email.to_string(),
             token_type: TokenType::Access,
-            permissions: vec!["read".to_string(), "write".to_string()],
+            permissions: role.permissions(),
             exp: expiration,
             iat: Utc::now().timestamp(),
             iss: "rcommerce".to_string(),
@@ -204,9 +204,15 @@ pub struct AuthenticatedUser {
 mod tests {
     use super::*;
     
+    fn test_config() -> Config {
+        let mut config = Config::default();
+        config.security.jwt.secret = "this_is_a_test_secret_that_is_at_least_32_bytes_long".to_string();
+        config
+    }
+    
     #[test]
     fn test_generate_and_verify_api_key() {
-        let config = Config::default();
+        let config = test_config();
         let auth = AuthService::new(config);
         
         let api_key = auth.generate_api_key();
@@ -223,7 +229,7 @@ mod tests {
     
     #[test]
     fn test_password_hashing() {
-        let config = Config::default();
+        let config = test_config();
         let auth = AuthService::new(config);
         
         let password = "my_secure_password123";
@@ -238,14 +244,17 @@ mod tests {
     
     #[test]
     fn test_jwt_generation_and_verification() {
-        let config = Config::default();
+        use crate::models::CustomerRole;
+        
+        let config = test_config();
         let auth = AuthService::new(config);
         
         let customer_id = Uuid::new_v4();
         let email = "test@example.com";
+        let role = CustomerRole::Customer;
         
         // Generate token
-        let token = auth.generate_access_token(customer_id, email).unwrap();
+        let token = auth.generate_access_token(customer_id, email, &role).unwrap();
         assert!(!token.is_empty());
         
         // Verify token
@@ -253,6 +262,38 @@ mod tests {
         assert_eq!(claims.sub, customer_id);
         assert_eq!(claims.email, email);
         assert_eq!(claims.token_type, TokenType::Access);
+        // Customer role should only have "read" permission
+        assert!(claims.permissions.contains(&"read".to_string()));
+        assert!(!claims.permissions.contains(&"write".to_string()));
+    }
+    
+    #[test]
+    fn test_jwt_permissions_by_role() {
+        use crate::models::CustomerRole;
+        
+        let config = test_config();
+        let auth = AuthService::new(config);
+        
+        let customer_id = Uuid::new_v4();
+        let email = "test@example.com";
+        
+        // Test Customer role
+        let token = auth.generate_access_token(customer_id, email, &CustomerRole::Customer).unwrap();
+        let claims = auth.verify_token(&token).unwrap();
+        assert_eq!(claims.permissions, vec!["read"]);
+        
+        // Test Manager role
+        let token = auth.generate_access_token(customer_id, email, &CustomerRole::Manager).unwrap();
+        let claims = auth.verify_token(&token).unwrap();
+        assert!(claims.permissions.contains(&"read".to_string()));
+        assert!(claims.permissions.contains(&"write".to_string()));
+        
+        // Test Admin role
+        let token = auth.generate_access_token(customer_id, email, &CustomerRole::Admin).unwrap();
+        let claims = auth.verify_token(&token).unwrap();
+        assert!(claims.permissions.contains(&"read".to_string()));
+        assert!(claims.permissions.contains(&"write".to_string()));
+        assert!(claims.permissions.contains(&"admin".to_string()));
     }
     
     #[test]

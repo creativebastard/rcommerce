@@ -115,6 +115,18 @@ impl Config {
             return Err(Error::Config("Cache size too large (max 10GB)".to_string()));
         }
         
+        // Validate JWT secret
+        if self.security.jwt.secret.is_empty() {
+            return Err(Error::Config(
+                "JWT secret is not configured. Please set security.jwt.secret in your config file.".to_string()
+            ));
+        }
+        if self.security.jwt.secret.len() < 32 {
+            return Err(Error::Config(
+                "JWT secret must be at least 32 bytes long".to_string()
+            ));
+        }
+        
         Ok(())
     }
 }
@@ -486,8 +498,9 @@ impl Default for JwtConfig {
 }
 
 fn default_jwt_secret() -> String {
-    // WARNING: This is a default! Replace with secure key in production
-    "change_this_in_production_to_a_secure_random_key".to_string()
+    // JWT secret must be explicitly configured
+    // Return empty string to force validation failure if not set
+    String::new()
 }
 
 fn default_jwt_expiry() -> u64 {
@@ -1131,15 +1144,43 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.server.port, 8080);
         assert_eq!(config.database.pool_size, 20);
+        // Default JWT secret should be empty (forcing explicit configuration)
+        assert!(config.security.jwt.secret.is_empty());
     }
     
     #[test]
     fn test_config_validation() {
         let mut config = Config::default();
         config.server.port = 0;  // 0 is an invalid port for binding
+        config.security.jwt.secret = "this_is_a_test_secret_that_is_at_least_32_bytes_long".to_string();
         assert!(config.validate().is_err());
         
         config.server.port = 8080;
+        assert!(config.validate().is_ok());
+    }
+    
+    #[test]
+    fn test_jwt_secret_validation() {
+        let mut config = Config::default();
+        
+        // Empty secret should fail
+        config.security.jwt.secret = String::new();
+        assert!(config.validate().is_err());
+        
+        // Short secret should fail
+        config.security.jwt.secret = "short_secret".to_string();
+        assert!(config.validate().is_err());
+        
+        // Secret with exactly 31 bytes should fail
+        config.security.jwt.secret = "a".repeat(31);
+        assert!(config.validate().is_err());
+        
+        // Secret with 32 bytes should pass
+        config.security.jwt.secret = "a".repeat(32);
+        assert!(config.validate().is_ok());
+        
+        // Long secret should pass
+        config.security.jwt.secret = "this_is_a_very_secure_random_key_for_testing".to_string();
         assert!(config.validate().is_ok());
     }
     

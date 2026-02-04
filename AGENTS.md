@@ -469,33 +469,341 @@ Public routes (no auth required):
 
 ### API Key Authentication
 
-For service-to-service authentication, use API keys managed via CLI.
+API keys provide service-to-service authentication with fine-grained scope-based permissions. Unlike JWT tokens which are user-centric and session-based, API keys are designed for programmatic access and long-term integrations.
 
-#### CLI Commands
+#### API Keys vs JWT Tokens
+
+| Feature | API Keys | JWT Tokens |
+|---------|----------|------------|
+| Purpose | Service-to-service auth | User session auth |
+| Lifetime | Long-term (until revoked) | Short-term (hours/days) |
+| Scopes | Fine-grained permissions | User role-based |
+| Storage | Database (hash only) | Stateless (client-side) |
+| Use Case | Integrations, automation | Web/mobile apps |
+
+#### API Key Format
+
+API keys use a two-part format: `prefix.secret`
+
+- **Prefix** (8 characters): Identifies the key in logs and CLI operations. Stored in plaintext for lookup.
+- **Secret** (32 characters): The actual secret used for authentication. Hashed before storage.
+
+Example: `ak_1a2b3c4d.x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4`
 
 ```bash
-# List all API keys
-rcommerce api-key list -c config.toml
-
-# Create new API key
-rcommerce api-key create -c config.toml --name "My App" --scopes "read,write"
-# Output: Key: <prefix>.<secret> (copy this - shown only once!)
-
-# Get API key details
-rcommerce api-key get -c config.toml <prefix>
-
-# Revoke API key
-rcommerce api-key revoke -c config.toml <prefix> --reason "Compromised"
-
-# Delete API key permanently
-rcommerce api-key delete -c config.toml <prefix>
+# Create API key (secret shown only once!)
+rcommerce api-key create --name "My Integration" --scopes "products:read,orders:write"
+# Output: Key: ak_1a2b3c4d.x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4
 ```
 
-#### Using API Keys
+#### Storage Security
+
+API keys are stored securely using cryptographic hashing:
+
+- **Secret**: Hashed with SHA-256 (never stored in plaintext)
+- **Prefix**: Stored in plaintext for lookup purposes
+- **Scopes**: Stored as comma-separated list
+- **Metadata**: Name, created_at, expires_at, last_used_at, revoked status
+
+Database schema for `api_keys` table:
+
+```sql
+CREATE TABLE api_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    prefix VARCHAR(16) UNIQUE NOT NULL,
+    secret_hash VARCHAR(64) NOT NULL,  -- SHA-256 hash
+    name VARCHAR(255) NOT NULL,
+    scopes TEXT NOT NULL,              -- Comma-separated scopes
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    last_used_at TIMESTAMPTZ,
+    revoked_at TIMESTAMPTZ,
+    revoked_reason TEXT,
+    created_by UUID REFERENCES customers(id)
+);
+
+CREATE INDEX idx_api_keys_prefix ON api_keys(prefix);
+CREATE INDEX idx_api_keys_active ON api_keys(prefix) 
+    WHERE revoked_at IS NULL AND (expires_at IS NULL OR expires_at > NOW());
+```
+
+### Scope-Based Permissions
+
+The API key system uses a hierarchical scope-based permission model.
+
+#### Scope Format
+
+Scopes follow the pattern: `resource:action`
+
+Examples:
+- `products:read` - Read access to products
+- `orders:write` - Create and update orders
+- `customers:admin` - Full admin access to customers
+
+#### Available Resources
+
+| Resource | Description |
+|----------|-------------|
+| `products` | Product catalog and variants |
+| `orders` | Order management |
+| `customers` | Customer accounts |
+| `carts` | Shopping carts |
+| `coupons` | Discount coupons |
+| `payments` | Payment processing |
+| `inventory` | Inventory tracking |
+| `webhooks` | Webhook configuration |
+| `users` | User management |
+| `settings` | System settings |
+| `reports` | Analytics and reports |
+| `imports` | Data imports |
+| `exports` | Data exports |
+
+#### Available Actions
+
+| Action | Permissions |
+|--------|-------------|
+| `read` | GET operations, list, view details |
+| `write` | POST/PUT/PATCH operations, create and update |
+| `admin` | DELETE operations, full control including configuration |
+
+#### Permission Hierarchy
+
+Actions follow a hierarchy where higher permissions include lower ones:
+
+```
+admin > write > read
+```
+
+- `resource:admin` grants read, write, and admin access
+- `resource:write` grants read and write access
+- `resource:read` grants only read access
+
+#### Wildcard Scopes
+
+For convenience, you can use action-only wildcards:
+
+- `read` - Read access to **all** resources (equivalent to `*:read`)
+- `write` - Write access to **all** resources
+- `admin` - Admin access to **all** resources
+
+Examples:
+```bash
+# Read-only access to everything
+--scopes "read"
+
+# Read and write access to everything
+--scopes "write"
+
+# Full admin access
+--scopes "admin"
+
+# Mixed: read all, write only products and orders
+--scopes "read,products:write,orders:write"
+```
+
+### Predefined Scope Presets
+
+The system provides convenient preset scopes for common use cases:
+
+```rust
+use rcommerce_core::auth::scope_presets;
+
+// Read-only access to all resources
+scope_presets::read_only()
+// Returns: ["read"]
+
+// Read and write access to all resources
+scope_presets::read_write()
+// Returns: ["write"]
+
+// Full admin access to all resources
+scope_presets::admin()
+// Returns: ["admin"]
+
+// Customer-facing access (products, carts, orders, customers)
+scope_presets::customer()
+// Returns: ["products:read", "carts:read", "carts:write", 
+//           "orders:read", "orders:write", "customers:read", "customers:write"]
+
+// Product management (read-only)
+scope_presets::products_read_only()
+// Returns: ["products:read"]
+
+// Inventory management
+scope_presets::inventory_manager()
+// Returns: ["products:read", "products:write", 
+//           "inventory:read", "inventory:write", "inventory:admin"]
+
+// Webhook processing
+scope_presets::webhook_handler()
+// Returns: ["webhooks:read", "webhooks:write", 
+//           "orders:read", "payments:read"]
+```
+
+#### Using Presets in CLI
 
 ```bash
-# Include in header
-Authorization: Bearer <api_key>
+# Create read-only API key
+rcommerce api-key create --name "Analytics Reader" --scopes "read"
+
+# Create admin API key
+rcommerce api-key create --name "System Admin" --scopes "admin"
+
+# Create customer-facing API key
+rcommerce api-key create --name "Storefront" --scopes "products:read,carts:write,orders:write"
+```
+
+### Using API Key Middleware
+
+The API provides middleware for validating API keys and extracting authentication context.
+
+#### Combined Authentication Middleware
+
+For endpoints that accept both API keys and JWT tokens:
+
+```rust
+use axum::{
+    routing::get,
+    Router,
+    middleware,
+    extract::Extension,
+};
+use rcommerce_api::middleware::auth::combined_auth_middleware;
+use rcommerce_core::repositories::ApiKeyRepository;
+use rcommerce_core::services::AuthService;
+
+let app = Router::new()
+    .route("/api/v1/products", get(list_products))
+    .layer(middleware::from_fn(|req, next| {
+        combined_auth_middleware(
+            Extension(state.api_key_repository.clone()),
+            Extension(state.auth_service.clone()),
+            req,
+            next,
+        )
+    }));
+```
+
+#### API-Key-Only Middleware
+
+For service-to-service endpoints that only accept API keys:
+
+```rust
+use rcommerce_api::middleware::auth::api_key_middleware;
+
+let app = Router::new()
+    .route("/api/v1/webhooks", post(handle_webhook))
+    .layer(middleware::from_fn(|req, next| {
+        api_key_middleware(
+            Extension(state.api_key_repository.clone()),
+            req,
+            next,
+        )
+    }));
+```
+
+### Checking Permissions in Handlers
+
+Once authenticated via API key, handlers can check permissions using the `ApiKeyAuth` extension:
+
+```rust
+use axum::{
+    extract::Extension,
+    response::IntoResponse,
+    Json,
+};
+use rcommerce_core::auth::{ApiKeyAuth, Resource, Action};
+
+async fn create_product(
+    Extension(auth): Extension<ApiKeyAuth>,
+    Json(input): Json<CreateProductInput>,
+) -> impl IntoResponse {
+    // Check if the API key has write permission for products
+    if !auth.can(Resource::Products, Action::Write) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    
+    // Proceed with product creation
+    let product = service.create_product(input).await;
+    Json(product).into_response()
+}
+
+async fn delete_product(
+    Extension(auth): Extension<ApiKeyAuth>,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    // Admin permission required for deletion
+    if !auth.can(Resource::Products, Action::Admin) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    
+    service.delete_product(id).await;
+    StatusCode::NO_CONTENT.into_response()
+}
+```
+
+#### Permission Checking Methods
+
+```rust
+// Check specific resource and action
+auth.can(Resource::Orders, Action::Write)
+
+// Check read access (convenience method)
+auth.can_read(Resource::Products)
+
+// Check write access (convenience method)
+auth.can_write(Resource::Customers)
+
+// Check admin access (convenience method)
+auth.can_admin(Resource::Settings)
+
+// Get all scopes
+let scopes = auth.scopes();
+
+// Get API key metadata
+let key_id = auth.key_id();
+let key_name = auth.key_name();
+```
+
+### CLI Commands for API Keys
+
+```bash
+# Create API key with specific scopes
+rcommerce api-key create --name "Product Manager" --scopes "products:read,products:write"
+
+# Create read-only API key
+rcommerce api-key create --name "Reader" --scopes "read"
+
+# Create admin API key
+rcommerce api-key create --name "Admin" --scopes "admin"
+
+# Create API key with expiration
+rcommerce api-key create --name "Temporary" --scopes "read" --expires "2025-12-31"
+
+# List all API keys (shows metadata, not secrets)
+rcommerce api-key list
+
+# Get details for a specific API key
+rcommerce api-key get <prefix>
+
+# Revoke API key (soft delete, keeps record)
+rcommerce api-key revoke <prefix> --reason "Compromised"
+
+# Delete API key permanently (hard delete)
+rcommerce api-key delete <prefix>
+
+# Update API key scopes
+rcommerce api-key update <prefix> --scopes "products:read,orders:read,orders:write"
+```
+
+#### Using API Keys in Requests
+
+```bash
+# Include API key in Authorization header
+Authorization: Bearer <prefix>.<secret>
+
+# Example
+Authorization: Bearer ak_1a2b3c4d.x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4
 ```
 
 ### Configuration

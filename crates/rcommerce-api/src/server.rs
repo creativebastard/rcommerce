@@ -14,7 +14,7 @@ use crate::state::AppState;
 use crate::tls::security_headers_middleware;
 use rcommerce_core::cache::RedisPool;
 use rcommerce_core::config::TlsConfig;
-use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository};
+use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository};
 use rcommerce_core::services::{AuthService, CustomerService, ProductService};
 use rcommerce_core::{Config, Result};
 
@@ -324,6 +324,7 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     // Initialize repositories
     let product_repo = ProductRepository::new(db.clone());
     let customer_repo = CustomerRepository::new(db.clone());
+    let api_key_repo = PostgresApiKeyRepository::new(db.pool().clone());
 
     // Initialize services
     let product_service = ProductService::new(product_repo);
@@ -340,6 +341,7 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         auth_service,
         db,
         redis,
+        api_key_repo,
     ))
 }
 

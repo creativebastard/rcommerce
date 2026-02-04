@@ -24,7 +24,7 @@ pub use models::{Currency, Pagination, SortDirection, SortParams, ProductType, S
 pub use traits::Repository;
 pub use repository::{Database, create_pool};
 pub use db::migrate::{Migrator, auto_migrate, DbStatus};
-pub use services::{ProductService, CustomerService, OrderService, AuthService, ApiKey, JwtClaims, Service, PaginationParams, PaginationInfo};
+pub use services::{ProductService, CustomerService, OrderService, AuthService, ApiKey, JwtClaims, Service, PaginationParams, PaginationInfo, Scope, ScopeChecker, Resource, Action, scope_presets};
 pub use payment::{PaymentGateway, CreatePaymentRequest, PaymentMethod, CardDetails, PaymentSession, PaymentSessionStatus, Payment, PaymentStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType};
 pub use payment::gateways::{stripe::StripeGateway, wechatpay::WeChatPayGateway, alipay::AliPayGateway};
 pub use inventory::{InventoryService, StockAlertLevel, StockReservation, ReservationStatus, InventoryLevel, StockMovement, StockStatus, LowStockAlert, InventoryConfig, InventoryLocation, ProductInventory, LocationInventory};
