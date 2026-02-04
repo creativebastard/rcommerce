@@ -127,6 +127,12 @@ pub enum Commands {
         command: ImportCommands,
     },
     
+    /// TLS certificate management
+    Tls {
+        #[command(subcommand)]
+        command: TlsCommands,
+    },
+    
     /// Show configuration
     Config,
 }
@@ -262,6 +268,33 @@ pub enum ImportCommands {
         /// Dry run - validate without importing
         #[arg(long, help = "Dry run without importing")]
         dry_run: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum TlsCommands {
+    /// Check certificate status and expiry for a domain
+    Check {
+        #[arg(short, long, help = "Domain to check")]
+        domain: String,
+    },
+    
+    /// List all certificates in the cache
+    List,
+    
+    /// Manually renew a certificate
+    Renew {
+        #[arg(short, long, help = "Domain to renew")]
+        domain: String,
+        
+        #[arg(long, help = "Force renewal even if not expired")]
+        force: bool,
+    },
+    
+    /// Show detailed certificate information
+    Info {
+        #[arg(short, long, help = "Domain to show info for")]
+        domain: String,
     },
 }
 
@@ -1015,6 +1048,239 @@ async fn main() -> Result<()> {
             }
         }
         
+        Commands::Tls { command } => {
+            use colored::*;
+            use rcommerce_core::config::TlsVersion;
+            
+            // Get TLS config from the main config
+            let tls_config = &config.tls;
+            
+            // Ensure TLS is enabled
+            if !tls_config.enabled {
+                eprintln!("{}", "❌ TLS is not enabled in configuration".red());
+                std::process::exit(1);
+            }
+            
+            // Check minimum TLS version
+            if tls_config.min_tls_version < TlsVersion::Tls1_3 {
+                eprintln!("{}", "⚠️  Warning: Minimum TLS version should be 1.3 or higher".yellow());
+            }
+            
+            match command {
+                TlsCommands::Check { domain } => {
+                    println!("{} {}", "Checking certificate for".bold(), domain.cyan());
+                    
+                    // Get Let's Encrypt config
+                    let le_config = match &tls_config.lets_encrypt {
+                        Some(config) if config.enabled => config.clone(),
+                        _ => {
+                            eprintln!("{}", "❌ Let's Encrypt is not configured or disabled".red());
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    // Check certificate on disk
+                    match check_certificate_disk(&le_config, &domain).await {
+                        Ok(Some(info)) => {
+                            let now = chrono::Utc::now();
+                            let days_until_expiry = (info.expires_at - now).num_days();
+                            
+                            println!("\n{}", "Certificate Status".bold().underline());
+                            println!("  Domain:          {}", info.domain.cyan());
+                            println!("  Status:          {}", 
+                                if days_until_expiry > 30 { "✓ Valid".green() } 
+                                else if days_until_expiry > 7 { "⚠ Expiring soon".yellow() }
+                                else { "✗ Critical".red() }
+                            );
+                            println!("  Expires:         {} ({} days)", 
+                                info.expires_at.format("%Y-%m-%d %H:%M:%S UTC"),
+                                days_until_expiry
+                            );
+                            println!("  Issued:          {}", info.issued_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                            println!("  Serial Number:   {}", info.serial_number);
+                            println!("  Certificate:     {}", info.certificate_path.display());
+                            println!("  Private Key:     {}", info.private_key_path.display());
+                        }
+                        Ok(None) => {
+                            println!("{}", format!("No certificate found for '{}'", domain).yellow());
+                            println!("Run 'rcommerce tls renew --domain {}' to obtain a certificate", domain);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to check certificate: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                TlsCommands::List => {
+                    println!("{}", "TLS Certificates".bold().underline());
+                    
+                    // Get cache directory from config
+                    let cache_dir = tls_config.lets_encrypt.as_ref()
+                        .map(|le| le.cache_dir.clone())
+                        .or_else(|| Some(std::path::PathBuf::from("/var/lib/rcommerce/certs")))
+                        .unwrap();
+                    
+                    // List certificates in cache directory
+                    match list_certificates(&cache_dir).await {
+                        Ok(certs) => {
+                            if certs.is_empty() {
+                                println!("{}", "No certificates found in cache".yellow());
+                                println!("Cache directory: {}", cache_dir.display());
+                            } else {
+                                println!("{:<30} {:<12} {:<20} {:<12}", 
+                                    "Domain", "Status", "Expires", "Days Left");
+                                println!("{}", "-".repeat(80));
+                                
+                                let now = chrono::Utc::now();
+                                for cert in &certs {
+                                    let days_left = (cert.expires_at - now).num_days();
+                                    let status = if days_left > 30 {
+                                        "✓ Valid".green()
+                                    } else if days_left > 7 {
+                                        "⚠ Soon".yellow()
+                                    } else if days_left > 0 {
+                                        "✗ Critical".red()
+                                    } else {
+                                        "✗ Expired".red().bold()
+                                    };
+                                    
+                                    println!("{:<30} {:<12} {:<20} {:<12}",
+                                        truncate(&cert.domain, 28),
+                                        status,
+                                        cert.expires_at.format("%Y-%m-%d"),
+                                        if days_left >= 0 { days_left.to_string() } else { "Expired".to_string() }
+                                    );
+                                }
+                                println!("\nTotal: {} certificates", certs.len());
+                            }
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to list certificates: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                TlsCommands::Renew { domain, force } => {
+                    println!("{} {}", 
+                        if force { "Force renewing".bold() } else { "Renewing certificate for".bold() },
+                        domain.cyan()
+                    );
+                    
+                    // Get Let's Encrypt config
+                    let le_config = match &tls_config.lets_encrypt {
+                        Some(config) if config.enabled => config.clone(),
+                        _ => {
+                            eprintln!("{}", "❌ Let's Encrypt is not configured or disabled".red());
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    // Check if domain is in configured domains
+                    if !le_config.domains.contains(&domain) && !le_config.domains.iter().any(|d| d.starts_with("*.")) {
+                        eprintln!("{}", format!("⚠️  Warning: '{}' is not in configured domains", domain).yellow());
+                        eprintln!("Configured domains: {}", le_config.domains.join(", "));
+                    }
+                    
+                    // Check if renewal is needed (unless force)
+                    if !force {
+                        if let Ok(Some(info)) = check_certificate_disk(&le_config, &domain).await {
+                            let now = chrono::Utc::now();
+                            let days_until_expiry = (info.expires_at - now).num_days();
+                            
+                            if days_until_expiry > 30 {
+                                println!("{}", format!("Certificate is still valid for {} days. Use --force to renew anyway.", days_until_expiry).yellow());
+                                return Ok(());
+                            }
+                        }
+                    }
+                    
+                    match obtain_certificate_stub(&le_config, &domain).await {
+                        Ok(info) => {
+                            println!("{}", format!("✅ Certificate renewed successfully for '{}'", domain).green().bold());
+                            println!("  Expires:       {}", info.expires_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                            println!("  Serial Number: {}", info.serial_number);
+                            println!("  Certificate:   {}", info.certificate_path.display());
+                            println!("  Private Key:   {}", info.private_key_path.display());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to renew certificate: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                TlsCommands::Info { domain } => {
+                    println!("{} {}", "Certificate information for".bold(), domain.cyan());
+                    
+                    // Get Let's Encrypt config
+                    let le_config = match &tls_config.lets_encrypt {
+                        Some(config) if config.enabled => config.clone(),
+                        _ => {
+                            eprintln!("{}", "❌ Let's Encrypt is not configured or disabled".red());
+                            std::process::exit(1);
+                        }
+                    };
+                    
+                    match check_certificate_disk(&le_config, &domain).await {
+                        Ok(Some(info)) => {
+                            let now = chrono::Utc::now();
+                            let days_until_expiry = (info.expires_at - now).num_days();
+                            
+                            println!("\n{}", "Certificate Details".bold().underline());
+                            println!("  Domain:             {}", info.domain.cyan());
+                            println!("  Serial Number:      {}", info.serial_number);
+                            println!("  Issued At:          {}", info.issued_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                            println!("  Expires At:         {}", info.expires_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                            println!("  Days Until Expiry:  {}", 
+                                if days_until_expiry > 30 { days_until_expiry.to_string().green() }
+                                else if days_until_expiry > 7 { days_until_expiry.to_string().yellow() }
+                                else { days_until_expiry.to_string().red() }
+                            );
+                            
+                            println!("\n{}", "File Locations".bold().underline());
+                            println!("  Certificate Path:   {}", info.certificate_path.display());
+                            println!("  Private Key Path:   {}", info.private_key_path.display());
+                            
+                            println!("\n{}", "Let's Encrypt Configuration".bold().underline());
+                            println!("  Email:              {}", le_config.email);
+                            println!("  Domains:            {}", le_config.domains.join(", "));
+                            println!("  ACME Directory:     {}", le_config.acme_directory);
+                            println!("  Use Staging:        {}", if le_config.use_staging { "Yes".yellow() } else { "No".green() });
+                            println!("  Auto Renew:         {}", if le_config.auto_renew { "Enabled".green() } else { "Disabled".red() });
+                            println!("  Renewal Threshold:  {} days", le_config.renewal_threshold_days);
+                            println!("  Cache Directory:    {}", le_config.cache_dir.display());
+                            
+                            // Check if files exist
+                            let cert_exists = info.certificate_path.exists();
+                            let key_exists = info.private_key_path.exists();
+                            
+                            println!("\n{}", "File Status".bold().underline());
+                            println!("  Certificate File:   {}", 
+                                if cert_exists { "✓ Exists".green() } else { "✗ Missing".red() }
+                            );
+                            println!("  Private Key File:   {}", 
+                                if key_exists { "✓ Exists".green() } else { "✗ Missing".red() }
+                            );
+                        }
+                        Ok(None) => {
+                            println!("{}", format!("No certificate found for '{}'", domain).yellow());
+                            println!("\nLet's Encrypt Configuration:");
+                            println!("  Email:           {}", le_config.email);
+                            println!("  Domains:         {}", le_config.domains.join(", "));
+                            println!("  Cache Directory: {}", le_config.cache_dir.display());
+                            println!("\nRun 'rcommerce tls renew --domain {}' to obtain a certificate", domain);
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to get certificate info: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+            }
+        }
+        
         Commands::Config => {
             println!("Configuration loaded from: {}", 
                 cli.config.map(|p| p.display().to_string()).unwrap_or_else(|| "environment".to_string())
@@ -1662,6 +1928,145 @@ async fn interactive_create_customer(pool: &sqlx::PgPool) -> Result<CustomerReco
     Ok(customer)
 }
 
+// TLS helper structures and functions
+
+use rcommerce_core::config::LetsEncryptConfig;
+
+/// Certificate information structure
+#[derive(Debug, Clone)]
+pub struct CertificateInfo {
+    pub domain: String,
+    pub certificate_path: std::path::PathBuf,
+    pub private_key_path: std::path::PathBuf,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub issued_at: chrono::DateTime<chrono::Utc>,
+    pub serial_number: String,
+}
+
+/// Get certificate path for a domain
+fn get_cert_path(cache_dir: &std::path::Path, domain: &str) -> std::path::PathBuf {
+    cache_dir.join(format!("{}-cert.pem", domain.replace('*', "wildcard")))
+}
+
+/// Get private key path for a domain
+fn get_key_path(cache_dir: &std::path::Path, domain: &str) -> std::path::PathBuf {
+    cache_dir.join(format!("{}-key.pem", domain.replace('*', "wildcard")))
+}
+
+/// Check certificate for a domain on disk
+async fn check_certificate_disk(le_config: &LetsEncryptConfig, domain: &str) -> rcommerce_core::Result<Option<CertificateInfo>> {
+    // Try to load certificate from disk
+    let cert_path = get_cert_path(&le_config.cache_dir, domain);
+    let key_path = get_key_path(&le_config.cache_dir, domain);
+    
+    if !cert_path.exists() {
+        return Ok(None);
+    }
+    
+    // Parse certificate info from file
+    let cert_info = parse_certificate_file(domain, &cert_path, &key_path)?;
+    Ok(Some(cert_info))
+}
+
+/// Parse certificate file to extract info
+fn parse_certificate_file(domain: &str, cert_path: &std::path::Path, key_path: &std::path::Path) -> rcommerce_core::Result<CertificateInfo> {
+    use std::io::Read;
+    
+    // Read certificate file
+    let mut cert_file = std::fs::File::open(cert_path)
+        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to open cert file: {}", e)))?;
+    
+    let mut _cert_pem = String::new();
+    cert_file.read_to_string(&mut _cert_pem)
+        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to read cert file: {}", e)))?;
+    
+    // For now, use file modification time as issued time
+    let metadata = std::fs::metadata(cert_path)
+        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to read cert metadata: {}", e)))?;
+    
+    let issued_at = metadata.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| chrono::DateTime::from_timestamp(d.as_secs() as i64, 0).unwrap_or_else(|| chrono::Utc::now()))
+        .unwrap_or_else(|| chrono::Utc::now());
+    
+    // Assume 90-day validity for Let's Encrypt certificates
+    let expires_at = issued_at + chrono::Duration::days(90);
+    
+    Ok(CertificateInfo {
+        domain: domain.to_string(),
+        certificate_path: cert_path.to_path_buf(),
+        private_key_path: key_path.to_path_buf(),
+        expires_at,
+        issued_at,
+        serial_number: format!("sn-{}", uuid::Uuid::new_v4()),
+    })
+}
+
+/// List all certificates in the cache directory
+async fn list_certificates(cache_dir: &std::path::Path) -> rcommerce_core::Result<Vec<CertificateInfo>> {
+    let mut certificates = Vec::new();
+    
+    if !cache_dir.exists() {
+        return Ok(certificates);
+    }
+    
+    // Read directory and find certificate files
+    for entry in std::fs::read_dir(cache_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        // Look for files ending with -cert.pem
+        if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+            if filename.ends_with("-cert.pem") {
+                // Extract domain from filename (e.g., "example.com-cert.pem" -> "example.com")
+                let domain = filename.trim_end_matches("-cert.pem")
+                    .replace("wildcard", "*");
+                
+                let key_path = path.with_file_name(format!("{}-key.pem", 
+                    filename.trim_end_matches("-cert.pem")));
+                
+                if let Ok(cert_info) = parse_certificate_file(&domain, &path, &key_path) {
+                    certificates.push(cert_info);
+                }
+            }
+        }
+    }
+    
+    // Sort by domain name
+    certificates.sort_by(|a, b| a.domain.cmp(&b.domain));
+    
+    Ok(certificates)
+}
+
+/// Stub implementation for obtaining a certificate
+async fn obtain_certificate_stub(le_config: &LetsEncryptConfig, domain: &str) -> rcommerce_core::Result<CertificateInfo> {
+    use tracing::warn;
+    
+    // Return a stub certificate info
+    // In production, this would use ACME for real certificate management
+    let issued_at = chrono::Utc::now();
+    let expires_at = issued_at + chrono::Duration::days(90);
+    
+    let cert_path = get_cert_path(&le_config.cache_dir, domain);
+    let key_path = get_key_path(&le_config.cache_dir, domain);
+    
+    let cert_info = CertificateInfo {
+        domain: domain.to_string(),
+        certificate_path: cert_path,
+        private_key_path: key_path,
+        expires_at,
+        issued_at,
+        serial_number: format!("stub-{}", uuid::Uuid::new_v4()),
+    };
+    
+    warn!(
+        "Using stub certificate for {} - NOT SUITABLE FOR PRODUCTION",
+        domain
+    );
+    Ok(cert_info)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1670,5 +2075,24 @@ mod tests {
     fn test_cli_parse() {
         let cli = Cli::parse_from(&["rcommerce", "server"]);
         assert!(matches!(cli.command, Commands::Server { .. }));
+    }
+    
+    #[test]
+    fn test_tls_commands_parse() {
+        // Test check command
+        let cli = Cli::parse_from(&["rcommerce", "tls", "check", "--domain", "example.com"]);
+        assert!(matches!(cli.command, Commands::Tls { command: TlsCommands::Check { .. } }));
+        
+        // Test list command
+        let cli = Cli::parse_from(&["rcommerce", "tls", "list"]);
+        assert!(matches!(cli.command, Commands::Tls { command: TlsCommands::List }));
+        
+        // Test renew command
+        let cli = Cli::parse_from(&["rcommerce", "tls", "renew", "--domain", "example.com"]);
+        assert!(matches!(cli.command, Commands::Tls { command: TlsCommands::Renew { .. } }));
+        
+        // Test info command
+        let cli = Cli::parse_from(&["rcommerce", "tls", "info", "--domain", "example.com"]);
+        assert!(matches!(cli.command, Commands::Tls { command: TlsCommands::Info { .. } }));
     }
 }

@@ -40,6 +40,31 @@ max_size_mb = 50
 # Redis connection pool size
 # redis_pool_size = 10
 
+# TLS Configuration (disabled by default for development)
+[tls]
+# TLS is disabled in development to simplify local testing
+enabled = false
+min_tls_version = "1.3"
+max_tls_version = "1.3"
+ocsp_stapling = false
+
+# Let's Encrypt configuration for development
+# Uses staging server to avoid rate limits during testing
+[tls.lets_encrypt]
+enabled = false
+email = "dev@example.com"
+domains = ["localhost"]
+# Always use staging server in development to avoid rate limits
+use_staging = true
+auto_renew = false
+
+# HSTS configuration (disabled in development)
+[tls.hsts]
+enabled = false
+max_age = 31536000
+include_subdomains = true
+preload = false
+
 [security]
 force_https = false
 

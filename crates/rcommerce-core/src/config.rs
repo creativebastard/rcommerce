@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Main configuration structure for R commerce
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +33,9 @@ pub struct Config {
     
     #[serde(default)]
     pub import: ImportConfig,
+    
+    #[serde(default)]
+    pub tls: TlsConfig,
 }
 
 impl Default for Config {
@@ -48,6 +51,7 @@ impl Default for Config {
             rate_limiting: RateLimitConfig::default(),
             features: FeatureFlags::default(),
             import: ImportConfig::default(),
+            tls: TlsConfig::default(),
         }
     }
 }
@@ -852,6 +856,272 @@ fn default_batch_size() -> usize {
     100
 }
 
+/// TLS configuration for secure HTTPS
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TlsConfig {
+    /// Enable TLS/HTTPS
+    #[serde(default = "default_false")]
+    pub enabled: bool,
+
+    /// Minimum TLS version (1.3 strongly recommended)
+    #[serde(default = "default_min_tls_version")]
+    pub min_tls_version: TlsVersion,
+
+    /// Maximum TLS version
+    #[serde(default = "default_max_tls_version")]
+    pub max_tls_version: TlsVersion,
+
+    /// Certificate file path (for manual certs)
+    pub cert_file: Option<PathBuf>,
+
+    /// Private key file path (for manual certs)
+    pub key_file: Option<PathBuf>,
+
+    /// Let's Encrypt configuration
+    #[serde(default)]
+    pub lets_encrypt: Option<LetsEncryptConfig>,
+
+    /// HSTS (HTTP Strict Transport Security) configuration
+    #[serde(default)]
+    pub hsts: Option<HstsConfig>,
+
+    /// Cipher suites (defaults to modern, secure ciphers)
+    #[serde(default)]
+    pub cipher_suites: Vec<String>,
+
+    /// Enable OCSP stapling
+    #[serde(default = "default_true")]
+    pub ocsp_stapling: bool,
+    
+    /// HTTP port for ACME challenges and redirects (default: 80)
+    #[serde(default = "default_http_port")]
+    pub http_port: u16,
+    
+    /// HTTPS port (default: 443)
+    #[serde(default = "default_https_port")]
+    pub https_port: u16,
+}
+
+impl Default for TlsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            min_tls_version: default_min_tls_version(),
+            max_tls_version: default_max_tls_version(),
+            cert_file: None,
+            key_file: None,
+            lets_encrypt: None,
+            hsts: None,
+            cipher_suites: vec![],
+            ocsp_stapling: true,
+            http_port: 80,
+            https_port: 443,
+        }
+    }
+}
+
+impl TlsConfig {
+    /// Validate TLS configuration
+    pub fn validate(&self) -> Result<(), String> {
+        if self.enabled {
+            // Check if either manual certs or Let's Encrypt is configured
+            let has_manual_certs = self.cert_file.is_some() && self.key_file.is_some();
+            let has_lets_encrypt = self.lets_encrypt.as_ref().map(|le| le.enabled).unwrap_or(false);
+
+            if !has_manual_certs && !has_lets_encrypt {
+                return Err(
+                    "Either certificate files or Let's Encrypt must be configured when TLS is enabled".to_string(),
+                );
+            }
+
+            // Verify TLS version is at least 1.2 (1.3 recommended)
+            if self.min_tls_version < TlsVersion::Tls1_2 {
+                return Err("Minimum TLS version must be 1.2 or higher".to_string());
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Check if this is using Let's Encrypt
+    pub fn uses_lets_encrypt(&self) -> bool {
+        self.enabled && self.lets_encrypt.as_ref().map(|le| le.enabled).unwrap_or(false)
+    }
+
+    /// Check if this is using manual certificates
+    pub fn uses_manual_certs(&self) -> bool {
+        self.enabled && self.cert_file.is_some() && self.key_file.is_some()
+    }
+}
+
+/// TLS version enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum TlsVersion {
+    #[serde(rename = "1.2")]
+    Tls1_2,
+    #[serde(rename = "1.3")]
+    Tls1_3,
+}
+
+impl Default for TlsVersion {
+    fn default() -> Self {
+        TlsVersion::Tls1_3
+    }
+}
+
+fn default_min_tls_version() -> TlsVersion {
+    TlsVersion::Tls1_3
+}
+
+fn default_max_tls_version() -> TlsVersion {
+    TlsVersion::Tls1_3
+}
+
+fn default_http_port() -> u16 {
+    80
+}
+
+fn default_https_port() -> u16 {
+    443
+}
+
+/// Let's Encrypt configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LetsEncryptConfig {
+    /// Enable automatic certificate provisioning
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Contact email for Let's Encrypt account
+    pub email: String,
+
+    /// Domain(s) to get certificates for
+    pub domains: Vec<String>,
+
+    /// ACME directory URL (production or staging)
+    #[serde(default = "default_acme_directory")]
+    pub acme_directory: String,
+
+    /// Use staging server for testing (default: false)
+    #[serde(default)]
+    pub use_staging: bool,
+
+    /// Certificate renewal threshold (days before expiry)
+    #[serde(default = "default_renewal_days")]
+    pub renewal_threshold_days: i32,
+
+    /// Auto-renew certificates
+    #[serde(default = "default_true")]
+    pub auto_renew: bool,
+
+    /// Certificate cache directory
+    #[serde(default = "default_cert_cache_dir")]
+    pub cache_dir: PathBuf,
+}
+
+impl Default for LetsEncryptConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            email: String::new(),
+            domains: vec![],
+            acme_directory: default_acme_directory(),
+            use_staging: false,
+            renewal_threshold_days: 30,
+            auto_renew: true,
+            cache_dir: default_cert_cache_dir(),
+        }
+    }
+}
+
+impl LetsEncryptConfig {
+    /// Validate Let's Encrypt configuration
+    pub fn validate(&self) -> Result<(), String> {
+        if self.enabled {
+            if self.email.is_empty() {
+                return Err("Let's Encrypt email is required".to_string());
+            }
+
+            if self.domains.is_empty() {
+                return Err("At least one domain is required for Let's Encrypt".to_string());
+            }
+
+            // Validate domains
+            for domain in &self.domains {
+                if !domain.contains('.') {
+                    return Err(format!("Invalid domain: {}", domain));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// HSTS (HTTP Strict Transport Security) configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HstsConfig {
+    /// Enable HSTS
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Max age in seconds (default: 1 year)
+    #[serde(default = "default_hsts_max_age")]
+    pub max_age: u64,
+
+    /// Include subdomains
+    #[serde(default = "default_true")]
+    pub include_subdomains: bool,
+
+    /// Preload in browsers
+    #[serde(default)]
+    pub preload: bool,
+}
+
+impl Default for HstsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_age: 31_536_000, // 1 year in seconds
+            include_subdomains: true,
+            preload: false,
+        }
+    }
+}
+
+impl HstsConfig {
+    /// Generate HSTS header value
+    pub fn header_value(&self) -> String {
+        let mut parts = vec![format!("max-age={}", self.max_age)];
+
+        if self.include_subdomains {
+            parts.push("includeSubDomains".to_string());
+        }
+
+        if self.preload {
+            parts.push("preload".to_string());
+        }
+
+        parts.join("; ")
+    }
+}
+
+fn default_acme_directory() -> String {
+    "https://acme-v02.api.letsencrypt.org/directory".to_string()
+}
+
+fn default_renewal_days() -> i32 {
+    30
+}
+
+fn default_cert_cache_dir() -> PathBuf {
+    PathBuf::from("/var/lib/rcommerce/certs")
+}
+
+fn default_hsts_max_age() -> u64 {
+    31_536_000 // 1 year
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -871,5 +1141,83 @@ mod tests {
         
         config.server.port = 8080;
         assert!(config.validate().is_ok());
+    }
+    
+    #[test]
+    fn test_tls_config_defaults() {
+        let tls_config = TlsConfig::default();
+        assert!(!tls_config.enabled);  // TLS disabled by default
+        assert_eq!(tls_config.min_tls_version, TlsVersion::Tls1_3);
+        assert_eq!(tls_config.max_tls_version, TlsVersion::Tls1_3);
+        assert!(tls_config.ocsp_stapling);
+        assert!(tls_config.hsts.is_none());  // No HSTS by default when disabled
+        assert_eq!(tls_config.http_port, 80);
+        assert_eq!(tls_config.https_port, 443);
+    }
+    
+    #[test]
+    fn test_tls_config_validation() {
+        // When TLS is disabled, validation should pass regardless of cert config
+        let tls_config = TlsConfig::default();
+        assert!(!tls_config.enabled);
+        assert!(tls_config.validate().is_ok());
+        
+        // When TLS is enabled, need certificate source
+        let mut tls_config = TlsConfig::default();
+        tls_config.enabled = true;
+        
+        // Invalid: no cert source
+        assert!(tls_config.validate().is_err());
+        
+        // Valid: Let's Encrypt
+        tls_config.lets_encrypt = Some(LetsEncryptConfig::default());
+        assert!(tls_config.validate().is_ok());
+        
+        // Valid: manual certificates
+        tls_config.lets_encrypt = None;
+        tls_config.cert_file = Some(PathBuf::from("/path/to/cert.pem"));
+        tls_config.key_file = Some(PathBuf::from("/path/to/key.pem"));
+        assert!(tls_config.validate().is_ok());
+    }
+    
+    #[test]
+    fn test_lets_encrypt_config_validation() {
+        let mut le_config = LetsEncryptConfig::default();
+        le_config.email = "admin@example.com".to_string();
+        le_config.domains = vec!["example.com".to_string()];
+        
+        assert!(le_config.validate().is_ok());
+        
+        // Invalid: empty email
+        le_config.email = String::new();
+        assert!(le_config.validate().is_err());
+        
+        // Invalid: no domains
+        le_config.email = "admin@example.com".to_string();
+        le_config.domains = vec![];
+        assert!(le_config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_tls_version_ordering() {
+        assert!(TlsVersion::Tls1_3 > TlsVersion::Tls1_2);
+        assert_eq!(TlsVersion::Tls1_3, TlsVersion::Tls1_3);
+    }
+    
+    #[test]
+    fn test_hsts_header_generation() {
+        let hsts = HstsConfig::default();
+        let header = hsts.header_value();
+        
+        assert!(header.contains("max-age=31536000"));
+        assert!(header.contains("includeSubDomains"));
+        assert!(!header.contains("preload"));
+        
+        let hsts_preload = HstsConfig {
+            preload: true,
+            ..Default::default()
+        };
+        let header_preload = hsts_preload.header_value();
+        assert!(header_preload.contains("preload"));
     }
 }

@@ -112,12 +112,9 @@ sudo ufw --force enable
 ```bash
 # Production with Let's Encrypt
 export RCOMMERCE_CONFIG=/etc/rcommerce/production.toml
-./target/release/rcommerce server --tls
+./target/release/rcommerce server
 
-# Or with explicit TLS config
-./target/release/rcommerce server \
-  --tls-config /etc/rcommerce/tls.toml \
-  --enable-hsts
+# The server automatically enables TLS when [tls] enabled = true in config
 ```
 
 ##  HSTS (HTTP Strict Transport Security)
@@ -185,30 +182,23 @@ R Commerce automatically adds these security headers:
 
 ##  Certificate Monitoring
 
-Monitor your certificates:
+Monitor your certificates using standard tools:
 
 ```bash
-# Check certificate expiry
-./rcommerce tls check --domain api.yourstore.com
+# Check certificate expiry using OpenSSL
+echo | openssl s_client -servername api.yourstore.com -connect api.yourstore.com:443 2>/dev/null | openssl x509 -noout -dates
 
-# List all certificates
-./rcommerce tls list
+# Check certificate details
+echo | openssl s_client -servername api.yourstore.com -connect api.yourstore.com:443 2>/dev/null | openssl x509 -noout -text
 
-# Renew certificates manually
-./rcommerce tls renew --domain api.yourstore.com
-
-# Get certificate info
-./rcommerce tls info --domain api.yourstore.com
+# Check certificate expiry from file
+openssl x509 -in /var/lib/rcommerce/certs/cert.pem -noout -enddate
 ```
 
 Sample output:
 ```
-Domain: api.yourstore.com
-Status: Valid
-Issued: 2024-01-15T10:30:00Z
-Expiry: 2024-04-14T10:30:00Z
-Days until expiry: 89
-Auto-renew: Enabled
+notBefore=Jan 15 10:30:00 2024 GMT
+notAfter=Apr 14 10:30:00 2024 GMT
 ```
 
 ##  SSL Labs Testing
@@ -251,6 +241,37 @@ curl http://api.yourstore.com/.well-known/acme-challenge/test
 # If not, check DNS and firewall
 ```
 
+**Problem:** Let's Encrypt rate limit exceeded
+
+```bash
+# Error: "too many registrations for this IP"
+# or "too many failed authorizations recently"
+```
+
+**Solution:**
+1. Switch to staging server in config:
+```toml
+[tls.lets_encrypt]
+use_staging = true
+```
+2. Wait 1 hour for rate limit to reset
+3. Fix the underlying issue (DNS, firewall)
+4. Test with staging first
+5. Switch back to production
+
+**Problem:** Certificate file permissions denied
+
+```bash
+# Check permissions
+ls -la /var/lib/rcommerce/certs/
+
+# Fix permissions
+sudo chown -R rcommerce:rcommerce /var/lib/rcommerce/certs
+sudo chmod 750 /var/lib/rcommerce/certs
+sudo chmod 600 /var/lib/rcommerce/certs/*-key.pem
+sudo chmod 644 /var/lib/rcommerce/certs/*-cert.pem
+```
+
 ### HSTS Issues
 
 **Problem:** Site inaccessible after enabling HSTS
@@ -267,6 +288,57 @@ curl http://api.yourstore.com/.well-known/acme-challenge/test
 [tls.lets_encrypt]
 use_staging = true  # Switch to production only when ready
 ```
+
+### TLS Connection Issues
+
+**Problem:** Clients cannot connect with "protocol version" errors
+
+**Solution:** Check TLS version configuration
+
+```toml
+[tls]
+# Ensure both min and max are set to 1.3
+min_tls_version = "1.3"
+max_tls_version = "1.3"
+```
+
+**Problem:** "certificate signed by unknown authority"
+
+**Solution:** 
+1. For staging certificates: Install the staging CA in your test client
+2. For production: Ensure system CA certificates are up to date:
+```bash
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install ca-certificates
+
+# Test certificate chain
+openssl s_client -connect api.yourstore.com:443 -servername api.yourstore.com
+```
+
+### Port Binding Issues
+
+**Problem:** "Permission denied" when binding to port 80 or 443
+
+**Solution:** 
+1. Use capabilities (recommended):
+```bash
+sudo setcap cap_net_bind_service=+ep ./target/release/rcommerce
+```
+2. Or use a reverse proxy (nginx/traefik) on ports 80/443
+3. Or run with sudo (not recommended for production)
+
+### OCSP Stapling Issues
+
+**Problem:** OCSP errors in logs
+
+**Solution:**
+```toml
+[tls]
+# Temporarily disable OCSP stapling for debugging
+ocsp_stapling = false
+```
+
+Note: OCSP stapling requires the certificate to have a valid OCSP responder URL.
 
 ##  Security Best Practices
 
@@ -302,6 +374,18 @@ chmod 750 /var/lib/rcommerce/certs
 chown rcommerce:rcommerce /var/lib/rcommerce/certs
 ```
 
+### 3. TLS Configuration Validation
+
+**Always validate your TLS configuration:**
+
+```bash
+# Test SSL configuration
+nmap --script ssl-enum-ciphers -p 443 api.yourstore.com
+
+# Or use SSL Labs scan (external)
+# https://www.ssllabs.com/ssltest/
+```
+
 ### 3. Domain Validation
 
 **Use separate domains:**
@@ -314,8 +398,21 @@ chown rcommerce:rcommerce /var/lib/rcommerce/certs
 **Monitor certificate expiry:**
 
 ```bash
-# Add to crontab (daily check)
-0 0 * * * /usr/local/bin/rcommerce tls check --domain api.yourstore.com
+# Add to crontab (daily check with email alert)
+0 0 * * * /usr/local/bin/check_cert_expiry.sh api.yourstore.com 30
+
+# Example check_cert_expiry.sh script:
+#!/bin/bash
+DOMAIN=$1
+DAYS=$2
+EXPIRY=$(echo | openssl s_client -servername $DOMAIN -connect $DOMAIN:443 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+EXPIRY_EPOCH=$(date -d "$EXPIRY" +%s)
+NOW_EPOCH=$(date +%s)
+DAYS_UNTIL=$(( (EXPIRY_EPOCH - NOW_EPOCH) / 86400 ))
+
+if [ $DAYS_UNTIL -lt $DAYS ]; then
+    echo "Certificate for $DOMAIN expires in $DAYS_UNTIL days" | mail -s "SSL Certificate Expiry Warning" admin@yourstore.com
+fi
 ```
 
 **Set up alerts for:**

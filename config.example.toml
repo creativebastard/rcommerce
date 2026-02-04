@@ -133,13 +133,110 @@ default_ttl = 300
 key_prefix = "rc:"
 
 # ============================================================================
+# TLS/SSL CONFIGURATION
+# ============================================================================
+[tls]
+# Enable TLS/HTTPS support
+# When enabled, the server will listen on HTTPS (port 443 by default)
+enabled = false
+
+# Minimum TLS version (1.2 or 1.3)
+# Default: 1.3 (strongly recommended for security)
+# TLS 1.3 provides better security and performance than 1.2
+min_tls_version = "1.3"
+
+# Maximum TLS version (1.2 or 1.3)
+# Should match min_tls_version for maximum security
+max_tls_version = "1.3"
+
+# Enable OCSP stapling for improved performance and privacy
+# OCSP stapling allows the server to provide certificate revocation status
+ocsp_stapling = true
+
+# Certificate file path (required when not using Let's Encrypt)
+# Path to the PEM-encoded certificate file
+cert_file = "/path/to/cert.pem"
+
+# Private key file path (required when not using Let's Encrypt)
+# Path to the PEM-encoded private key file
+key_file = "/path/to/private.key"
+
+# Certificate chain file path (optional)
+# Path to intermediate certificates
+chain_file = "/path/to/chain.pem"
+
+# Certificate cache directory for Let's Encrypt
+# Directory to store cached certificates and account data
+cache_dir = "/var/lib/rcommerce/certs"
+
+# Let's Encrypt ACME configuration
+[tls.lets_encrypt]
+# Enable automatic certificate provisioning via Let's Encrypt
+enabled = false
+
+# Email address for Let's Encrypt account registration and notifications
+# Required for certificate expiration notices
+email = "admin@example.com"
+
+# List of domains to request certificates for
+# Must be publicly accessible and point to this server
+domains = ["api.example.com", "store.example.com"]
+
+# Use Let's Encrypt staging server
+# Set to true for testing to avoid rate limits
+# Staging certificates are not trusted by browsers
+use_staging = false
+
+# Enable automatic certificate renewal
+# Certificates will be renewed before expiration
+auto_renew = true
+
+# Days before expiry to trigger renewal
+renewal_threshold_days = 30
+
+# ACME directory URL
+# Production: https://acme-v02.api.letsencrypt.org/directory
+# Staging: https://acme-staging-v02.api.letsencrypt.org/directory
+acme_directory = "https://acme-v02.api.letsencrypt.org/directory"
+
+# HTTP-01 challenge port (usually 80, required for Let's Encrypt validation)
+# This is the port for the HTTP challenge server
+http_port = 80
+
+# HTTPS port for the main server (usually 443)
+https_port = 443
+
+# HSTS (HTTP Strict Transport Security) configuration
+[tls.hsts]
+# Enable HSTS header
+# Forces browsers to use HTTPS for the specified duration
+enabled = true
+
+# Max age in seconds for HSTS policy
+# 31536000 = 1 year (recommended minimum)
+# 63072000 = 2 years
+max_age = 31536000
+
+# Include subdomains in HSTS policy
+# When true, applies to all subdomains
+include_subdomains = true
+
+# Enable HSTS preload
+# WARNING: Only enable if you understand the implications
+# Preloading makes HTTPS permanent and difficult to reverse
+# Submit your domain at https://hstspreload.org/ after enabling
+preload = false
+
+# ============================================================================
 # SECURITY CONFIGURATION
 # ============================================================================
 [security]
 # Enable HTTPS redirection (production only)
+# Redirects all HTTP requests to HTTPS
 force_https = false
 
 # HSTS max age in seconds (HTTP Strict Transport Security)
+# Deprecated: Use [tls.hsts] section instead
 hsts_max_age = 31536000
 
 # Content Security Policy header
@@ -192,6 +289,74 @@ require_numbers = true
 
 # Require special characters
 require_special = false
+
+# ============================================================================
+# TLS/HTTPS CONFIGURATION
+# ============================================================================
+[tls]
+# Enable TLS/HTTPS
+# When enabled, the server will listen on both HTTP (port 80) and HTTPS (port 443)
+# HTTP requests will be redirected to HTTPS, except for ACME challenges
+enabled = false
+
+# Minimum TLS version (1.2 or 1.3)
+# Strongly recommended: 1.3 for production
+min_tls_version = "1.3"
+
+# Maximum TLS version
+max_tls_version = "1.3"
+
+# HTTP port for ACME challenges and redirects (default: 80)
+http_port = 80
+
+# HTTPS port (default: 443)
+https_port = 443
+
+# Certificate file path (for manual certificates)
+# cert_file = "/path/to/cert.pem"
+
+# Private key file path (for manual certificates)
+# key_file = "/path/to/key.pem"
+
+# Enable OCSP stapling
+ocsp_stapling = true
+
+# HSTS (HTTP Strict Transport Security) configuration
+[tls.hsts]
+# Enable HSTS
+enabled = true
+
+# Max age in seconds (default: 1 year = 31536000)
+max_age = 31536000
+
+# Include subdomains
+include_subdomains = true
+
+# Preload in browsers (submit to hstspreload.org)
+preload = false
+
+# Let's Encrypt configuration (alternative to manual certificates)
+[tls.lets_encrypt]
+# Enable automatic certificate provisioning
+enabled = false
+
+# Contact email for Let's Encrypt account
+email = "admin@example.com"
+
+# Domain(s) to get certificates for
+domains = ["example.com", "www.example.com"]
+
+# Use staging server for testing (no rate limits)
+use_staging = false
+
+# Certificate renewal threshold (days before expiry)
+renewal_threshold_days = 30
+
+# Auto-renew certificates
+auto_renew = true
+
+# Certificate cache directory
+cache_dir = "/var/lib/rcommerce/certs"
 
 # Rate limiting configuration
 [security.rate_limit]

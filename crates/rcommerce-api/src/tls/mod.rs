@@ -7,10 +7,17 @@ use axum::{
     response::Response,
 };
 
-pub use config::{HstsConfig, LetsEncryptConfig, TlsConfig, TlsVersion};
+// Re-export only the types that don't conflict with rcommerce_core
+pub use config::{HstsConfig, TlsVersion};
 pub use letsencrypt::{CertificateInfo, LetsEncryptManager};
 
+// Use core TlsConfig for consistency
+pub use rcommerce_core::config::TlsConfig;
+
 /// Security headers middleware
+/// 
+/// This middleware adds security headers including HSTS when TLS is enabled.
+/// The TlsConfig should be passed via request extensions.
 pub async fn security_headers_middleware(
     request: Request<axum::body::Body>,
     next: Next,

@@ -6,7 +6,6 @@ pub mod tls;
 
 pub use server::run;
 pub use state::AppState;
-pub use tls::{LetsEncryptConfig, TlsConfig};
 
 // Re-export commonly used types
 pub use rcommerce_core::*;
