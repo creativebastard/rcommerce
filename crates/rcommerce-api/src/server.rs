@@ -4,7 +4,6 @@ use axum::{
     Router,
 };
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
@@ -13,18 +12,11 @@ use crate::middleware::{admin_middleware, auth_middleware};
 
 use crate::state::AppState;
 use crate::tls::security_headers_middleware;
-#[cfg(feature = "letsencrypt")]
-use crate::tls::LetsEncryptManager;
 use rcommerce_core::cache::RedisPool;
-use rcommerce_core::config::{HstsConfig, LetsEncryptConfig, TlsConfig};
+use rcommerce_core::config::TlsConfig;
 use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository};
 use rcommerce_core::services::{AuthService, CustomerService, ProductService};
 use rcommerce_core::{Config, Result};
-
-// TLS imports
-use rustls::{Certificate, PrivateKey, ServerConfig as RustlsServerConfig};
-use std::io::BufReader;
-use tokio_rustls::TlsAcceptor;
 
 pub async fn run(config: Config) -> Result<()> {
     // Check if TLS is enabled
@@ -74,10 +66,6 @@ async fn run_http_server(config: Config) -> Result<()> {
 /// 2. Sets up TLS configuration with rustls (TLS 1.3 only)
 /// 3. Starts an HTTPS server on port 443
 /// 4. Supports both manual certificates and Let's Encrypt
-/// 
-/// Note: The HTTPS server implementation uses a custom TLS acceptor loop.
-/// For production use, consider using a reverse proxy like nginx or traefik
-/// which handles TLS termination more efficiently.
 async fn run_tls_server(config: Config) -> Result<()> {
     // Validate TLS configuration
     if let Err(e) = config.tls.validate() {
@@ -133,84 +121,12 @@ async fn run_tls_server(config: Config) -> Result<()> {
         }
     });
 
-    // Start certificate renewal task if using Let's Encrypt
-    #[cfg(feature = "letsencrypt")]
-    if config.tls.uses_lets_encrypt() {
-        if let Some(le_config) = config.tls.lets_encrypt.clone() {
-            // Check auto_renew before moving le_config
-            let auto_renew = le_config.auto_renew;
-            
-            let le_manager = Arc::new(LetsEncryptManager::new(le_config)?);
-            
-            // Initialize Let's Encrypt account
-            info!("Let's Encrypt certificate management enabled");
-            
-            // Start renewal task if auto_renew is enabled
-            if auto_renew {
-                let le_manager_clone = Arc::clone(&le_manager);
-                tokio::spawn(async move {
-                    if let Err(e) = le_manager_clone.start_renewal_task().await {
-                        error!("Failed to start certificate renewal task: {}", e);
-                    }
-                });
-            }
-        }
-    }
-
-    // Set up TLS acceptor
-    let tls_acceptor = setup_tls_acceptor(&config).await?;
-
-    // Start HTTPS server (port 443)
-    let https_listener = tokio::net::TcpListener::bind(https_addr)
-        .await
-        .map_err(|e| rcommerce_core::Error::Network(format!(
-            "Failed to bind HTTPS port {}: {}. Note: Binding port 443 may require root privileges.",
-            config.tls.https_port, e
-        )))?;
-
-    info!("TLS acceptor ready, accepting HTTPS connections on port {}", config.tls.https_port);
-
-    // HTTPS server loop
-    // Note: This is a simplified implementation. In production, you might want to use
-    // axum-server or a reverse proxy for better performance and stability.
-    let https_server = tokio::spawn(async move {
-        loop {
-            let (stream, peer_addr) = match https_listener.accept().await {
-                Ok(conn) => conn,
-                Err(e) => {
-                    error!("Failed to accept HTTPS connection: {}", e);
-                    continue;
-                }
-            };
-
-            let tls_acceptor = tls_acceptor.clone();
-            let api_app = api_app.clone();
-
-            tokio::spawn(async move {
-                match tls_acceptor.accept(stream).await {
-                    Ok(tls_stream) => {
-                        // Serve the connection
-                        // Note: Proper integration with axum requires handling the body type conversion
-                        // For a complete implementation, use axum-server or similar
-                        info!("TLS connection established from {}", peer_addr);
-                        
-                        // Create a service for this connection
-                        let service = api_app.clone();
-                        
-                        // Serve the connection using hyper
-                        // This is a simplified version - full implementation would properly
-                        // handle the body type conversions between axum and hyper
-                        if let Err(e) = serve_https_connection(tls_stream, service).await {
-                            error!("Error serving HTTPS connection from {}: {}", peer_addr, e);
-                        }
-                    }
-                    Err(e) => {
-                        error!("TLS handshake error from {}: {}", peer_addr, e);
-                    }
-                }
-            });
-        }
-    });
+    // Start HTTPS server based on certificate type
+    let https_server = if config.tls.uses_lets_encrypt() {
+        start_lets_encrypt_server(https_addr, api_app, &config.tls).await?
+    } else {
+        start_manual_tls_server(https_addr, api_app, &config.tls).await?
+    };
 
     // Wait for both servers
     tokio::select! {
@@ -225,70 +141,14 @@ async fn run_tls_server(config: Config) -> Result<()> {
     Ok(())
 }
 
-/// Serve HTTPS connection using hyper
-/// 
-/// This function handles the conversion between tokio-rustls and axum.
-/// Note: This is a simplified implementation.
-async fn serve_https_connection<S>(
-    _stream: S,
-    _app: Router,
-) -> Result<()>
-where
-    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
-{
-    // For a complete implementation, we would use hyper to serve the connection
-    // with proper body type handling. The complexity comes from converting between
-    // axum's body types and hyper's body types.
-    //
-    // For production use, consider using axum-server which handles this properly:
-    // https://github.com/programatik29/axum-server
-    //
-    // Or use a reverse proxy like nginx or traefik for TLS termination.
-    
-    // Placeholder for actual implementation
-    let _ = _app;
-    Ok(())
-}
-
-/// Set up TLS acceptor with rustls
-async fn setup_tls_acceptor(config: &Config) -> Result<TlsAcceptor> {
-    let tls_config = &config.tls;
-
-    // Load or obtain certificates
-    let (cert_chain, private_key) = if tls_config.uses_manual_certs() {
-        // Load manual certificates
-        load_manual_certs(tls_config).await?
-    } else if tls_config.uses_lets_encrypt() {
-        // Obtain certificates from Let's Encrypt
-        obtain_lets_encrypt_certs(tls_config).await?
-    } else {
-        return Err(rcommerce_core::Error::Config(
-            "No certificate source configured".to_string(),
-        ));
-    };
-
-    // Configure rustls with TLS 1.3 only
-    let rustls_config = RustlsServerConfig::builder()
-        .with_safe_default_cipher_suites()
-        .with_safe_default_kx_groups()
-        .with_protocol_versions(&[&rustls::version::TLS13])
-        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to configure TLS versions: {}", e)))?
-        .with_no_client_auth()
-        .with_single_cert(cert_chain, private_key)
-        .map_err(|e| rcommerce_core::Error::Config(format!("Invalid TLS certificate: {}", e)))?;
-
-    // Enable OCSP stapling if configured
-    if tls_config.ocsp_stapling {
-        info!("OCSP stapling enabled");
-    }
-
-    Ok(TlsAcceptor::from(Arc::new(rustls_config)))
-}
-
-/// Load manual certificates from files
-async fn load_manual_certs(
+/// Start HTTPS server with manual certificates
+async fn start_manual_tls_server(
+    addr: SocketAddr,
+    app: Router,
     tls_config: &TlsConfig,
-) -> Result<(Vec<Certificate>, PrivateKey)> {
+) -> Result<tokio::task::JoinHandle<()>> {
+    use axum_server::tls_rustls::RustlsConfig;
+
     let cert_file = tls_config
         .cert_file
         .as_ref()
@@ -300,129 +160,103 @@ async fn load_manual_certs(
 
     info!("Loading TLS certificates from {:?}", cert_file);
 
-    // Load certificate chain
-    let cert_file_content = tokio::fs::read(cert_file)
+    // Load certificates using axum-server's RustlsConfig
+    let rustls_config = RustlsConfig::from_pem_file(cert_file, key_file)
         .await
-        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to read certificate file: {}", e)))?;
-    let mut cert_reader = BufReader::new(&cert_file_content[..]);
-    let cert_chain = rustls_pemfile::certs(&mut cert_reader)
-        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to parse certificate: {}", e)))?
-        .into_iter()
-        .map(Certificate)
-        .collect();
-
-    // Load private key (try PKCS8 first, then PKCS1/RSA)
-    let key_file_content = tokio::fs::read(key_file)
-        .await
-        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to read private key file: {}", e)))?;
-    let mut key_reader = BufReader::new(&key_file_content[..]);
-    
-    // Try PKCS8 format first
-    let keys = rustls_pemfile::pkcs8_private_keys(&mut key_reader)
-        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to parse private key: {}", e)))?;
-
-    let private_key = if let Some(key) = keys.into_iter().next() {
-        PrivateKey(key)
-    } else {
-        // Try RSA format
-        let mut key_reader = BufReader::new(&key_file_content[..]);
-        let rsa_keys = rustls_pemfile::rsa_private_keys(&mut key_reader)
-            .map_err(|e| rcommerce_core::Error::Config(format!("Failed to parse RSA private key: {}", e)))?;
-        
-        rsa_keys
-            .into_iter()
-            .next()
-            .map(PrivateKey)
-            .ok_or_else(|| rcommerce_core::Error::Config("No private key found in file".to_string()))?
-    };
+        .map_err(|e| rcommerce_core::Error::Config(format!("Failed to load TLS certificates: {}", e)))?;
 
     info!("TLS certificates loaded successfully");
-    Ok((cert_chain, private_key))
+    info!("Starting HTTPS server with manual certificates on {}", addr);
+
+    let handle = tokio::spawn(async move {
+        if let Err(e) = axum_server::bind_rustls(addr, rustls_config)
+            .serve(app.into_make_service())
+            .await
+        {
+            error!("HTTPS server error: {}", e);
+        }
+    });
+
+    Ok(handle)
 }
 
-/// Obtain certificates from Let's Encrypt
+/// Start HTTPS server with Let's Encrypt automatic certificates
 #[cfg(feature = "letsencrypt")]
-async fn obtain_lets_encrypt_certs(
+async fn start_lets_encrypt_server(
+    addr: SocketAddr,
+    app: Router,
     tls_config: &TlsConfig,
-) -> Result<(Vec<Certificate>, PrivateKey)> {
+) -> Result<tokio::task::JoinHandle<()>> {
+    use futures::StreamExt;
+    use rustls_acme::caches::DirCache;
+    use rustls_acme::AcmeConfig;
+
     let le_config = tls_config
         .lets_encrypt
         .as_ref()
         .ok_or_else(|| rcommerce_core::Error::Config("Let's Encrypt not configured".to_string()))?;
 
-    info!("Obtaining Let's Encrypt certificates for domains: {:?}", le_config.domains);
+    info!(
+        "Starting HTTPS server with Let's Encrypt for domains: {:?}",
+        le_config.domains
+    );
 
-    // Create Let's Encrypt manager
-    let le_manager = LetsEncryptManager::new(le_config.clone())?;
+    // Prepare domains and contact email
+    let domains: Vec<String> = le_config.domains.clone();
+    let emails: Vec<String> = vec![format!("mailto:{}", le_config.email)];
+    let cache_dir = le_config.cache_dir.clone();
+    let use_staging = !le_config.use_staging; // rustls-acme uses `prod` flag, we use `use_staging`
 
-    // For each domain, obtain or load certificate
-    let mut all_certs = Vec::new();
-    let mut private_key = None;
+    // Ensure cache directory exists
+    if let Err(e) = tokio::fs::create_dir_all(&cache_dir).await {
+        warn!("Failed to create cache directory: {}", e);
+    }
 
-    for domain in &le_config.domains {
-        match le_manager.obtain_certificate(domain).await {
-            Ok(cert_info) => {
-                info!("Certificate obtained for {}", domain);
-                
-                // Load the certificate and key from disk
-                let cert_pem: Vec<u8> = tokio::fs::read(&cert_info.certificate_path)
-                    .await
-                    .map_err(|e| rcommerce_core::Error::Config(format!(
-                        "Failed to read certificate for {}: {}", domain, e
-                    )))?;
-                let mut cert_reader = BufReader::new(&cert_pem[..]);
-                let certs: Vec<Certificate> = rustls_pemfile::certs(&mut cert_reader)
-                    .map_err(|e| rcommerce_core::Error::Config(format!(
-                        "Failed to parse certificate for {}: {}", domain, e
-                    )))?
-                    .into_iter()
-                    .map(Certificate)
-                    .collect();
-                all_certs.extend(certs);
+    // Set up ACME configuration following rustls-acme example pattern
+    let mut state = AcmeConfig::new(domains)
+        .contact(emails)
+        .cache(DirCache::new(cache_dir))
+        .directory_lets_encrypt(use_staging)
+        .state();
 
-                // Load private key (only need one)
-                if private_key.is_none() {
-                    let key_pem: Vec<u8> = tokio::fs::read(&cert_info.private_key_path)
-                        .await
-                        .map_err(|e| rcommerce_core::Error::Config(format!(
-                            "Failed to read private key for {}: {}", domain, e
-                        )))?;
-                    let mut key_reader = BufReader::new(&key_pem[..]);
-                    let keys = rustls_pemfile::pkcs8_private_keys(&mut key_reader)
-                        .map_err(|e| rcommerce_core::Error::Config(format!(
-                            "Failed to parse private key for {}: {}", domain, e
-                        )))?;
-                    
-                    if let Some(key) = keys.into_iter().next() {
-                        private_key = Some(PrivateKey(key));
-                    }
+    let acceptor = state.axum_acceptor(state.default_rustls_config());
+
+    // Spawn ACME event loop for certificate management
+    tokio::spawn(async move {
+        loop {
+            match state.next().await {
+                Some(Ok(ok)) => info!("ACME event: {:?}", ok),
+                Some(Err(err)) => error!("ACME error: {:?}", err),
+                None => {
+                    warn!("ACME state stream ended");
+                    break;
                 }
             }
-            Err(e) => {
-                warn!("Failed to obtain certificate for {}: {}", domain, e);
-            }
         }
-    }
+    });
 
-    if all_certs.is_empty() {
-        return Err(rcommerce_core::Error::Config(
-            "Failed to obtain any certificates from Let's Encrypt".to_string(),
-        ));
-    }
+    info!("Let's Encrypt HTTPS server ready on {}", addr);
 
-    let private_key = private_key.ok_or_else(|| {
-        rcommerce_core::Error::Config("No private key obtained from Let's Encrypt".to_string())
-    })?;
+    let handle = tokio::spawn(async move {
+        if let Err(e) = axum_server::bind(addr)
+            .acceptor(acceptor)
+            .serve(app.into_make_service())
+            .await
+        {
+            error!("HTTPS server error: {}", e);
+        }
+    });
 
-    info!("Let's Encrypt certificates obtained successfully");
-    Ok((all_certs, private_key))
+    Ok(handle)
 }
 
 /// Stub for when letsencrypt feature is disabled
 #[cfg(not(feature = "letsencrypt"))]
-async fn obtain_lets_encrypt_certs(
+async fn start_lets_encrypt_server(
+    _addr: SocketAddr,
+    _app: Router,
     _tls_config: &TlsConfig,
-) -> Result<(Vec<Certificate>, PrivateKey)> {
+) -> Result<tokio::task::JoinHandle<()>> {
     Err(rcommerce_core::Error::Config(
         "Let's Encrypt support not compiled in. Rebuild with --features letsencrypt".to_string()
     ))

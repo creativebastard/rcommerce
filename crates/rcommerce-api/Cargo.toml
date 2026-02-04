@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [features]
 default = ["letsencrypt"]
-letsencrypt = ["dep:rustls-acme"]
+letsencrypt = ["dep:rustls-acme", "dep:futures"]
 
 [dependencies]
 # Core library
@@ -82,9 +82,12 @@ tokio-rustls = "0.24"
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 
 # Let's Encrypt (optional, enabled by default) - pure Rust, no OpenSSL
-rustls-acme = { version = "0.15", optional = true }
+rustls-acme = { version = "0.15", optional = true, features = ["axum"] }
 
-# Certificate generation
+# Required for ACME event loop/stream processing (used with letsencrypt feature)
+futures = { workspace = true, optional = true }
+
+# Certificate generation (for dev/test certificates)
 rcgen = "0.11"
 
 # For E2E tests
