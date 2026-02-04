@@ -19,7 +19,7 @@ This directory contains comprehensive documentation for the R commerce headless 
    - Entity definitions (Product, Order, Customer, etc.)
    - Migration strategy
 
-3. **[03-api-design.md](architecture/03-api-design.md)** - API Design Specification
+3. **[api/01-api-design.md](api/01-api-design.md)** - API Design Specification
    - REST API endpoints
    - Authentication & authorization
    - Request/response formats
@@ -190,7 +190,7 @@ This directory contains comprehensive documentation for the R commerce headless 
 ### For Engineers
 
 1. Start with [01-overview.md](architecture/01-overview.md) to understand the architecture
-2. Read [03-api-design.md](architecture/03-api-design.md) for API details
+2. Read [api/01-api-design.md](api/01-api-design.md) for API details
 3. Review [development/development-roadmap.md](development/development-roadmap.md) for implementation phases
 4. Check [05-payment-architecture.md](architecture/05-payment-architecture.md) and [06-shipping-integration.md](architecture/06-shipping-integration.md) for integrations
 
@@ -215,7 +215,7 @@ All core documentation has been completed and is production-ready:
 #### Architecture & Systems
 -  **01-overview.md** - Architectural rationale and overview (185 lines)
 -  **02-data-modeling.md** - Complete data models (37,983 lines)
--  **03-api-design.md** - REST/GraphQL API specification (515 lines)
+-  **api/01-api-design.md** - REST/GraphQL API specification
 -  **04-database-abstraction.md** - Database layer design (6,980 lines)
 -  **05-payment-architecture.md** - Payment integration (29,698 lines)
 -  **06-shipping-integration.md** - Shipping providers (36,741 lines)
