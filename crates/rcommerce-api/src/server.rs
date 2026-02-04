@@ -12,7 +12,9 @@ use tracing::{error, info, warn};
 use crate::middleware::{admin_middleware, auth_middleware};
 
 use crate::state::AppState;
-use crate::tls::{security_headers_middleware, LetsEncryptManager};
+use crate::tls::security_headers_middleware;
+#[cfg(feature = "letsencrypt")]
+use crate::tls::LetsEncryptManager;
 use rcommerce_core::cache::RedisPool;
 use rcommerce_core::config::{HstsConfig, LetsEncryptConfig, TlsConfig};
 use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository};
@@ -132,6 +134,7 @@ async fn run_tls_server(config: Config) -> Result<()> {
     });
 
     // Start certificate renewal task if using Let's Encrypt
+    #[cfg(feature = "letsencrypt")]
     if config.tls.uses_lets_encrypt() {
         if let Some(le_config) = config.tls.lets_encrypt.clone() {
             // Check auto_renew before moving le_config
@@ -338,6 +341,7 @@ async fn load_manual_certs(
 }
 
 /// Obtain certificates from Let's Encrypt
+#[cfg(feature = "letsencrypt")]
 async fn obtain_lets_encrypt_certs(
     tls_config: &TlsConfig,
 ) -> Result<(Vec<Certificate>, PrivateKey)> {
@@ -361,7 +365,7 @@ async fn obtain_lets_encrypt_certs(
                 info!("Certificate obtained for {}", domain);
                 
                 // Load the certificate and key from disk
-                let cert_pem = tokio::fs::read(&cert_info.certificate_path)
+                let cert_pem: Vec<u8> = tokio::fs::read(&cert_info.certificate_path)
                     .await
                     .map_err(|e| rcommerce_core::Error::Config(format!(
                         "Failed to read certificate for {}: {}", domain, e
@@ -378,7 +382,7 @@ async fn obtain_lets_encrypt_certs(
 
                 // Load private key (only need one)
                 if private_key.is_none() {
-                    let key_pem = tokio::fs::read(&cert_info.private_key_path)
+                    let key_pem: Vec<u8> = tokio::fs::read(&cert_info.private_key_path)
                         .await
                         .map_err(|e| rcommerce_core::Error::Config(format!(
                             "Failed to read private key for {}: {}", domain, e
@@ -412,6 +416,16 @@ async fn obtain_lets_encrypt_certs(
 
     info!("Let's Encrypt certificates obtained successfully");
     Ok((all_certs, private_key))
+}
+
+/// Stub for when letsencrypt feature is disabled
+#[cfg(not(feature = "letsencrypt"))]
+async fn obtain_lets_encrypt_certs(
+    _tls_config: &TlsConfig,
+) -> Result<(Vec<Certificate>, PrivateKey)> {
+    Err(rcommerce_core::Error::Config(
+        "Let's Encrypt support not compiled in. Rebuild with --features letsencrypt".to_string()
+    ))
 }
 
 /// Build HTTP challenge router for port 80

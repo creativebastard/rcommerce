@@ -1,4 +1,6 @@
 pub mod config;
+
+#[cfg(feature = "letsencrypt")]
 pub mod letsencrypt;
 
 use axum::{
@@ -9,6 +11,8 @@ use axum::{
 
 // Re-export only the types that don't conflict with rcommerce_core
 pub use config::{HstsConfig, TlsVersion};
+
+#[cfg(feature = "letsencrypt")]
 pub use letsencrypt::{CertificateInfo, LetsEncryptManager};
 
 // Use core TlsConfig for consistency

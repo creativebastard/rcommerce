@@ -15,7 +15,7 @@ path = "src/main.rs"
 [dependencies]
 # Core library
 rcommerce-core = { path = "../rcommerce-core" }
-rcommerce-api = { path = "../rcommerce-api" }
+rcommerce-api = { path = "../rcommerce-api", default-features = false }
 
 # Async runtime
 tokio = { workspace = true }
