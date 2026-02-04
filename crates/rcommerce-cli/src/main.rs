@@ -227,11 +227,11 @@ pub enum ImportCommands {
         platform: String,
         
         /// API base URL (or set in config file)
-        #[arg(short, long, help = "API base URL (or set in config file)", default_value = "")]
+        #[arg(short = 'u', long, help = "API base URL (or set in config file)", default_value = "")]
         api_url: String,
         
         /// API key or access token (or set in config file)
-        #[arg(short, long, help = "API key or access token (or set in config file)", default_value = "")]
+        #[arg(short = 'k', long, help = "API key or access token (or set in config file)", default_value = "")]
         api_key: String,
         
         /// Additional API secret (for WooCommerce)
