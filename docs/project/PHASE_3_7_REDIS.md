@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  STATUS:  FULLY TESTED & DOCUMENTED
  TESTS: 126 tests passing, 21 cache-specific tests
  DOCS: Complete architecture (12-redis-caching.md) + operations guide (redis-setup.md)
@@ -433,7 +433,7 @@ if blacklist.is_blacklisted(&token_id).await? {
 
 ════════════════════════════════════════════════════════════════════════
 
-📌 GITEE: https://gitee.com/captainjez/gocart
+📌 GITHUB: https://github.com/creativebastard/rcommerce
 📌 STATUS: Production Ready with Full Documentation
 📌 NEXT: Phase 3.8 - Background Job Processing System
 

@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  BRANCH: master
  LAST COMMIT: b27a435 - Phase 3.6 WebSocket documentation
 
@@ -280,7 +280,7 @@ Ready for:
 
 ════════════════════════════════════════════════════════════════════════
 
-📌 REPOSITORY: https://gitee.com/captainjez/gocart
+📌 REPOSITORY: https://github.com/creativebastard/rcommerce
 📌 COMMIT: b27a435 (latest)
 📌 BRANCH: master
 📌 STATUS: All changes pushed and production-ready

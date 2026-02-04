@@ -117,7 +117,7 @@ Total: 485,926+ lines across 50+ files
 
 ```bash
 # 1. Clone repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # 2. Build
@@ -151,7 +151,7 @@ curl http://localhost:8080/api/v1/customers
 
 ## ** Repository**
 
-**URL:** https://gitee.com/captainjez/gocart.git
+**URL:** https://github.com/creativebastard/rcommerce.git
 
 **Recent Commit:** 1ad2916 - "feat: Phase 2 Core E-Commerce - 85% Complete"
 
@@ -263,7 +263,7 @@ cargo build --release
 ```
 
 **Visit:** https://rcommerce.app
-**Repository:** https://gitee.com/captainjez/gocart
+**Repository:** https://github.com/creativebastard/rcommerce
 
 ---
 

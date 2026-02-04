@@ -98,7 +98,7 @@ brew install \
 
 ```bash
 # Clone repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # Build release binary
@@ -125,7 +125,7 @@ cargo check --target aarch64-apple-darwin        # macOS ARM64 (Apple Silicon)
 
 ```bash
 # Clone the repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # Create environment file

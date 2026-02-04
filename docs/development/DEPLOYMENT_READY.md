@@ -6,7 +6,7 @@ All code changes have been successfully committed and pushed to Gitee.
 
 ### ** Repository Status**
 ```
-Remote:  https://gitee.com/captainjez/gocart.git
+Remote:  https://github.com/creativebastard/rcommerce.git
 Branch:  master
 Status:   Up to date
 Binary:   Built (2.6MB)
@@ -357,8 +357,8 @@ Before going to production, verify:
 
 ## ** Support**
 
-- **Repository**: https://gitee.com/captainjez/gocart
-- **Issues**: https://gitee.com/captainjez/gocart/issues
+- **Repository**: https://github.com/creativebastard/rcommerce
+- **Issues**: https://github.com/creativebastard/rcommerce/issues
 - **Email**: support@rcommerce.app
 - **Docs**: https://rcommerce.app
 

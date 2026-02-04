@@ -137,8 +137,7 @@ rcommerce import file \
 Always test your migration first with `--dry-run`:
 
 ```bash
-rcommerce import platform \
-  --platform shopify \
+rcommerce import platform shopify \
   --api-url https://your-store.myshopify.com \
   --api-key YOUR_API_KEY \
   --api-secret YOUR_API_PASSWORD \
@@ -335,8 +334,8 @@ run_fraud_check = false
 
 ## Support and Resources
 
-- [R commerce Documentation](https://gitee.com/captainjez/gocart)
-- [Migration Tool Repository](https://gitee.com/captainjez/rcommerce-migrate)
+- [R commerce Documentation](https://github.com/creativebastard/rcommerce)
+- [Migration Tool Repository](https://github.com/creativebastard/rcommerce)
 - [Community Forum](https://forum.rcommerce.app)
 - [Migration Webinars](https://rcommerce.app/webinars)
 

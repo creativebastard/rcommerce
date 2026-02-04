@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  STATUS: Core Implementation Complete
  COMMIT: [To be pushed] - Phase 3.8 Background Jobs
 

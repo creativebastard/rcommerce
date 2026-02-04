@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  STATUS: Implementation Complete & Pushed
  LAST UPDATED: Rate limiting middleware with DDoS protection
 

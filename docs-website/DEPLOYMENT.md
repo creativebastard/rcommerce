@@ -299,4 +299,4 @@ mkdocs build -v
 For issues with:
 - **MkDocs**: https://www.mkdocs.org/
 - **Material Theme**: https://squidfunk.github.io/mkdocs-material/
-- **R Commerce**: https://gitee.com/captainjez/gocart/issues
+- **R Commerce**: https://github.com/creativebastard/rcommerce/issues

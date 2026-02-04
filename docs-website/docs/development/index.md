@@ -34,7 +34,7 @@ cargo install cargo-outdated
 ### 1. Clone Repository
 
 ```bash
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 ```
 

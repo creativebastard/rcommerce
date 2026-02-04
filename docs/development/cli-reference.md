@@ -496,15 +496,17 @@ Commands:
 Import data directly from supported ecommerce platforms:
 
 ```bash
-rcommerce import platform [OPTIONS] --platform <PLATFORM> --api-url <URL> --api-key <KEY>
+rcommerce import platform <PLATFORM> [OPTIONS]
+
+Arguments:
+  <PLATFORM>    Platform type: shopify, woocommerce, magento, medusa
 
 Options:
-  -p, --platform <PLATFORM>    Platform type: shopify, woocommerce, magento, medusa
   -u, --api-url <URL>          API endpoint URL
   -k, --api-key <KEY>          API key or access token
-  -s, --api-secret <SECRET>    API secret (if required)
+      --api-secret <SECRET>    API secret (if required)
   -e, --entities <ENTITIES>    Comma-separated list: products,customers,orders [default: all]
-  -l, --limit <LIMIT>          Maximum records to import per entity
+      --limit <LIMIT>          Maximum records to import per entity
       --dry-run                Validate data without importing
 ```
 
@@ -521,17 +523,15 @@ Options:
 
 ```bash
 # Import all data from Shopify
-rcommerce import platform \
+rcommerce import platform shopify \
   -c config.toml \
-  --platform shopify \
   --api-url https://your-store.myshopify.com \
   --api-key YOUR_API_KEY \
   --api-secret YOUR_API_PASSWORD
 
 # Import only products and customers (dry run)
-rcommerce import platform \
+rcommerce import platform shopify \
   -c config.toml \
-  --platform shopify \
   --api-url https://your-store.myshopify.com \
   --api-key YOUR_API_KEY \
   --api-secret YOUR_API_PASSWORD \
@@ -539,9 +539,8 @@ rcommerce import platform \
   --dry-run
 
 # Import from WooCommerce with limit
-rcommerce import platform \
+rcommerce import platform woocommerce \
   -c config.toml \
-  --platform woocommerce \
   --api-url https://your-store.com/wp-json/wc/v3 \
   --api-key YOUR_CONSUMER_KEY \
   --api-secret YOUR_CONSUMER_SECRET \
@@ -553,7 +552,7 @@ rcommerce import platform \
 Use `--dry-run` to validate data without actually importing:
 
 ```bash
-rcommerce import platform --platform shopify ... --dry-run
+rcommerce import platform shopify ... --dry-run
 ```
 
 Output:

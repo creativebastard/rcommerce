@@ -5,7 +5,7 @@
 ╚══════════════════════════════════════════════════════════════════════╝
 
  STATUS: Documentation & Comments Enhanced
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  LAST UPDATED: Notification module documentation
 
 ╔══════════════════════════════════════════════════════════════════════╗
@@ -245,7 +245,7 @@ These errors are OUTSIDE the notification module and relate to:
 📌 COMMIT STATUS:
    Last: aede3bd - HTML email visual preview
    Branch: master (pushed to Gitee)
-   Repository: https://gitee.com/captainjez/gocart
+   Repository: https://github.com/creativebastard/rcommerce
 
 The notification module is fully documented and structurally sound!
 Ready for integration once external compilation issues are resolved.

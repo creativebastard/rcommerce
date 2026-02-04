@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  STATUS: Core Infrastructure Implemented & Pushed
  COMMIT: d920e8c - Phase 3.6 WebSocket Support
 

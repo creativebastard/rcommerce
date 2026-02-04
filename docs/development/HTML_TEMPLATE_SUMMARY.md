@@ -5,7 +5,7 @@
 ╚══════════════════════════════════════════════════════════════════════╝
 
  STATUS: Successfully integrated and pushed to Gitee
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  COMMIT: e2565b2 - HTML invoice template integration
 
 ╔══════════════════════════════════════════════════════════════════════╗
@@ -196,7 +196,7 @@ All changes committed and pushed to Gitee repository.
 
 📌 Commit: e2565b2  
 📌 Branch: master
-📌 Repository: https://gitee.com/captainjez/gocart
+📌 Repository: https://github.com/creativebastard/rcommerce
 
 The HTML invoice template is now fully integrated and ready for use!
 

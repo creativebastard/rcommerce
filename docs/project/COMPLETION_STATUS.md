@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  BRANCH: master
  LAST COMMIT: c4176ed - Comprehensive notification module documentation
 
@@ -292,7 +292,7 @@ Next phase: Rate Limiting & DDoS Protection (Phase 3.5)
 
 ════════════════════════════════════════════════════════════════════════
 
-📌 GITEE REPOSITORY: https://gitee.com/captainjez/gocart
+📌 GITHUB REPOSITORY: https://github.com/creativebastard/rcommerce
 📌 BRANCH: master
 📌 COMMITS: 3 new commits pushed
 

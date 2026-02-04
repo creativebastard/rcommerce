@@ -56,7 +56,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 
 # 克隆并构建
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 cargo build --release
 sudo cp target/release/rcommerce /usr/local/rcommerce/

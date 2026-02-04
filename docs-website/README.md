@@ -25,7 +25,7 @@ A beautiful, fast, and searchable documentation website for the R Commerce headl
 
 ```bash
 # Clone the repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart/docs-website
 
 # Install dependencies
@@ -187,7 +187,7 @@ extra:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://gitee.com/captainjez/gocart
+      link: https://github.com/creativebastard/rcommerce
 ```
 
 ##  Writing Documentation

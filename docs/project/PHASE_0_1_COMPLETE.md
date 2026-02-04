@@ -15,7 +15,7 @@ We have successfully completed **Phases 0 and 1** of the R Commerce headless e-c
  Plugin architecture traits
  Workspace structure setup
 
-**Repository**: https://gitee.com/captainjez/gocart
+**Repository**: https://github.com/creativebastard/rcommerce
 **Domain**: https://rcommerce.app
 
 ### **Phase 1: MVP Implementation (708caab + 95c74c3)**
@@ -61,7 +61,7 @@ GET  /                            # API info
 
 ### **1. Clone & Build**
 ```bash
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 cargo build --release
 ```
@@ -190,7 +190,7 @@ Phase 2 will add core e-commerce features:
 ## ** Documentation**
 
 - **Project**: [https://rcommerce.app](https://rcommerce.app)
-- **Repository**: [https://gitee.com/captainjez/gocart](https://gitee.com/captainjez/gocart)
+- **Repository**: [https://github.com/creativebastard/rcommerce](https://github.com/creativebastard/rcommerce)
 - **Phase 0 Summary**: `PHASE_0_SUMMARY.md`
 - **Phase 1 Summary**: `PHASE_1_SUMMARY.md`
 - **API Test Script**: `test_api.sh`
@@ -255,7 +255,7 @@ MIT License - See LICENSE file for details
 
 ## ** Contributing**
 
-1. Fork: https://gitee.com/captainjez/gocart
+1. Fork: https://github.com/creativebastard/rcommerce
 2. Create feature branch
 3. Commit changes
 4. Push to branch
@@ -265,7 +265,7 @@ MIT License - See LICENSE file for details
 
 ## ** Support**
 
-- **Issues**: https://gitee.com/captainjez/gocart/issues
+- **Issues**: https://github.com/creativebastard/rcommerce/issues
 - **Email**: support@rcommerce.app
 - **Documentation**: https://rcommerce.app/docs
 

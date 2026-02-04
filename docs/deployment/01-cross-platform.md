@@ -122,7 +122,7 @@ brew install mysql-client
 
 ```bash
 # Clone repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # Build release binary
@@ -359,7 +359,7 @@ Create `/etc/systemd/system/rcommerce.service`:
 ```ini
 [Unit]
 Description=R commerce Headless Ecommerce Platform
-Documentation=https://gitee.com/captainjez/gocart
+Documentation=https://github.com/creativebastard/rcommerce
 After=network.target
 Wants=network-online.target
 

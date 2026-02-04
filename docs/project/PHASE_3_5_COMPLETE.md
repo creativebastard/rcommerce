@@ -5,7 +5,7 @@
 ╚══════════════════════════════════════════════════════════════════════╝
 
  STATUS:  Successfully Implemented, Tested & Pushed
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  COMMIT: fe5debb - Phase 3.5 Rate Limiting & DDoS Protection
 
 ╔══════════════════════════════════════════════════════════════════════╗
@@ -505,7 +505,7 @@ Total: 6 files changed, 670+ lines added
 
 ════════════════════════════════════════════════════════════════════════
 
-📌 GITEE: https://gitee.com/captainjez/gocart
+📌 GITHUB: https://github.com/creativebastard/rcommerce
 📌 COMMIT: fe5debb
 📌 BRANCH: master
 📌 STATUS: All changes pushed and production-ready

@@ -21,7 +21,7 @@ For most production deployments, we recommend Docker:
 
 ```bash
 # Clone the repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # Copy and edit configuration

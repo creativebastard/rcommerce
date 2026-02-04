@@ -4,7 +4,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
  STATUS: Fully Implemented & Production Ready
  COMMIT: [Latest] - Phase 3.9 Performance Optimization
 
@@ -386,7 +386,7 @@ With Performance Optimizations Applied:
 
 ════════════════════════════════════════════════════════════════════════
 
-📌 GITEE: https://gitee.com/captainjez/gocart
+📌 GITHUB: https://github.com/creativebastard/rcommerce
 📌 COMMIT: [Latest] - Phase 3.9 complete
 📌 OVERALL: 98% project completion
  ALL PHASES: Successfully implemented!

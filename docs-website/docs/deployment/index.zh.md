@@ -21,7 +21,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # 复制并编辑配置

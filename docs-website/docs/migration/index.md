@@ -76,17 +76,15 @@ R Commerce includes a built-in import tool for migrating from popular platforms:
 
 ```bash
 # Import from Shopify
-rcommerce import platform \
+rcommerce import platform shopify \
   -c config.toml \
-  --platform shopify \
   --api-url https://your-store.myshopify.com \
   --api-key YOUR_API_KEY \
   --api-secret YOUR_API_PASSWORD
 
 # Import from WooCommerce
-rcommerce import platform \
+rcommerce import platform woocommerce \
   -c config.toml \
-  --platform woocommerce \
   --api-url https://your-store.com/wp-json/wc/v3 \
   --api-key YOUR_CONSUMER_KEY \
   --api-secret YOUR_CONSUMER_SECRET
@@ -118,7 +116,7 @@ rcommerce import file -c config.toml --file customers.json --format json --entit
 Always validate first with `--dry-run`:
 
 ```bash
-rcommerce import platform ... --dry-run
+rcommerce import platform shopify ... --dry-run
 ```
 
 This validates all data without modifying your database.

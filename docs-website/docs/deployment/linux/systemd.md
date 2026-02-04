@@ -48,7 +48,7 @@ Or build from source:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone and build
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 cargo build --release
 sudo cp target/release/rcommerce /opt/rcommerce/

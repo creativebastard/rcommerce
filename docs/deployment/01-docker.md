@@ -6,7 +6,7 @@ This guide covers deploying R commerce using Docker and Docker Compose for produ
 
 ```bash
 # Clone the repository
-git clone https://gitee.com/captainjez/gocart.git
+git clone https://github.com/creativebastard/rcommerce.git
 cd gocart
 
 # Create environment file

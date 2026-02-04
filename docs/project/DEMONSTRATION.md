@@ -7,7 +7,7 @@
 
  PROJECT COMPLETION: 98% (536,350+ lines of code)
  STATUS: Production Ready
- REPOSITORY: https://gitee.com/captainjez/gocart
+ REPOSITORY: https://github.com/creativebastard/rcommerce
 
 ╔══════════════════════════════════════════════════════════════════════╗
 ║               IMPLEMENTED FEATURES DEMONSTRATION                   ║
@@ -288,7 +288,7 @@
 ║                                                                      ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
-📌 GITEE: https://gitee.com/captainjez/gocart
+📌 GITHUB: https://github.com/creativebastard/rcommerce
  DOCUMENTATION: All phases documented (60+ KB)
  TESTS: 200+ test functions
  QUALITY: Production-grade Rust code

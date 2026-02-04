@@ -119,7 +119,7 @@ This directory contains comprehensive documentation for the R commerce headless 
 
 ### Developer Documentation
 
-- **[development-roadmap.md](../development-roadmap.md)** - Development Roadmap & Timeline
+- **[development/development-roadmap.md](development/development-roadmap.md)** - Development Roadmap & Timeline
   - 10-phase development plan
   - 44-week timeline to v1.0
   - Technical decisions
@@ -191,20 +191,20 @@ This directory contains comprehensive documentation for the R commerce headless 
 
 1. Start with [01-overview.md](architecture/01-overview.md) to understand the architecture
 2. Read [03-api-design.md](architecture/03-api-design.md) for API details
-3. Review [development-roadmap.md](../development-roadmap.md) for implementation phases
+3. Review [development/development-roadmap.md](development/development-roadmap.md) for implementation phases
 4. Check [05-payment-architecture.md](architecture/05-payment-architecture.md) and [06-shipping-integration.md](architecture/06-shipping-integration.md) for integrations
 
 ### For Product Managers
 
 1. Review [00-feature-suggestions.md](features/00-feature-suggestions.md) for feature overview
-2. Check [development-roadmap.md](../development-roadmap.md) for timeline and phases
+2. Check [development/development-roadmap.md](development/development-roadmap.md) for timeline and phases
 3. See [01-overview.md](architecture/01-overview.md) for high-level architecture
 
 ### For Technical Decision Makers
 
 1. Read [01-overview.md](architecture/01-overview.md) for rationale and benefits
 2. Review [04-database-abstraction.md](architecture/04-database-abstraction.md) for technical approach
-3. Check [development-roadmap.md](../development-roadmap.md) for timeline and resources
+3. Check [development/development-roadmap.md](development/development-roadmap.md) for timeline and resources
 
 ##  Documentation Status
 
@@ -237,7 +237,7 @@ All core documentation has been completed and is production-ready:
 #### Development, CLI & Configuration
 -  **configuration-reference.md** - Complete config reference (16,783 lines)
 -  **developer-guide.md** - Developer guide (22,000 lines)
--  **development-roadmap.md** - 44-week development plan (9,144 lines)
+-  **development/development-roadmap.md** - 44-week development plan
 -  **cli-reference.md** - CLI reference (26,000 lines) - Complete command-line interface for all operations
 
 #### Migration Guides
@@ -268,7 +268,7 @@ To begin implementing R commerce:
 
 1. **Read the Architecture Overview**: Start with [architecture/01-overview.md](architecture/01-overview.md)
 
-2. **Review the Roadmap**: Understand the phases in [development-roadmap.md](../development-roadmap.md)
+2. **Review the Roadmap**: Understand the phases in [development/development-roadmap.md](development/development-roadmap.md)
 
 3. **Set up Development Environment**: Follow [developer-guide.md](developer-guide.md)
 
