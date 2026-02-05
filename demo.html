@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R Commerce Demo Store</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Martian+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Martian Mono', 'monospace'],
+                    },
+                    colors: {
+                        rust: '#EB4F27',
+                        dark: '#0F0F0F',
+                        gray: { 50: '#F9FAFB', 100: '#F3F4F6', 800: '#1F2937', 900: '#111827' }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-up': 'slideUp 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #ffffff; color: #0F0F0F; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Loader */
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #EB4F27;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col bg-gray-50">
+
+    <!-- API Telemetry Console (Fixed Bottom) -->
+    <div id="telemetry" class="fixed bottom-4 right-4 z-50 w-80 pointer-events-none flex flex-col gap-2 items-end">
+        <!-- Logs injected here -->
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" onclick="app.router('home')" class="flex items-center gap-3 group">
+                 <svg viewBox="0 0 848 848" class="w-8 h-8 text-black group-hover:text-rust transition-colors" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="matrix(1,0,0,1,-981.69,-347.171)">
+                        <g transform="matrix(0.99996,0,0,1.00835,-10.514,-9.34551)">
+                            <path d="M1839.58,505.224L1839.58,1042.69C1839.58,1126.12 1771.28,1193.85 1687.15,1193.85L1145.17,1193.85C1061.05,1193.85 992.743,1126.12 992.743,1042.69L992.743,505.224C992.743,421.795 1061.05,354.062 1145.17,354.062L1687.15,354.062C1771.28,354.062 1839.58,421.795 1839.58,505.224Z" stroke="currentColor" stroke-width="60"/>
+                        </g>
+                        <g transform="matrix(1,0,0,1,20.899,-0.15612)">
+                            <g transform="matrix(1.09709,0,0,1,-130.201,-5.8933)">
+                                <rect x="1245.19" y="542.021" width="111.19" height="470.199" fill="currentColor"/>
+                            </g>
+                            <g transform="matrix(1,0,0,1,-6.81494,-1.30258)">
+                                <circle cx="1493.65" cy="622.083" r="84.653" fill="currentColor"/>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+                <span class="font-bold text-lg tracking-tight font-mono text-black uppercase hidden sm:block">RCOMMERCE</span>
+            </a>
+
+            <!-- Search -->
+            <div class="flex-1 max-w-md mx-4 sm:mx-8">
+                <div class="relative group">
+                    <input type="text" id="search-input" placeholder="Search products..." 
+                           class="w-full bg-gray-100 border-none rounded-md py-2 pl-10 pr-4 text-sm font-mono focus:ring-2 focus:ring-rust focus:bg-white transition-all"
+                           onkeyup="app.handleSearch(event)">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400 group-focus-within:text-rust"></i>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 sm:gap-6">
+                <!-- User -->
+                <div class="relative group" id="user-menu">
+                    <!-- Injected by JS -->
+                </div>
+
+                <!-- Cart -->
+                <button onclick="app.router('cart')" class="relative p-2 hover:bg-gray-100 rounded-md transition-colors group">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-gray-600 group-hover:text-black"></i>
+                    <span id="cart-count" class="absolute top-0 right-0 bg-rust text-white text-[10px] font-bold font-mono px-1.5 py-0.5 rounded-full hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main App Container -->
+    <div id="app" class="flex-grow w-full max-w-7xl mx-auto px-4 py-8">
+        <!-- Content injected here -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex justify-center items-center gap-2 mb-4 opacity-50">
+                 <svg viewBox="0 0 848 848" class="w-6 h-6 text-black" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g transform="matrix(1,0,0,1,-981.69,-347.171)">
+                        <g transform="matrix(0.99996,0,0,1.00835,-10.514,-9.34551)">
+                            <path d="M1839.58,505.224L1839.58,1042.69C1839.58,1126.12 1771.28,1193.85 1687.15,1193.85L1145.17,1193.85C1061.05,1193.85 992.743,1126.12 992.743,1042.69L992.743,505.224C992.743,421.795 1061.05,354.062 1145.17,354.062L1687.15,354.062C1771.28,354.062 1839.58,421.795 1839.58,505.224Z" stroke="currentColor" stroke-width="60"/>
+                        </g>
+                        <g transform="matrix(1,0,0,1,20.899,-0.15612)">
+                            <g transform="matrix(1.09709,0,0,1,-130.201,-5.8933)">
+                                <rect x="1245.19" y="542.021" width="111.19" height="470.199" fill="currentColor"/>
+                            </g>
+                            <g transform="matrix(1,0,0,1,-6.81494,-1.30258)">
+                                <circle cx="1493.65" cy="622.083" r="84.653" fill="currentColor"/>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+                <span class="font-mono font-bold text-sm tracking-widest">RCOMMERCE DEMO</span>
+            </div>
+            <p class="text-gray-500 text-xs font-mono">
+                Powered by R Commerce API v1.0. <br class="sm:hidden">
+                Open Source & Self-Hosted.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Mock Data & Application Logic -->
+    <script>
+        // --- Mock Data ---
+        const PRODUCTS = [
+            { id: 'prod_001', name: 'High-Performance Server Blade', price: 1600.00, image: 'https://images.unsplash.com/photo-1558494949-efc535b5c4c1?auto=format&fit=crop&q=80&w=600', category: 'Hardware', badge: 'Best Seller' },
+            { id: 'prod_002', name: 'Enterprise Rust Support (Yearly)', price: 850.00, image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=600', category: 'Services', badge: 'Popular' },
+            { id: 'prod_003', name: 'Cloud Deployment Config', price: 120.00, image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=600', category: 'Digital' },
+            { id: 'prod_004', name: 'R Commerce Hoodie', price: 65.00, image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=600', category: 'Merch' },
+            { id: 'prod_005', name: 'Developer Keyboard', price: 240.00, image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=600', category: 'Hardware' },
+            { id: 'prod_006', name: '10G Network Switch', price: 450.00, image: 'https://images.unsplash.com/photo-1544197150-b99a580bbc18?auto=format&fit=crop&q=80&w=600', category: 'Hardware' }
+        ];
+
+        // --- Store / State Management ---
+        const store = {
+            user: JSON.parse(localStorage.getItem('rc_user')) || null,
+            cart: JSON.parse(localStorage.getItem('rc_cart')) || [],
+            orders: JSON.parse(localStorage.getItem('rc_orders')) || [],
+            view: 'home'
+        };
+
+        // --- Core Application Logic ---
+        const app = {
+            init: () => {
+                lucide.createIcons();
+                app.updateNav();
+                app.router(store.view); // Restore view or default to home? Simple demo: always home on refresh for now, or check URL hash
+                
+                // Simple Router
+                window.onhashchange = () => {
+                    const hash = window.location.hash.replace('#', '') || 'home';
+                    app.router(hash);
+                };
+                
+                // Initial Telemetry
+                app.logAPI('GET', '/v1/store/config', 200, '3ms');
+            },
+
+            router: (view) => {
+                store.view = view;
+                const container = document.getElementById('app');
+                container.innerHTML = ''; // Clear
+                window.location.hash = view;
+
+                if (view === 'home') app.renderHome(container);
+                else if (view === 'cart') app.renderCart(container);
+                else if (view === 'login') app.renderLogin(container);
+                else if (view === 'orders') app.renderOrders(container);
+                else if (view === 'checkout') app.renderCheckout(container);
+                else if (view === 'confirmation') app.renderConfirmation(container);
+                
+                lucide.createIcons();
+                window.scrollTo(0,0);
+            },
+
+            // --- Renderers ---
+            renderHome: (container) => {
+                // Hero
+                const hero = document.createElement('div');
+                hero.className = "mb-12 bg-black text-white rounded-xl p-8 md:p-12 relative overflow-hidden";
+                hero.innerHTML = `
+                    <div class="relative z-10 max-w-2xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-mono font-bold text-rust bg-white/10 rounded-full border border-white/10">
+                            <span class="w-2 h-2 rounded-full bg-rust animate-pulse"></span>
+                            DEMO STORE
+                        </div>
+                        <h1 class="text-3xl md:text-5xl font-bold font-mono uppercase tracking-tight mb-4">Speed is a Feature.</h1>
+                        <p class="text-gray-400 mb-8 max-w-lg">Experience the raw performance of R Commerce. Browse products, add to cart, and checkout in milliseconds.</p>
+                        <button onclick="document.getElementById('products-grid').scrollIntoView({behavior:'smooth'})" class="bg-white text-black px-6 py-3 rounded-md font-mono text-sm font-bold hover:bg-gray-200 transition-colors">
+                            Shop Collection
+                        </button>
+                    </div>
+                    <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-rust/20 to-transparent"></div>
+                `;
+                container.appendChild(hero);
+
+                // Grid
+                const grid = document.createElement('div');
+                grid.id = "products-grid";
+                grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8";
+                
+                PRODUCTS.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = "group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all";
+                    card.innerHTML = `
+                        <div class="aspect-video bg-gray-100 relative overflow-hidden">
+                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            ${p.badge ? `<span class="absolute top-2 right-2 bg-black text-white text-[10px] font-mono uppercase px-2 py-1">${p.badge}</span>` : ''}
+                        </div>
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <span class="text-xs text-rust font-mono font-bold uppercase tracking-wider">${p.category}</span>
+                                    <h3 class="font-bold text-lg mt-1">${p.name}</h3>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center mt-4 border-t border-gray-100 pt-4">
+                                <span class="font-mono text-lg font-bold">$${p.price.toFixed(2)}</span>
+                                <button onclick="app.addToCart('${p.id}')" class="bg-black text-white p-2 rounded hover:bg-rust transition-colors flex items-center gap-2 text-sm font-bold px-4">
+                                    <span>Add</span>
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                container.appendChild(grid);
+
+                app.logAPI('GET', '/v1/products', 200, '12ms');
+            },
+
+            renderCart: (container) => {
+                if (store.cart.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-24">
+                            <div class="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i data-lucide="shopping-cart" class="w-8 h-8 text-gray-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold mb-2">Your cart is empty</h2>
+                            <p class="text-gray-500 mb-8">Looks like you haven't added anything yet.</p>
+                            <button onclick="app.router('home')" class="bg-black text-white px-6 py-3 rounded-md font-mono text-sm font-bold hover:bg-gray-800">
+                                Start Shopping
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const total = store.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+                
+                container.innerHTML = `
+                    <h1 class="text-2xl font-bold font-mono mb-8 border-b border-gray-200 pb-4 uppercase">Shopping Cart (${store.cart.length})</h1>
+                    <div class="flex flex-col lg:flex-row gap-12">
+                        <div class="flex-1 space-y-4">
+                            ${store.cart.map((item, idx) => `
+                                <div class="flex gap-4 p-4 bg-white border border-gray-200 rounded-lg items-center">
+                                    <img src="${item.product.image}" class="w-20 h-20 object-cover rounded bg-gray-100">
+                                    <div class="flex-1">
+                                        <h3 class="font-bold">${item.product.name}</h3>
+                                        <p class="text-sm text-gray-500 font-mono">$${item.product.price.toFixed(2)}</p>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center border border-gray-200 rounded">
+                                            <button onclick="app.updateQty(${idx}, -1)" class="px-3 py-1 hover:bg-gray-50">-</button>
+                                            <span class="px-2 font-mono text-sm">${item.quantity}</span>
+                                            <button onclick="app.updateQty(${idx}, 1)" class="px-3 py-1 hover:bg-gray-50">+</button>
+                                        </div>
+                                        <button onclick="app.removeFromCart(${idx})" class="text-gray-400 hover:text-red-600"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="w-full lg:w-96">
+                            <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm sticky top-24">
+                                <h3 class="font-bold text-lg mb-4">Summary</h3>
+                                <div class="space-y-2 text-sm mb-6 border-b border-gray-100 pb-6">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Subtotal</span>
+                                        <span class="font-mono">$${total.toFixed(2)}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Shipping</span>
+                                        <span class="font-mono text-green-600">Free</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center mb-6">
+                                    <span class="font-bold">Total</span>
+                                    <span class="font-bold font-mono text-xl">$${total.toFixed(2)}</span>
+                                </div>
+                                <button onclick="app.router('checkout')" class="w-full bg-rust text-white py-3 rounded-md font-bold hover:bg-[#c2410c] transition-colors flex justify-center items-center gap-2">
+                                    Checkout <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                app.logAPI('GET', '/v1/cart', 200, '5ms');
+            },
+
+            renderCheckout: (container) => {
+                if (!store.user) {
+                    app.router('login'); // Force login
+                    return;
+                }
+                const total = store.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+                
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto">
+                        <div class="flex items-center gap-2 mb-8 text-sm text-gray-500 font-mono">
+                            <span class="cursor-pointer hover:text-black" onclick="app.router('cart')">Cart</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            <span class="text-black font-bold">Checkout</span>
+                        </div>
+                        
+                        <div class="bg-white p-8 border border-gray-200 rounded-xl shadow-sm">
+                            <h2 class="text-2xl font-bold mb-6 font-mono uppercase">Checkout</h2>
+                            <form onsubmit="app.processPayment(event)">
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Shipping Address</label>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <input required type="text" placeholder="First Name" class="border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                            <input required type="text" placeholder="Last Name" class="border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                            <input required type="text" placeholder="Address" class="col-span-2 border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                            <input required type="text" placeholder="City" class="border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                            <input required type="text" placeholder="Zip Code" class="border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Payment Method</label>
+                                        <div class="border border-gray-200 rounded p-4 flex items-center gap-3 bg-gray-50">
+                                            <i data-lucide="credit-card" class="w-5 h-5 text-gray-600"></i>
+                                            <span class="text-sm font-mono text-gray-600">Card ending in 4242 (Demo)</span>
+                                            <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Verified</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="pt-6 border-t border-gray-100 flex justify-between items-center">
+                                        <div class="text-sm text-gray-500">Total to pay</div>
+                                        <div class="text-2xl font-bold font-mono">$${total.toFixed(2)}</div>
+                                    </div>
+                                    
+                                    <button type="submit" id="pay-btn" class="w-full bg-black text-white py-4 rounded-md font-bold hover:bg-gray-800 transition-colors flex justify-center items-center gap-2">
+                                        Pay Now
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderConfirmation: (container) => {
+                const order = store.orders[0]; // Most recent
+                if(!order) { app.router('home'); return; }
+                
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto text-center pt-12">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="check" class="w-10 h-10 text-green-600"></i>
+                        </div>
+                        <h1 class="text-3xl font-bold mb-2">Order Confirmed!</h1>
+                        <p class="text-gray-500 mb-8">Thank you for your purchase. We've sent a confirmation email to ${store.user.email}.</p>
+                        
+                        <div class="bg-white border border-gray-200 rounded-lg p-6 text-left mb-8">
+                            <div class="flex justify-between mb-4 border-b border-gray-100 pb-4">
+                                <span class="text-gray-500 text-sm">Order Number</span>
+                                <span class="font-mono font-bold text-rust">#${order.id}</span>
+                            </div>
+                            <div class="space-y-2">
+                                ${order.items.map(i => `
+                                    <div class="flex justify-between text-sm">
+                                        <span>${i.product.name} x${i.quantity}</span>
+                                        <span class="font-mono">$${(i.product.price * i.quantity).toFixed(2)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="flex justify-between mt-4 pt-4 border-t border-gray-100 font-bold">
+                                <span>Total</span>
+                                <span class="font-mono">$${order.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="app.router('home')" class="text-rust hover:text-black font-bold text-sm">Continue Shopping &rarr;</button>
+                    </div>
+                `;
+            },
+
+            renderLogin: (container) => {
+                container.innerHTML = `
+                    <div class="max-w-md mx-auto py-12">
+                        <div class="bg-white p-8 border border-gray-200 rounded-xl shadow-sm">
+                            <h2 class="text-2xl font-bold mb-1 font-mono uppercase">Sign In</h2>
+                            <p class="text-sm text-gray-500 mb-6">Use 'demo@example.com' / 'demo'</p>
+                            
+                            <form onsubmit="app.handleLogin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Email</label>
+                                    <input type="email" id="email" value="demo@example.com" class="w-full border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Password</label>
+                                    <input type="password" id="password" value="demo" class="w-full border border-gray-200 rounded p-3 text-sm focus:ring-2 focus:ring-rust focus:border-transparent">
+                                </div>
+                                <button type="submit" class="w-full bg-black text-white py-3 rounded-md font-bold hover:bg-gray-800 transition-colors">Sign In</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            renderOrders: (container) => {
+                if(!store.user) { app.router('login'); return; }
+                
+                app.logAPI('GET', `/v1/customers/${store.user.id}/orders`, 200, '40ms');
+                
+                container.innerHTML = `
+                    <h1 class="text-2xl font-bold font-mono mb-8 border-b border-gray-200 pb-4 uppercase">Order History</h1>
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        ${store.orders.length === 0 ? 
+                            '<div class="p-8 text-center text-gray-500">No orders found.</div>' : 
+                            store.orders.map(o => `
+                                <div class="border-b border-gray-100 last:border-0 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                                    <div>
+                                        <div class="font-mono font-bold text-rust mb-1">#${o.id}</div>
+                                        <div class="text-xs text-gray-500">${new Date(o.date).toLocaleDateString()} • ${o.items.length} items</div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded uppercase">Paid</span>
+                                        <span class="font-mono font-bold">$${o.total.toFixed(2)}</span>
+                                        <button class="text-gray-400 hover:text-black"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                                    </div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                `;
+            },
+
+            // --- Actions ---
+            handleSearch: (e) => {
+                const term = e.target.value.toLowerCase();
+                const cards = document.querySelectorAll('#products-grid > div');
+                let matches = 0;
+                
+                // If not on home, go home first (simplified)
+                if(store.view !== 'home' && term.length > 0) {
+                     app.router('home');
+                     setTimeout(() => {
+                         document.getElementById('search-input').value = term;
+                         document.getElementById('search-input').focus();
+                         app.handleSearch({target: {value: term}});
+                     }, 100);
+                     return;
+                }
+
+                cards.forEach((card, idx) => {
+                    const name = PRODUCTS[idx].name.toLowerCase();
+                    if (name.includes(term)) {
+                        card.style.display = "block";
+                        matches++;
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+                
+                // Debounce API log
+                if (term.length > 2 && !app.searchDebounce) {
+                    app.logAPI('POST', '/v1/search', 200, '8ms');
+                    app.searchDebounce = setTimeout(() => app.searchDebounce = null, 1000);
+                }
+            },
+
+            addToCart: (id) => {
+                const product = PRODUCTS.find(p => p.id === id);
+                const existing = store.cart.find(i => i.product.id === id);
+                
+                if (existing) existing.quantity++;
+                else store.cart.push({ product, quantity: 1 });
+                
+                app.saveCart();
+                app.updateNav();
+                app.logAPI('POST', `/v1/carts/${store.user ? 'me' : 'guest'}/items`, 201, '14ms');
+                
+                // Toast
+                app.toast(`Added ${product.name}`);
+            },
+
+            removeFromCart: (idx) => {
+                store.cart.splice(idx, 1);
+                app.saveCart();
+                app.router('cart'); // Re-render
+                app.updateNav();
+                app.logAPI('DELETE', `/v1/carts/items/${idx}`, 204, '11ms');
+            },
+
+            updateQty: (idx, change) => {
+                store.cart[idx].quantity += change;
+                if (store.cart[idx].quantity < 1) store.cart.splice(idx, 1);
+                app.saveCart();
+                app.router('cart');
+                app.updateNav();
+            },
+
+            handleLogin: (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const pass = document.getElementById('password').value;
+
+                if (email === 'demo@example.com' && pass === 'demo') {
+                    store.user = { id: 'usr_001', email, name: 'Demo User' };
+                    localStorage.setItem('rc_user', JSON.stringify(store.user));
+                    app.logAPI('POST', '/v1/auth/login', 200, '45ms');
+                    app.updateNav();
+                    app.router('home');
+                    app.toast('Welcome back, Demo User');
+                } else {
+                    app.logAPI('POST', '/v1/auth/login', 401, '12ms');
+                    alert('Invalid credentials');
+                }
+            },
+
+            logout: () => {
+                store.user = null;
+                localStorage.removeItem('rc_user');
+                app.logAPI('POST', '/v1/auth/logout', 200, '8ms');
+                app.updateNav();
+                app.router('home');
+            },
+            
+            processPayment: (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('pay-btn');
+                const originalText = btn.innerHTML;
+                
+                // Simulate processing
+                btn.disabled = true;
+                btn.innerHTML = `<div class="loader"></div> Processing...`;
+                
+                app.logAPI('POST', '/v1/orders', 202, 'Processing...');
+                
+                setTimeout(() => {
+                    app.logAPI('POST', '/v1/payments/stripe/charge', 200, '350ms');
+                    
+                    setTimeout(() => {
+                        // Create Order
+                        const newOrder = {
+                            id: 'ORD-' + Math.floor(Math.random() * 10000),
+                            date: new Date().toISOString(),
+                            items: [...store.cart],
+                            total: store.cart.reduce((sum, i) => sum + (i.product.price * i.quantity), 0)
+                        };
+                        
+                        store.orders.unshift(newOrder);
+                        localStorage.setItem('rc_orders', JSON.stringify(store.orders));
+                        
+                        // Clear Cart
+                        store.cart = [];
+                        app.saveCart();
+                        app.updateNav();
+                        
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        
+                        app.router('confirmation');
+                    }, 800);
+                }, 1000);
+            },
+
+            // --- Utilities ---
+            saveCart: () => localStorage.setItem('rc_cart', JSON.stringify(store.cart)),
+            
+            updateNav: () => {
+                // Cart Badge
+                const count = store.cart.reduce((sum, i) => sum + i.quantity, 0);
+                const badge = document.getElementById('cart-count');
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'block' : 'none';
+
+                // User Menu
+                const userMenu = document.getElementById('user-menu');
+                if (store.user) {
+                    userMenu.innerHTML = `
+                        <button class="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-md transition-colors font-mono text-xs font-bold">
+                            <span class="bg-gray-200 w-6 h-6 flex items-center justify-center rounded-full text-gray-600">${store.user.name[0]}</span>
+                            <span>${store.user.name}</span>
+                        </button>
+                        <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 hidden group-hover:block z-50">
+                            <button onclick="app.router('orders')" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50">Orders</button>
+                            <button onclick="app.logout()" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">Sign Out</button>
+                        </div>
+                    `;
+                } else {
+                    userMenu.innerHTML = `
+                        <button onclick="app.router('login')" class="p-2 hover:bg-gray-100 rounded-md transition-colors text-sm font-bold">
+                            Sign In
+                        </button>
+                    `;
+                }
+            },
+
+            logAPI: (method, endpoint, status, time) => {
+                const telemetry = document.getElementById('telemetry');
+                const log = document.createElement('div');
+                
+                let color = 'text-green-500';
+                if (status >= 400) color = 'text-red-500';
+                else if (status >= 300) color = 'text-yellow-500';
+                else if (status === 202) color = 'text-blue-500';
+
+                log.className = "bg-black/90 backdrop-blur text-white p-3 rounded-md text-[10px] font-mono shadow-lg border border-white/10 w-full animate-slide-up flex justify-between items-center";
+                log.innerHTML = `
+                    <div class="flex gap-2">
+                        <span class="font-bold text-gray-400">${method}</span>
+                        <span>${endpoint}</span>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="${color}">${status}</span>
+                        <span class="text-gray-500">${time}</span>
+                    </div>
+                `;
+                
+                telemetry.appendChild(log);
+                
+                // Auto remove
+                setTimeout(() => {
+                    log.style.opacity = '0';
+                    log.style.transform = 'translateY(10px)';
+                    setTimeout(() => log.remove(), 300);
+                }, 4000);
+            },
+
+            toast: (msg) => {
+                // Reuse telemetry style for user toasts but positioned differently or distinct style
+                // For simplicity in this demo, just using console log or alert is too basic.
+                // Let's rely on the API log visual feedback as the primary "action confirmed" indicator for this tech demo.
+            }
+        };
+
+        // Boot
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
