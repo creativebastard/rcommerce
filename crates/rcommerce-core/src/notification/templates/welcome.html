@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{ company_name }}!</title>
+    <style>
+        /* Import Fonts - Email client support varies, providing web fonts is good practice */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #0F0F0F;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Typography Helper Classes */
+        .font-mono {
+            font-family: 'Martian Mono', 'Courier New', monospace;
+        }
+        
+        .text-rust {
+            color: #EB4F27;
+        }
+
+        .text-sm {
+            font-size: 14px;
+        }
+
+        .text-xs {
+            font-size: 12px;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .tracking-wide {
+            letter-spacing: 0.05em;
+        }
+
+        /* Layout Sections */
+        .header {
+            padding: 40px;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #000;
+        }
+
+        .logo-box {
+            background-color: #000;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .welcome-intro {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-intro h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-intro p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .welcome-message {
+            background-color: #f9fafb;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .welcome-message h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            color: #0F0F0F;
+        }
+
+        .welcome-message p {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* CTA Button */
+        .cta-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #EB4F27;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .cta-button:hover {
+            background-color: #d94420;
+        }
+
+        /* Getting Started Tips */
+        .tips-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .tips-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 24px 0;
+            font-family: 'Martian Mono', monospace;
+            text-align: center;
+        }
+
+        .tips-grid {
+            display: flex;
+            gap: 20px;
+        }
+
+        .tip-card {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .tip-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .tip-card h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #0F0F0F;
+        }
+
+        .tip-card p {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Help Section */
+        .help-section {
+            margin-top: 40px;
+            padding: 24px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .help-section p {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .help-section a {
+            color: #EB4F27;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #0F0F0F;
+            color: #9ca3af;
+            padding: 40px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin: 0 0 8px 0;
+        }
+
+        .footer-links {
+            margin-top: 24px;
+        }
+
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 12px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .footer-link:hover {
+            color: #EB4F27;
+        }
+
+        /* Mobile Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                border: none;
+            }
+            .tips-grid {
+                flex-direction: column;
+                gap: 16px;
+            }
+            .welcome-message {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-box">R</div>
+                <span class="logo-text">RCOMMERCE</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            
+            <div class="welcome-intro">
+                <h1>Welcome to {{ company_name }}!</h1>
+                <p>We're thrilled to have you join our community of savvy shoppers.</p>
+            </div>
+
+            <!-- Welcome Message -->
+            <div class="welcome-message">
+                <h2>Hi {{ customer_name }}, your account is ready!</h2>
+                <p>Thank you for signing up. You're now part of a growing community that enjoys premium products, exclusive deals, and a seamless shopping experience.</p>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-container">
+                <a href="{{ shop_url }}" class="cta-button">Start Shopping</a>
+            </div>
+
+            <!-- Getting Started Tips -->
+            <div class="tips-section">
+                <h3>Getting Started</h3>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <div class="tip-icon">🔍</div>
+                        <h4>Browse Products</h4>
+                        <p>Explore our curated collection of premium items.</p>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-icon">💝</div>
+                        <h4>Save Favorites</h4>
+                        <p>Create your wishlist for quick access later.</p>
+                    </div>
+                    <div class="tip-card">
+                        <div class="tip-icon">🚚</div>
+                        <h4>Fast Shipping</h4>
+                        <p>Enjoy quick delivery on all your orders.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="help-section">
+                <p>Need help getting started? Visit our <a href="{{ help_center_url }}">Help Center</a> or contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            
+            <div class="footer-links">
+                <a href="{{ shop_url }}" class="footer-link">Shop</a>
+                <a href="{{ help_center_url }}" class="footer-link">Help</a>
+                <a href="{{ login_url }}" class="footer-link">My Account</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

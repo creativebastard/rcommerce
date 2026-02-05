@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed - R COMMERCE</title>
+    <style>
+        /* Import Fonts - Email client support varies, providing web fonts is good practice */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #0F0F0F;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Typography Helper Classes */
+        .font-mono {
+            font-family: 'Martian Mono', 'Courier New', monospace;
+        }
+        
+        .text-rust {
+            color: #EB4F27;
+        }
+
+        .text-error {
+            color: #ef4444;
+        }
+
+        .text-sm {
+            font-size: 14px;
+        }
+
+        .text-xs {
+            font-size: 12px;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .tracking-wide {
+            letter-spacing: 0.05em;
+        }
+
+        /* Layout Sections */
+        .header {
+            padding: 40px;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #000;
+        }
+
+        .logo-box {
+            background-color: #000;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .payment-intro {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .error-icon {
+            width: 64px;
+            height: 64px;
+            background-color: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .error-icon svg {
+            width: 32px;
+            height: 32px;
+            color: #ef4444;
+        }
+
+        .payment-intro h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .payment-intro p {
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .error-message {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .error-message p {
+            margin: 0;
+            color: #991b1b;
+            font-size: 14px;
+        }
+
+        .payment-details {
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .payment-details h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .detail-value.amount {
+            color: #ef4444;
+            font-size: 16px;
+        }
+
+        .cta-button {
+            display: block;
+            width: 100%;
+            background-color: #ef4444;
+            color: #fff;
+            text-align: center;
+            padding: 16px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 32px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .cta-button:hover {
+            background-color: #dc2626;
+        }
+
+        .help-text {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #0F0F0F;
+            color: #9ca3af;
+            padding: 40px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin: 0 0 8px 0;
+        }
+
+        .footer-links {
+            margin-top: 24px;
+        }
+
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 12px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .footer-link:hover {
+            color: #EB4F27;
+        }
+
+        /* Mobile Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                border: none;
+            }
+            .payment-details {
+                padding: 16px;
+            }
+            .detail-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-box">R</div>
+                <span class="logo-text">RCOMMERCE</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            
+            <div class="payment-intro">
+                <div class="error-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+                <h1>Payment Failed</h1>
+                <p>Hi {{ customer_name }}, we were unable to process your payment. Please try again.</p>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message">
+                <p>{{ error_message }}</p>
+            </div>
+
+            <!-- Payment Details -->
+            <div class="payment-details">
+                <h2>Order Details</h2>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Order Number</span>
+                    <span class="detail-value text-rust">#{{ order_number }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Amount Due</span>
+                    <span class="detail-value amount">{{ amount }}</span>
+                </div>
+            </div>
+
+            <a href="{{ retry_url }}" class="cta-button">Retry Payment</a>
+
+            <p class="help-text">
+                Need help? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #EB4F27; text-decoration: none;">{{ support_email }}</a>
+            </p>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            
+            <div class="footer-links">
+                <a href="#" class="footer-link">View Order</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

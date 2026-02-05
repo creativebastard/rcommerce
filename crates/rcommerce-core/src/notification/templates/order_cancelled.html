@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Cancelled - R COMMERCE</title>
+    <style>
+        /* Import Fonts - Email client support varies, providing web fonts is good practice */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #0F0F0F;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Typography Helper Classes */
+        .font-mono {
+            font-family: 'Martian Mono', 'Courier New', monospace;
+        }
+        
+        .text-rust {
+            color: #EB4F27;
+        }
+
+        .text-sm {
+            font-size: 14px;
+        }
+
+        .text-xs {
+            font-size: 12px;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .tracking-wide {
+            letter-spacing: 0.05em;
+        }
+
+        /* Layout Sections */
+        .header {
+            padding: 40px;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #000;
+        }
+
+        .logo-box {
+            background-color: #000;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .order-intro {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .order-intro h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .order-intro p {
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .meta-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 6px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .meta-group p {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        /* Cancellation Section */
+        .cancellation-section {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .cancellation-section h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: #dc2626;
+        }
+
+        .cancellation-reason {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            margin: 0;
+        }
+
+        /* Refund Section */
+        .refund-section {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .refund-section h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: #15803d;
+        }
+
+        .refund-amount {
+            font-family: 'Martian Mono', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            color: #15803d;
+            margin-bottom: 8px;
+        }
+
+        .refund-note {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        /* Order Summary */
+        .order-summary {
+            margin-bottom: 30px;
+        }
+
+        .order-summary h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 16px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-row.cancelled {
+            background-color: #fef2f2;
+            margin: 0 -10px;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: #6b7280;
+        }
+
+        .summary-label.cancelled {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .summary-value {
+            font-family: 'Martian Mono', monospace;
+            font-weight: 600;
+        }
+
+        .summary-value.cancelled {
+            color: #dc2626;
+        }
+
+        /* Support Section */
+        .support-section {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .support-section p {
+            font-size: 14px;
+            color: #374151;
+            margin: 0 0 12px 0;
+        }
+
+        .support-section a {
+            color: #EB4F27;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .support-section a:hover {
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #0F0F0F;
+            color: #9ca3af;
+            padding: 40px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin: 0 0 8px 0;
+        }
+
+        .footer-links {
+            margin-top: 24px;
+        }
+
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 12px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .footer-link:hover {
+            color: #EB4F27;
+        }
+
+        /* Mobile Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                border: none;
+            }
+            .order-meta {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            .cancellation-section,
+            .refund-section {
+                padding: 20px;
+            }
+            .refund-amount {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-box">R</div>
+                <span class="logo-text">RCOMMERCE</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            
+            <div class="order-intro">
+                <h1>Order Cancelled</h1>
+                <p>Hi {{ customer_name }}, we're sorry, but your order has been cancelled. Please see the details below for more information.</p>
+            </div>
+
+            <!-- Key Order Data -->
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
+                </div>
+                <div class="meta-group">
+                    <h3>Order Date</h3>
+                    <p>{{ order_date }}</p>
+                </div>
+            </div>
+
+            <!-- Cancellation Reason -->
+            <div class="cancellation-section">
+                <h2>Cancellation Reason</h2>
+                <p class="cancellation-reason">{{ cancellation_reason }}</p>
+            </div>
+
+            <!-- Refund Information -->
+            <div class="refund-section">
+                <h2>Refund Processed</h2>
+                <div class="refund-amount">{{ refund_amount }}</div>
+                <p class="refund-note">Your refund has been processed and will appear in your account within 5-10 business days.</p>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <h3>Order Summary</h3>
+                <div class="summary-row">
+                    <span class="summary-label">Order Number</span>
+                    <span class="summary-value">#{{ order_number }}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Order Date</span>
+                    <span class="summary-value">{{ order_date }}</span>
+                </div>
+                <div class="summary-row cancelled">
+                    <span class="summary-label cancelled">Status</span>
+                    <span class="summary-value cancelled">CANCELLED</span>
+                </div>
+            </div>
+
+            <!-- Support Section -->
+            <div class="support-section">
+                <p>Have questions about your cancellation?</p>
+                <p>Contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>We're sorry for any inconvenience. If you have questions, contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            
+            <div class="footer-links">
+                <a href="#" class="footer-link">View Order</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

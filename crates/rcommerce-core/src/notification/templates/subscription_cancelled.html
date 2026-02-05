@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Cancelled: {{ plan_name }} - R COMMERCE</title>
+    <style>
+        /* Import Fonts - Email client support varies, providing web fonts is good practice */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
+
+        /* Base Styles */
+        body {
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            background-color: #f9fafb;
+            color: #0F0F0F;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Typography Helper Classes */
+        .font-mono {
+            font-family: 'Martian Mono', 'Courier New', monospace;
+        }
+        
+        .text-rust {
+            color: #EB4F27;
+        }
+
+        .text-sm {
+            font-size: 14px;
+        }
+
+        .text-xs {
+            font-size: 12px;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .uppercase {
+            text-transform: uppercase;
+        }
+
+        .tracking-wide {
+            letter-spacing: 0.05em;
+        }
+
+        /* Layout Sections */
+        .header {
+            padding: 40px;
+            border-bottom: 1px solid #f3f4f6;
+            text-align: center;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #000;
+        }
+
+        .logo-box {
+            background-color: #000;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-family: 'Martian Mono', monospace;
+            font-weight: 700;
+            font-size: 20px;
+            letter-spacing: -0.02em;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .subscription-intro {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .subscription-intro h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subscription-intro p {
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Cancellation Banner */
+        .cancel-banner {
+            background-color: #6b7280;
+            color: #fff;
+            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .cancel-banner p {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        /* Access Info Box */
+        .access-info {
+            background-color: #fef3f0;
+            border: 1px solid #fde4dd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .access-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #9a3412;
+            margin: 0 0 8px 0;
+        }
+
+        .access-info p {
+            font-size: 14px;
+            color: #9a3412;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .access-info strong {
+            font-family: 'Martian Mono', monospace;
+        }
+
+        /* Subscription Details Box */
+        .subscription-details {
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .subscription-details h2 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 20px 0;
+            font-family: 'Martian Mono', monospace;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .detail-value.cancelled {
+            color: #dc2626;
+        }
+
+        /* Reason Box */
+        .reason-box {
+            background-color: #fff;
+            border-left: 4px solid #6b7280;
+            padding: 16px 20px;
+            margin-bottom: 30px;
+        }
+
+        .reason-box h3 {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 8px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .reason-box p {
+            font-size: 14px;
+            color: #374151;
+            line-height: 1.5;
+            margin: 0;
+            font-style: italic;
+        }
+
+        /* Reactivate Box */
+        .reactivate-box {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .reactivate-box h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        .reactivate-box p {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin: 0 0 20px 0;
+        }
+
+        /* CTA Button */
+        .cta-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: #EB4F27;
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .cta-button:hover {
+            background-color: #d94520;
+        }
+
+        .cta-button.secondary {
+            background-color: #374151;
+            margin-left: 12px;
+        }
+
+        .cta-button.secondary:hover {
+            background-color: #1f2937;
+        }
+
+        /* Feedback Request */
+        .feedback-box {
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .feedback-box p {
+            font-size: 13px;
+            color: #6b7280;
+            margin: 0;
+        }
+
+        .feedback-box a {
+            color: #EB4F27;
+            text-decoration: underline;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #0F0F0F;
+            color: #9ca3af;
+            padding: 40px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin: 0 0 8px 0;
+        }
+
+        .footer-links {
+            margin-top: 24px;
+        }
+
+        .footer-link {
+            color: #fff;
+            text-decoration: none;
+            margin: 0 12px;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .footer-link:hover {
+            color: #EB4F27;
+        }
+
+        /* Mobile Responsive */
+        @media only screen and (max-width: 600px) {
+            .container {
+                width: 100% !important;
+                border: none;
+            }
+            .detail-row {
+                flex-direction: column;
+                gap: 4px;
+            }
+            .subscription-details {
+                padding: 16px;
+            }
+            .cta-button.secondary {
+                margin-left: 0;
+                margin-top: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-box">R</div>
+                <span class="logo-text">RCOMMERCE</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            
+            <div class="subscription-intro">
+                <h1>Subscription Cancelled</h1>
+                <p>Hi {{ customer_name }}, we're sorry to see you go. Your subscription has been cancelled as requested.</p>
+            </div>
+
+            <!-- Cancellation Banner -->
+            <div class="cancel-banner">
+                <p>SUBSCRIPTION CANCELLED</p>
+            </div>
+
+            <!-- Access Info -->
+            <div class="access-info">
+                <h3>Your Access Continues</h3>
+                <p>You will continue to have access to {{ plan_name }} until <strong>{{ access_until }}</strong>. No further charges will be made.</p>
+            </div>
+
+            <!-- Subscription Details -->
+            <div class="subscription-details">
+                <h2>Cancellation Details</h2>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Plan</span>
+                    <span class="detail-value">{{ plan_name }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value cancelled">CANCELLED</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Cancellation Date</span>
+                    <span class="detail-value">{{ cancellation_date }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Access Until</span>
+                    <span class="detail-value">{{ end_date }}</span>
+                </div>
+            </div>
+
+            <!-- Reason (if provided) -->
+            {{#if reason}}
+            <div class="reason-box">
+                <h3>Cancellation Reason</h3>
+                <p>"{{ reason }}"</p>
+            </div>
+            {{/if}}
+
+            <!-- Reactivate Box -->
+            <div class="reactivate-box">
+                <h3>Changed Your Mind?</h3>
+                <p>You can reactivate your subscription at any time before {{ access_until }} to continue without interruption.</p>
+                <div class="cta-container">
+                    <a href="#" class="cta-button">Reactivate Subscription</a>
+                </div>
+            </div>
+
+            <!-- Feedback Request -->
+            <div class="feedback-box">
+                <p>We'd love to hear why you're leaving. Your feedback helps us improve. <a href="#">Share your thoughts</a></p>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            
+            <div class="footer-links">
+                <a href="#" class="footer-link">Account</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

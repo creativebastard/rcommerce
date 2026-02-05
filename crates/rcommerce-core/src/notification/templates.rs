@@ -77,10 +77,20 @@ impl NotificationTemplate {
     
     /// Load HTML template from embedded file
     fn load_html_template(path: &str) -> Result<String> {
-        // In a real implementation, this would load from filesystem
-        // For now, we'll include the template as a string literal
         match path {
             "invoice.html" => Ok(include_str!("templates/invoice.html").to_string()),
+            "order_shipped.html" => Ok(include_str!("templates/order_shipped.html").to_string()),
+            "payment_successful.html" => Ok(include_str!("templates/payment_successful.html").to_string()),
+            "payment_failed.html" => Ok(include_str!("templates/payment_failed.html").to_string()),
+            "subscription_created.html" => Ok(include_str!("templates/subscription_created.html").to_string()),
+            "subscription_renewal.html" => Ok(include_str!("templates/subscription_renewal.html").to_string()),
+            "subscription_cancelled.html" => Ok(include_str!("templates/subscription_cancelled.html").to_string()),
+            "dunning_first.html" => Ok(include_str!("templates/dunning_first.html").to_string()),
+            "dunning_retry.html" => Ok(include_str!("templates/dunning_retry.html").to_string()),
+            "dunning_final.html" => Ok(include_str!("templates/dunning_final.html").to_string()),
+            "welcome.html" => Ok(include_str!("templates/welcome.html").to_string()),
+            "password_reset.html" => Ok(include_str!("templates/password_reset.html").to_string()),
+            "abandoned_cart.html" => Ok(include_str!("templates/abandoned_cart.html").to_string()),
             _ => Err(Error::not_found("HTML template not found")),
         }
     }
