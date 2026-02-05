@@ -35,14 +35,6 @@
             color: #EB4F27;
         }
 
-        .text-amber {
-            color: #f59e0b;
-        }
-
-        .text-orange {
-            color: #ea580c;
-        }
-
         .text-sm {
             font-size: 14px;
         }
@@ -103,118 +95,53 @@
             padding: 40px;
         }
 
-        /* Alert Banner */
-        .alert-banner {
-            background-color: #fff7ed;
-            border: 1px solid #fdba74;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 32px;
+        .order-intro {
             text-align: center;
+            margin-bottom: 40px;
         }
 
-        .alert-icon {
-            width: 48px;
-            height: 48px;
-            background-color: #f97316;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
+        .order-intro h1 {
             font-size: 24px;
-        }
-
-        .alert-banner h1 {
-            font-size: 22px;
             font-weight: 700;
-            margin: 0 0 8px 0;
-            color: #c2410c;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
         }
 
-        .alert-banner p {
-            color: #9a3412;
+        .order-intro p {
+            color: #6b7280;
+            line-height: 1.5;
             margin: 0;
-            font-size: 14px;
         }
 
-        /* Progress Indicator */
-        .progress-section {
-            margin-bottom: 32px;
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
         }
 
-        .progress-label {
-            font-size: 12px;
+        .meta-group h3 {
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #6b7280;
-            margin-bottom: 12px;
+            margin: 0 0 6px 0;
             font-family: 'Martian Mono', monospace;
-            text-align: center;
         }
 
-        .progress-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .progress-step {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Martian Mono', monospace;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .progress-step.completed {
-            background-color: #f97316;
-            color: #ffffff;
-        }
-
-        .progress-step.current {
-            background-color: #f97316;
-            color: #ffffff;
-            box-shadow: 0 0 0 4px #fed7aa;
-        }
-
-        .progress-step.pending {
-            background-color: #e5e7eb;
-            color: #9ca3af;
-        }
-
-        .progress-connector {
-            width: 40px;
-            height: 2px;
-            background-color: #e5e7eb;
-        }
-
-        .progress-connector.active {
-            background-color: #f97316;
-        }
-
-        .progress-text {
-            text-align: center;
+        .meta-group p {
             font-size: 14px;
-            color: #ea580c;
             font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
         }
 
         /* Message Section */
         .message-section {
             margin-bottom: 32px;
-        }
-
-        .message-section h2 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 16px 0;
         }
 
         .message-section p {
@@ -224,77 +151,61 @@
             font-size: 14px;
         }
 
-        /* Order Meta */
-        .order-meta {
-            background-color: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 32px;
-            border: 1px solid #f3f4f6;
-        }
-
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .meta-row:last-child {
-            border-bottom: none;
-        }
-
-        .meta-row.highlight {
+        /* Attempt Info */
+        .attempt-info {
             background-color: #fff7ed;
-            margin: 0 -20px;
-            padding: 12px 20px;
-            border-bottom: none;
+            border: 1px solid #fdba74;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 32px;
+            text-align: center;
         }
 
-        .meta-label {
-            font-size: 12px;
-            color: #6b7280;
+        .attempt-info h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #c2410c;
+            margin: 0 0 8px 0;
             font-family: 'Martian Mono', monospace;
         }
 
-        .meta-value {
+        .attempt-info p {
+            color: #9a3412;
+            margin: 0;
             font-size: 14px;
-            font-weight: 600;
             font-family: 'Martian Mono', monospace;
-        }
-
-        .meta-value.urgent {
-            color: #ea580c;
+            font-weight: 600;
         }
 
         /* Warning Box */
         .warning-box {
-            background-color: #fff7ed;
-            border: 1px solid #fdba74;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 32px;
         }
 
         .warning-box h3 {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #ea580c;
+            color: #6b7280;
             margin: 0 0 8px 0;
             font-family: 'Martian Mono', monospace;
         }
 
         .warning-box p {
-            color: #9a3412;
-            margin: 0;
+            color: #4b5563;
+            margin: 0 0 8px 0;
             font-size: 14px;
         }
 
         .warning-box ul {
             margin: 8px 0 0 0;
             padding-left: 20px;
-            color: #9a3412;
+            color: #4b5563;
             font-size: 14px;
         }
 
@@ -302,28 +213,22 @@
             margin-bottom: 4px;
         }
 
-        /* CTA Button */
+        /* CTA Link */
         .cta-section {
             text-align: center;
             margin: 32px 0;
         }
 
-        .cta-button {
-            display: inline-block;
-            background-color: #f97316;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 16px 32px;
-            border-radius: 6px;
+        .cta-link {
+            color: #EB4F27;
+            text-decoration: underline;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 14px;
             font-family: 'Inter', Helvetica, Arial, sans-serif;
-            border: none;
-            cursor: pointer;
         }
 
-        .cta-button:hover {
-            background-color: #ea580c;
+        .cta-link:hover {
+            color: #c43d1b;
         }
 
         .cta-note {
@@ -366,26 +271,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .content {
-                padding: 24px;
-            }
-            .alert-banner {
-                padding: 16px;
-            }
-            .meta-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
-            }
-            .meta-row.highlight {
-                margin: 0 -16px;
-                padding: 12px 16px;
-            }
-            .progress-connector {
-                width: 20px;
-            }
-            .cta-button {
-                width: 100%;
-                box-sizing: border-box;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -404,53 +293,42 @@
         <!-- Main Content -->
         <div class="content">
             
-            <!-- Alert Banner -->
-            <div class="alert-banner">
-                <div class="alert-icon">⚡</div>
-                <h1>Action Required</h1>
+            <div class="order-intro">
+                <h1>Action Required: Payment Failed</h1>
                 <p>Your payment has failed again for order #{{ order_number }}</p>
             </div>
 
-            <!-- Progress Indicator -->
-            <div class="progress-section">
-                <div class="progress-label">Payment Attempt {{ attempt_number }} of {{ max_attempts }}</div>
-                <div class="progress-bar">
-                    <div class="progress-step completed">1</div>
-                    <div class="progress-connector active"></div>
-                    <div class="progress-step completed">2</div>
-                    <div class="progress-connector active"></div>
-                    <div class="progress-step current">3</div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step pending">4</div>
+            <!-- Key Order Data -->
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
                 </div>
-                <div class="progress-text">{{ attempt_number }} of {{ max_attempts }} attempts used</div>
+                <div class="meta-group">
+                    <h3>Amount Due</h3>
+                    <p>${{ amount }}</p>
+                </div>
+                <div class="meta-group">
+                    <h3>Next Retry</h3>
+                    <p>{{ next_retry_date }}</p>
+                </div>
+            </div>
+
+            <!-- Attempt Info -->
+            <div class="attempt-info">
+                <h3>Payment Attempt</h3>
+                <p>Attempt {{ attempt_number }} of {{ max_attempts }}</p>
             </div>
 
             <!-- Personal Message -->
             <div class="message-section">
-                <h2>Hi {{ customer_name }},</h2>
+                <p>Hi {{ customer_name }},</p>
                 <p>We've tried to process your payment again, but it was unsuccessful. We don't want you to lose your order, so please take a moment to update your payment information.</p>
-            </div>
-
-            <!-- Order Details -->
-            <div class="order-meta">
-                <div class="meta-row">
-                    <span class="meta-label">Order Number</span>
-                    <span class="meta-value text-rust">#{{ order_number }}</span>
-                </div>
-                <div class="meta-row">
-                    <span class="meta-label">Amount Due</span>
-                    <span class="meta-value">${{ amount }}</span>
-                </div>
-                <div class="meta-row highlight">
-                    <span class="meta-label">Next Retry Date</span>
-                    <span class="meta-value urgent">{{ next_retry_date }}</span>
-                </div>
             </div>
 
             <!-- Warning Box -->
             <div class="warning-box">
-                <h3>What Happens Next?</h3>
+                <h3>What Happens Next</h3>
                 <p>If we can't process your payment by the next retry date:</p>
                 <ul>
                     <li>We'll make one final attempt to charge your payment method</li>
@@ -461,7 +339,7 @@
 
             <!-- Call to Action -->
             <div class="cta-section">
-                <a href="{{ update_payment_url }}" class="cta-button">Update Payment Method Now</a>
+                <a href="{{ update_payment_url }}" class="cta-link">Update Payment Method</a>
                 <p class="cta-note">Securely update your payment details to avoid cancellation</p>
             </div>
 
@@ -470,7 +348,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="#" class="footer-link">View Order</a>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to {{ company_name }}!</title>
+    <title>Welcome to {{ company_name }}</title>
     <style>
         /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
@@ -95,119 +95,97 @@
             padding: 40px;
         }
 
-        .welcome-intro {
+        .order-intro {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .welcome-intro h1 {
-            font-size: 28px;
+        .order-intro h1 {
+            font-size: 24px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             letter-spacing: -0.02em;
         }
 
-        .welcome-intro p {
+        .order-intro p {
             color: #6b7280;
-            line-height: 1.6;
+            line-height: 1.5;
             margin: 0;
-            font-size: 16px;
         }
 
-        .welcome-message {
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
             background-color: #f9fafb;
-            padding: 30px;
+            padding: 20px;
             border-radius: 8px;
             margin-bottom: 40px;
             border: 1px solid #f3f4f6;
-            text-align: center;
         }
 
-        .welcome-message h2 {
-            font-size: 20px;
+        .meta-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 6px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .meta-group p {
+            font-size: 14px;
             font-weight: 600;
-            margin: 0 0 12px 0;
-            color: #0F0F0F;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        /* Welcome Message */
+        .welcome-message {
+            margin-bottom: 40px;
         }
 
         .welcome-message p {
             font-size: 14px;
-            color: #6b7280;
+            color: #374151;
             line-height: 1.6;
-            margin: 0;
+            margin: 0 0 16px 0;
         }
 
-        /* CTA Button */
-        .cta-container {
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        .cta-button {
-            display: inline-block;
-            background-color: #EB4F27;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 16px 32px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .cta-button:hover {
-            background-color: #d94420;
-        }
-
-        /* Getting Started Tips */
-        .tips-section {
+        /* Links Section */
+        .links-section {
             margin-top: 40px;
             padding-top: 40px;
             border-top: 1px solid #f3f4f6;
         }
 
-        .tips-section h3 {
-            font-size: 14px;
+        .links-section h3 {
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #6b7280;
-            margin: 0 0 24px 0;
+            margin: 0 0 16px 0;
             font-family: 'Martian Mono', monospace;
-            text-align: center;
         }
 
-        .tips-grid {
-            display: flex;
-            gap: 20px;
+        .links-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
         }
 
-        .tip-card {
-            flex: 1;
-            text-align: center;
-            padding: 20px;
-            background-color: #f9fafb;
-            border-radius: 8px;
-        }
-
-        .tip-icon {
-            font-size: 24px;
+        .links-list li {
             margin-bottom: 12px;
         }
 
-        .tip-card h4 {
+        .links-list a {
+            color: #EB4F27;
+            text-decoration: none;
             font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 8px 0;
-            color: #0F0F0F;
+            font-weight: 500;
         }
 
-        .tip-card p {
-            font-size: 12px;
-            color: #6b7280;
-            margin: 0;
-            line-height: 1.5;
+        .links-list a:hover {
+            text-decoration: underline;
         }
 
         /* Help Section */
@@ -216,11 +194,10 @@
             padding: 24px;
             background-color: #f9fafb;
             border-radius: 8px;
-            text-align: center;
         }
 
         .help-section p {
-            font-size: 14px;
+            font-size: 13px;
             color: #6b7280;
             margin: 0;
             line-height: 1.6;
@@ -266,12 +243,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .tips-grid {
+            .order-meta {
                 flex-direction: column;
                 gap: 16px;
-            }
-            .welcome-message {
-                padding: 20px;
+                text-align: center;
             }
         }
     </style>
@@ -290,47 +265,42 @@
         <!-- Main Content -->
         <div class="content">
             
-            <div class="welcome-intro">
-                <h1>Welcome to {{ company_name }}!</h1>
-                <p>We're thrilled to have you join our community of savvy shoppers.</p>
+            <div class="order-intro">
+                <h1>Welcome to {{ company_name }}</h1>
+                <p>Your account has been created successfully. We're glad to have you with us.</p>
+            </div>
+
+            <!-- Account Info -->
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Account Name</h3>
+                    <p>{{ customer_name }}</p>
+                </div>
+                <div class="meta-group">
+                    <h3>Status</h3>
+                    <p class="text-rust">Active</p>
+                </div>
             </div>
 
             <!-- Welcome Message -->
             <div class="welcome-message">
-                <h2>Hi {{ customer_name }}, your account is ready!</h2>
-                <p>Thank you for signing up. You're now part of a growing community that enjoys premium products, exclusive deals, and a seamless shopping experience.</p>
+                <p>Hi {{ customer_name }}, thank you for joining {{ company_name }}. Your account is now ready to use.</p>
+                <p>You can start shopping right away, track your orders, and manage your account settings from your dashboard.</p>
             </div>
 
-            <!-- CTA Button -->
-            <div class="cta-container">
-                <a href="{{ shop_url }}" class="cta-button">Start Shopping</a>
-            </div>
-
-            <!-- Getting Started Tips -->
-            <div class="tips-section">
-                <h3>Getting Started</h3>
-                <div class="tips-grid">
-                    <div class="tip-card">
-                        <div class="tip-icon">🔍</div>
-                        <h4>Browse Products</h4>
-                        <p>Explore our curated collection of premium items.</p>
-                    </div>
-                    <div class="tip-card">
-                        <div class="tip-icon">💝</div>
-                        <h4>Save Favorites</h4>
-                        <p>Create your wishlist for quick access later.</p>
-                    </div>
-                    <div class="tip-card">
-                        <div class="tip-icon">🚚</div>
-                        <h4>Fast Shipping</h4>
-                        <p>Enjoy quick delivery on all your orders.</p>
-                    </div>
-                </div>
+            <!-- Quick Links -->
+            <div class="links-section">
+                <h3>Quick Links</h3>
+                <ul class="links-list">
+                    <li><a href="{{ shop_url }}">Start Shopping</a></li>
+                    <li><a href="{{ login_url }}">Access Your Account</a></li>
+                    <li><a href="{{ help_center_url }}">Visit Help Center</a></li>
+                </ul>
             </div>
 
             <!-- Help Section -->
             <div class="help-section">
-                <p>Need help getting started? Visit our <a href="{{ help_center_url }}">Help Center</a> or contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+                <p>Need help getting started? Contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
             </div>
 
         </div>
@@ -338,7 +308,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="{{ shop_url }}" class="footer-link">Shop</a>

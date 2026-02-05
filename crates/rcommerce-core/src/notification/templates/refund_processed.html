@@ -35,10 +35,6 @@
             color: #EB4F27;
         }
 
-        .text-success {
-            color: #10b981;
-        }
-
         .text-sm {
             font-size: 14px;
         }
@@ -99,133 +95,72 @@
             padding: 40px;
         }
 
-        .refund-intro {
+        .order-intro {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .refund-icon {
-            width: 64px;
-            height: 64px;
-            background-color: #dbeafe;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-
-        .refund-icon svg {
-            width: 32px;
-            height: 32px;
-            color: #3b82f6;
-        }
-
-        .refund-intro h1 {
+        .order-intro h1 {
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 12px;
             letter-spacing: -0.02em;
         }
 
-        .refund-intro p {
+        .order-intro p {
             color: #6b7280;
             line-height: 1.5;
             margin: 0;
         }
 
-        .refund-details {
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .meta-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 6px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .meta-group p {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .processing-box {
             background-color: #f9fafb;
             border: 1px solid #f3f4f6;
             border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 32px;
+            padding: 20px;
+            margin-bottom: 40px;
         }
 
-        .refund-details h2 {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 20px 0;
-            color: #374151;
+        .processing-box h3 {
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-
-        .detail-label {
             color: #6b7280;
-            font-size: 14px;
-        }
-
-        .detail-value {
-            font-weight: 600;
-            font-size: 14px;
+            margin: 0 0 8px 0;
             font-family: 'Martian Mono', monospace;
         }
 
-        .detail-value.amount {
-            color: #3b82f6;
-            font-size: 16px;
-        }
-
-        .processing-info {
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 32px;
-        }
-
-        .processing-info h3 {
+        .processing-box p {
             font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 12px 0;
-            color: #1e40af;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .processing-info p {
+            color: #374151;
             margin: 0;
-            color: #1e3a8a;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .cta-button {
-            display: block;
-            width: 100%;
-            background-color: #000;
-            color: #fff;
-            text-align: center;
-            padding: 16px 24px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 32px;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .cta-button:hover {
-            background-color: #374151;
-        }
-
-        .help-text {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 14px;
-            color: #6b7280;
+            line-height: 1.5;
         }
 
         /* Footer */
@@ -262,12 +197,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .refund-details {
-                padding: 16px;
-            }
-            .detail-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -286,47 +219,32 @@
         <!-- Main Content -->
         <div class="content">
             
-            <div class="refund-intro">
-                <div class="refund-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                </div>
+            <div class="order-intro">
                 <h1>Refund Processed</h1>
                 <p>Hi {{ customer_name }}, your refund has been processed successfully.</p>
             </div>
 
             <!-- Refund Details -->
-            <div class="refund-details">
-                <h2>Refund Details</h2>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Order Number</span>
-                    <span class="detail-value text-rust">#{{ order_number }}</span>
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Refund Amount</span>
-                    <span class="detail-value amount">{{ refund_amount }}</span>
+                <div class="meta-group">
+                    <h3>Refund Amount</h3>
+                    <p>{{ refund_amount }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Refund Method</span>
-                    <span class="detail-value">{{ refund_method }}</span>
+                <div class="meta-group">
+                    <h3>Method</h3>
+                    <p>{{ refund_method }}</p>
                 </div>
             </div>
 
             <!-- Processing Info -->
-            <div class="processing-info">
-                <h3>When will I receive my refund?</h3>
+            <div class="processing-box">
+                <h3>Processing Time</h3>
                 <p>{{ processing_time }} Depending on your payment method and financial institution, it may take 5-10 business days for the funds to appear in your account.</p>
             </div>
-
-            <a href="#" class="cta-button">View Order Details</a>
-
-            <p class="help-text">
-                Have questions about your refund? Contact us at <a href="mailto:{{ support_email }}" style="color: #EB4F27; text-decoration: none;">{{ support_email }}</a>
-            </p>
 
         </div>
 

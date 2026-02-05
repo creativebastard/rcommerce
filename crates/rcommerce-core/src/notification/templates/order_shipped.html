@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Order Has Shipped! - R COMMERCE</title>
+    <title>Order Shipped - R COMMERCE</title>
     <style>
-        /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
 
-        /* Base Styles */
         body {
             font-family: 'Inter', Helvetica, Arial, sans-serif;
             background-color: #f9fafb;
@@ -26,7 +24,6 @@
             border: 1px solid #e5e7eb;
         }
 
-        /* Typography Helper Classes */
         .font-mono {
             font-family: 'Martian Mono', 'Courier New', monospace;
         }
@@ -35,27 +32,6 @@
             color: #EB4F27;
         }
 
-        .text-sm {
-            font-size: 14px;
-        }
-
-        .text-xs {
-            font-size: 12px;
-        }
-
-        .font-bold {
-            font-weight: 700;
-        }
-
-        .uppercase {
-            text-transform: uppercase;
-        }
-
-        .tracking-wide {
-            letter-spacing: 0.05em;
-        }
-
-        /* Layout Sections */
         .header {
             padding: 40px;
             border-bottom: 1px solid #f3f4f6;
@@ -142,69 +118,13 @@
         /* Tracking Section */
         .tracking-section {
             background-color: #f9fafb;
-            border: 2px solid #EB4F27;
+            padding: 24px;
             border-radius: 8px;
-            padding: 30px;
             margin-bottom: 40px;
-            text-align: center;
+            border: 1px solid #f3f4f6;
         }
 
         .tracking-section h2 {
-            font-size: 16px;
-            font-weight: 700;
-            margin: 0 0 20px 0;
-            color: #0F0F0F;
-        }
-
-        .tracking-number {
-            font-family: 'Martian Mono', monospace;
-            font-size: 18px;
-            font-weight: 700;
-            color: #EB4F27;
-            margin-bottom: 8px;
-            word-break: break-all;
-        }
-
-        .tracking-carrier {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        .tracking-button {
-            display: inline-block;
-            background-color: #EB4F27;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 14px 32px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.2s;
-        }
-
-        .tracking-button:hover {
-            background-color: #d94420;
-        }
-
-        .estimated-delivery {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            font-size: 14px;
-            color: #374151;
-        }
-
-        .estimated-delivery strong {
-            color: #0F0F0F;
-        }
-
-        /* Order Summary */
-        .order-summary {
-            margin-bottom: 30px;
-        }
-
-        .order-summary h3 {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -213,25 +133,42 @@
             font-family: 'Martian Mono', monospace;
         }
 
-        .summary-row {
+        .tracking-row {
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
             font-size: 14px;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .summary-row:last-child {
+        .tracking-row:last-child {
             border-bottom: none;
         }
 
-        .summary-label {
+        .tracking-label {
             color: #6b7280;
         }
 
-        .summary-value {
+        .tracking-value {
             font-family: 'Martian Mono', monospace;
             font-weight: 600;
+        }
+
+        .tracking-link {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .tracking-link a {
+            color: #EB4F27;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .tracking-link a:hover {
+            text-decoration: underline;
         }
 
         /* Footer */
@@ -262,7 +199,6 @@
             color: #EB4F27;
         }
 
-        /* Mobile Responsive */
         @media only screen and (max-width: 600px) {
             .container {
                 width: 100% !important;
@@ -272,12 +208,6 @@
                 flex-direction: column;
                 gap: 16px;
                 text-align: center;
-            }
-            .tracking-section {
-                padding: 20px;
-            }
-            .tracking-number {
-                font-size: 16px;
             }
         }
     </style>
@@ -297,8 +227,8 @@
         <div class="content">
             
             <div class="order-intro">
-                <h1>Your Order Has Shipped!</h1>
-                <p>Hi {{ customer_name }}, great news! Your order is on its way. You can track your package using the information below.</p>
+                <h1>Order Shipped</h1>
+                <p>Hi {{ customer_name }}, your order is on its way. Track your package using the information below.</p>
             </div>
 
             <!-- Key Order Data -->
@@ -308,36 +238,32 @@
                     <p class="text-rust">#{{ order_number }}</p>
                 </div>
                 <div class="meta-group">
-                    <h3>Order Date</h3>
+                    <h3>Date</h3>
                     <p>{{ order_date }}</p>
+                </div>
+                <div class="meta-group">
+                    <h3>Tracking</h3>
+                    <p>{{ tracking_number }}</p>
                 </div>
             </div>
 
             <!-- Tracking Information -->
             <div class="tracking-section">
-                <h2>Track Your Package</h2>
-                <div class="tracking-number">{{ tracking_number }}</div>
-                <div class="tracking-carrier">Shipped via {{ shipping_carrier }}</div>
-                <a href="{{ tracking_url }}" class="tracking-button">Track Package</a>
-                <div class="estimated-delivery">
-                    <strong>Estimated Delivery:</strong> {{ estimated_delivery }}
+                <h2>Shipment Details</h2>
+                <div class="tracking-row">
+                    <span class="tracking-label">Carrier</span>
+                    <span class="tracking-value">{{ shipping_carrier }}</span>
                 </div>
-            </div>
-
-            <!-- Order Summary -->
-            <div class="order-summary">
-                <h3>Order Summary</h3>
-                <div class="summary-row">
-                    <span class="summary-label">Order Number</span>
-                    <span class="summary-value">#{{ order_number }}</span>
+                <div class="tracking-row">
+                    <span class="tracking-label">Tracking Number</span>
+                    <span class="tracking-value">{{ tracking_number }}</span>
                 </div>
-                <div class="summary-row">
-                    <span class="summary-label">Shipping Carrier</span>
-                    <span class="summary-value">{{ shipping_carrier }}</span>
+                <div class="tracking-row">
+                    <span class="tracking-label">Estimated Delivery</span>
+                    <span class="tracking-value">{{ estimated_delivery }}</span>
                 </div>
-                <div class="summary-row">
-                    <span class="summary-label">Tracking Number</span>
-                    <span class="summary-value">{{ tracking_number }}</span>
+                <div class="tracking-link">
+                    <a href="{{ tracking_url }}">Track Package</a>
                 </div>
             </div>
 
@@ -346,7 +272,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions about your shipment? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="#" class="footer-link">View Order</a>

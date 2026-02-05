@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Failed - R COMMERCE</title>
+    <title>Payment Update Required - R COMMERCE</title>
     <style>
         /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
@@ -33,10 +33,6 @@
         
         .text-rust {
             color: #EB4F27;
-        }
-
-        .text-amber {
-            color: #f59e0b;
         }
 
         .text-sm {
@@ -99,39 +95,48 @@
             padding: 40px;
         }
 
-        /* Alert Banner */
-        .alert-banner {
-            background-color: #fffbeb;
-            border: 1px solid #fbbf24;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 32px;
+        .order-intro {
             text-align: center;
+            margin-bottom: 40px;
         }
 
-        .alert-icon {
-            width: 48px;
-            height: 48px;
-            background-color: #fbbf24;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
+        .order-intro h1 {
             font-size: 24px;
-        }
-
-        .alert-banner h1 {
-            font-size: 22px;
             font-weight: 700;
-            margin: 0 0 8px 0;
-            color: #92400e;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
         }
 
-        .alert-banner p {
-            color: #a16207;
+        .order-intro p {
+            color: #6b7280;
+            line-height: 1.5;
             margin: 0;
+        }
+
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
+        }
+
+        .meta-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 6px 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .meta-group p {
             font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
         }
 
         /* Message Section */
@@ -139,49 +144,11 @@
             margin-bottom: 32px;
         }
 
-        .message-section h2 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 16px 0;
-        }
-
         .message-section p {
             color: #4b5563;
             line-height: 1.6;
             margin: 0 0 12px 0;
             font-size: 14px;
-        }
-
-        /* Order Meta */
-        .order-meta {
-            background-color: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 32px;
-            border: 1px solid #f3f4f6;
-        }
-
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .meta-row:last-child {
-            border-bottom: none;
-        }
-
-        .meta-label {
-            font-size: 12px;
-            color: #6b7280;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .meta-value {
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Martian Mono', monospace;
         }
 
         /* Error Box */
@@ -194,7 +161,7 @@
         }
 
         .error-box h3 {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #dc2626;
@@ -208,28 +175,22 @@
             font-size: 14px;
         }
 
-        /* CTA Button */
+        /* CTA Link */
         .cta-section {
             text-align: center;
             margin: 32px 0;
         }
 
-        .cta-button {
-            display: inline-block;
-            background-color: #f59e0b;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 16px 32px;
-            border-radius: 6px;
+        .cta-link {
+            color: #EB4F27;
+            text-decoration: underline;
             font-weight: 600;
-            font-size: 16px;
+            font-size: 14px;
             font-family: 'Inter', Helvetica, Arial, sans-serif;
-            border: none;
-            cursor: pointer;
         }
 
-        .cta-button:hover {
-            background-color: #d97706;
+        .cta-link:hover {
+            color: #c43d1b;
         }
 
         .cta-note {
@@ -240,24 +201,24 @@
 
         /* Info Box */
         .info-box {
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 8px;
             padding: 16px;
             margin-top: 32px;
         }
 
         .info-box h3 {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #2563eb;
+            color: #6b7280;
             margin: 0 0 8px 0;
             font-family: 'Martian Mono', monospace;
         }
 
         .info-box p {
-            color: #1e40af;
+            color: #4b5563;
             margin: 0;
             font-size: 14px;
         }
@@ -296,19 +257,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .content {
-                padding: 24px;
-            }
-            .alert-banner {
-                padding: 16px;
-            }
-            .meta-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
-            }
-            .cta-button {
-                width: 100%;
-                box-sizing: border-box;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -327,33 +279,24 @@
         <!-- Main Content -->
         <div class="content">
             
-            <!-- Alert Banner -->
-            <div class="alert-banner">
-                <div class="alert-icon">⚠️</div>
-                <h1>Payment Failed</h1>
-                <p>We couldn't process your payment for order #{{ order_number }}</p>
+            <div class="order-intro">
+                <h1>Payment Update Required</h1>
+                <p>We encountered an issue while processing your payment for order #{{ order_number }}</p>
             </div>
 
-            <!-- Personal Message -->
-            <div class="message-section">
-                <h2>Hi {{ customer_name }},</h2>
-                <p>We encountered an issue while processing your payment. Don't worry — this happens sometimes and can usually be fixed quickly.</p>
-                <p>Your order is still reserved, but we'll need a valid payment method to complete the purchase.</p>
-            </div>
-
-            <!-- Order Details -->
+            <!-- Key Order Data -->
             <div class="order-meta">
-                <div class="meta-row">
-                    <span class="meta-label">Order Number</span>
-                    <span class="meta-value text-rust">#{{ order_number }}</span>
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
                 </div>
-                <div class="meta-row">
-                    <span class="meta-label">Amount Due</span>
-                    <span class="meta-value">${{ amount }}</span>
+                <div class="meta-group">
+                    <h3>Amount Due</h3>
+                    <p>${{ amount }}</p>
                 </div>
-                <div class="meta-row">
-                    <span class="meta-label">Payment Method</span>
-                    <span class="meta-value">{{ payment_method }}</span>
+                <div class="meta-group">
+                    <h3>Payment Method</h3>
+                    <p>{{ payment_method }}</p>
                 </div>
             </div>
 
@@ -363,16 +306,22 @@
                 <p>{{ error_message }}</p>
             </div>
 
+            <!-- Personal Message -->
+            <div class="message-section">
+                <p>Hi {{ customer_name }},</p>
+                <p>We encountered an issue while processing your payment. This happens sometimes and can usually be fixed quickly. Your order is still reserved, but we'll need a valid payment method to complete the purchase.</p>
+            </div>
+
             <!-- Call to Action -->
             <div class="cta-section">
-                <a href="{{ retry_url }}" class="cta-button">Update Payment Method</a>
+                <a href="{{ retry_url }}" class="cta-link">Update Payment Method</a>
                 <p class="cta-note">Click above to securely update your payment details</p>
             </div>
 
             <!-- No Fees Notice -->
             <div class="info-box">
                 <h3>No Late Fees</h3>
-                <p>Good news — we don't charge any late fees or penalties. Simply update your payment method and we'll process your order right away.</p>
+                <p>We don't charge any late fees or penalties. Simply update your payment method and we'll process your order right away.</p>
             </div>
 
         </div>
@@ -380,7 +329,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="#" class="footer-link">View Order</a>

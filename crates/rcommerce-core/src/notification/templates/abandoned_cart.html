@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>You left something in your cart!</title>
+    <title>You left something in your cart</title>
     <style>
         /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
@@ -95,43 +95,22 @@
             padding: 40px;
         }
 
-        .cart-intro {
+        .order-intro {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .cart-intro h1 {
+        .order-intro h1 {
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 12px;
             letter-spacing: -0.02em;
         }
 
-        .cart-intro p {
+        .order-intro p {
             color: #6b7280;
             line-height: 1.5;
             margin: 0;
-        }
-
-        /* Urgency Banner */
-        .urgency-banner {
-            background: linear-gradient(135deg, #fef3f2 0%, #fff7ed 100%);
-            border: 1px solid #fecaca;
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .urgency-banner p {
-            font-size: 14px;
-            color: #991b1b;
-            margin: 0;
-            font-weight: 500;
-        }
-
-        .urgency-banner strong {
-            color: #dc2626;
         }
 
         /* Cart Items Table */
@@ -176,11 +155,6 @@
             font-weight: 500;
         }
 
-        .items-table .col-qty {
-            text-align: center;
-            font-family: 'Martian Mono', monospace;
-        }
-
         /* Cart Total */
         .cart-total {
             background-color: #f9fafb;
@@ -197,24 +171,24 @@
         }
 
         .total-label {
-            font-size: 14px;
-            color: #6b7280;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            color: #6b7280;
             font-family: 'Martian Mono', monospace;
         }
 
         .total-value {
             font-family: 'Martian Mono', monospace;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: #0F0F0F;
         }
 
         /* Discount Code */
         .discount-section {
-            background-color: #ecfdf5;
-            border: 2px dashed #10b981;
+            background-color: #f9fafb;
+            border: 1px solid #f3f4f6;
             border-radius: 8px;
             padding: 20px;
             text-align: center;
@@ -222,10 +196,10 @@
         }
 
         .discount-section h3 {
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #065f46;
+            color: #6b7280;
             margin: 0 0 12px 0;
             font-family: 'Martian Mono', monospace;
         }
@@ -233,94 +207,39 @@
         .discount-code {
             display: inline-block;
             background-color: #ffffff;
-            border: 1px solid #10b981;
+            border: 1px dashed #d1d5db;
             border-radius: 6px;
             padding: 12px 24px;
             font-family: 'Martian Mono', monospace;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
-            color: #059669;
+            color: #0F0F0F;
             letter-spacing: 0.1em;
         }
 
-        .discount-note {
-            font-size: 12px;
-            color: #6b7280;
-            margin: 12px 0 0 0;
-        }
-
-        /* CTA Button */
-        .cta-container {
+        /* Cart Link */
+        .cart-link {
             text-align: center;
             margin: 40px 0;
         }
 
-        .cta-button {
-            display: inline-block;
-            background-color: #EB4F27;
-            color: #ffffff;
+        .cart-link a {
+            color: #EB4F27;
             text-decoration: none;
-            padding: 18px 40px;
-            border-radius: 6px;
-            font-weight: 600;
             font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-family: 'Martian Mono', monospace;
+            font-weight: 500;
         }
 
-        .cta-button:hover {
-            background-color: #d94420;
-        }
-
-        /* Trust Badges */
-        .trust-section {
-            margin-top: 40px;
-            padding-top: 40px;
-            border-top: 1px solid #f3f4f6;
-            text-align: center;
-        }
-
-        .trust-section h3 {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-            margin: 0 0 20px 0;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .trust-badges {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-        }
-
-        .trust-badge {
-            text-align: center;
-        }
-
-        .trust-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .trust-badge p {
-            font-size: 11px;
-            color: #6b7280;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-family: 'Martian Mono', monospace;
+        .cart-link a:hover {
+            text-decoration: underline;
         }
 
         /* Help Section */
         .help-section {
-            margin-top: 30px;
-            padding: 20px;
+            margin-top: 40px;
+            padding: 24px;
             background-color: #f9fafb;
             border-radius: 8px;
-            text-align: center;
         }
 
         .help-section p {
@@ -370,12 +289,8 @@
                 width: 100% !important;
                 border: none;
             }
-            .trust-badges {
-                flex-direction: column;
-                gap: 16px;
-            }
             .total-value {
-                font-size: 20px;
+                font-size: 18px;
             }
             .discount-code {
                 font-size: 16px;
@@ -398,37 +313,22 @@
         <!-- Main Content -->
         <div class="content">
             
-            <div class="cart-intro">
-                <h1>You left something in your cart!</h1>
-                <p>Hi {{ customer_name }}, don't miss out on these great items. Complete your purchase before they're gone!</p>
-            </div>
-
-            <!-- Urgency Banner -->
-            <div class="urgency-banner">
-                <p>⚡ <strong>Popular items sell fast!</strong> Secure your favorites before stock runs out.</p>
+            <div class="order-intro">
+                <h1>You left something in your cart</h1>
+                <p>Hi {{ customer_name }}, complete your purchase before these items are gone.</p>
             </div>
 
             <!-- Cart Items -->
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th style="width: 55%;">Item</th>
+                        <th style="width: 60%;">Item</th>
                         <th style="width: 15%; text-align: center;">Qty</th>
-                        <th style="width: 30%; text-align: right;">Price</th>
+                        <th style="width: 25%; text-align: right;">Price</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{ cart_items }}
-                    <!-- Example item structure:
-                    <tr>
-                        <td>
-                            <span class="item-name">Product Name</span>
-                            <span class="item-meta">SKU: XXX-XXX</span>
-                        </td>
-                        <td class="col-qty">1</td>
-                        <td class="col-price">$99.00</td>
-                    </tr>
-                    -->
                 </tbody>
             </table>
 
@@ -443,39 +343,19 @@
             <!-- Discount Code (Optional) -->
             {{#if discount_code}}
             <div class="discount-section">
-                <h3>🎉 Special Offer Just for You</h3>
+                <h3>Discount Code</h3>
                 <div class="discount-code">{{ discount_code }}</div>
-                <p class="discount-note">Use this code at checkout for exclusive savings!</p>
             </div>
             {{/if}}
 
-            <!-- CTA Button -->
-            <div class="cta-container">
-                <a href="{{ cart_url }}" class="cta-button">Complete My Purchase</a>
-            </div>
-
-            <!-- Trust Badges -->
-            <div class="trust-section">
-                <h3>Why Shop With Us</h3>
-                <div class="trust-badges">
-                    <div class="trust-badge">
-                        <div class="trust-icon">🔒</div>
-                        <p>Secure Checkout</p>
-                    </div>
-                    <div class="trust-badge">
-                        <div class="trust-icon">🚚</div>
-                        <p>Fast Shipping</p>
-                    </div>
-                    <div class="trust-badge">
-                        <div class="trust-icon">↩️</div>
-                        <p>Easy Returns</p>
-                    </div>
-                </div>
+            <!-- Cart Link -->
+            <div class="cart-link">
+                <a href="{{ cart_url }}">Complete Your Purchase</a>
             </div>
 
             <!-- Help Section -->
             <div class="help-section">
-                <p>Need help with your order? Contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a> — we're here to help!</p>
+                <p>Need help with your order? Contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
             </div>
 
         </div>
@@ -483,7 +363,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="{{ cart_url }}" class="footer-link">View Cart</a>

@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to {{ plan_name }} - R COMMERCE</title>
+    <title>Subscription Confirmed - R COMMERCE</title>
     <style>
-        /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
 
-        /* Base Styles */
         body {
             font-family: 'Inter', Helvetica, Arial, sans-serif;
             background-color: #f9fafb;
@@ -26,7 +24,6 @@
             border: 1px solid #e5e7eb;
         }
 
-        /* Typography Helper Classes */
         .font-mono {
             font-family: 'Martian Mono', 'Courier New', monospace;
         }
@@ -35,27 +32,6 @@
             color: #EB4F27;
         }
 
-        .text-sm {
-            font-size: 14px;
-        }
-
-        .text-xs {
-            font-size: 12px;
-        }
-
-        .font-bold {
-            font-weight: 700;
-        }
-
-        .uppercase {
-            text-transform: uppercase;
-        }
-
-        .tracking-wide {
-            letter-spacing: 0.05em;
-        }
-
-        /* Layout Sections */
         .header {
             padding: 40px;
             border-bottom: 1px solid #f3f4f6;
@@ -95,135 +71,98 @@
             padding: 40px;
         }
 
-        .subscription-intro {
+        .order-intro {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .subscription-intro h1 {
+        .order-intro h1 {
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 12px;
             letter-spacing: -0.02em;
         }
 
-        .subscription-intro p {
+        .order-intro p {
             color: #6b7280;
             line-height: 1.5;
             margin: 0;
         }
 
-        /* Subscription Details Box */
-        .subscription-details {
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
             background-color: #f9fafb;
-            border: 1px solid #f3f4f6;
+            padding: 20px;
             border-radius: 8px;
-            padding: 24px;
             margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
         }
 
-        .subscription-details h2 {
+        .meta-group h3 {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #6b7280;
-            margin: 0 0 20px 0;
+            margin: 0 0 6px 0;
             font-family: 'Martian Mono', monospace;
-            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .meta-group p {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .subscription-details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .subscription-details th {
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6b7280;
             padding-bottom: 12px;
+            border-bottom: 2px solid #f3f4f6;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 600;
         }
 
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
+        .subscription-details td {
+            padding: 16px 0;
             border-bottom: 1px solid #f3f4f6;
+            font-size: 14px;
         }
 
-        .detail-row:last-child {
-            border-bottom: none;
+        .subscription-details .item-name {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
         }
 
-        .detail-label {
+        .subscription-details .item-meta {
+            font-size: 12px;
+            color: #6b7280;
+            font-family: 'Martian Mono', monospace;
+        }
+
+        .subscription-details .col-price {
+            text-align: right;
+            font-family: 'Martian Mono', monospace;
+            font-weight: 500;
+        }
+
+        .info-text {
             font-size: 14px;
             color: #6b7280;
+            line-height: 1.6;
+            margin: 0 0 30px 0;
         }
 
-        .detail-value {
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .detail-value.price {
-            color: #EB4F27;
-            font-weight: 700;
-        }
-
-        /* Info Box */
-        .info-box {
-            background-color: #fff;
-            border-left: 4px solid #EB4F27;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .info-box h3 {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 8px 0;
-        }
-
-        .info-box p {
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        /* CTA Button */
-        .cta-container {
-            text-align: center;
-            margin: 30px 0;
-        }
-
-        .cta-button {
-            display: inline-block;
-            background-color: #EB4F27;
-            color: #fff;
-            text-decoration: none;
-            padding: 14px 32px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .cta-button:hover {
-            background-color: #d94520;
-        }
-
-        /* Trial Notice */
-        .trial-notice {
-            background-color: #fef3f0;
-            border: 1px solid #fde4dd;
-            border-radius: 8px;
-            padding: 16px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .trial-notice p {
-            font-size: 14px;
-            color: #9a3412;
-            margin: 0;
-        }
-
-        .trial-notice strong {
-            font-family: 'Martian Mono', monospace;
-        }
-
-        /* Footer */
         .footer {
             background-color: #0F0F0F;
             color: #9ca3af;
@@ -251,18 +190,15 @@
             color: #EB4F27;
         }
 
-        /* Mobile Responsive */
         @media only screen and (max-width: 600px) {
             .container {
                 width: 100% !important;
                 border: none;
             }
-            .detail-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
-            }
-            .subscription-details {
-                padding: 16px;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -270,7 +206,6 @@
 <body>
 
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <div class="logo">
                 <div class="logo-box">R</div>
@@ -278,60 +213,82 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="content">
             
-            <div class="subscription-intro">
-                <h1>Welcome to {{ plan_name }}</h1>
-                <p>Hi {{ customer_name }}, thank you for subscribing! Your subscription is now active and ready to use.</p>
+            <div class="order-intro">
+                <h1>Subscription Confirmed</h1>
+                <p>Hi {{ customer_name }}, thank you for subscribing. Your subscription is now active.</p>
             </div>
 
-            <!-- Trial Notice (shown if trial exists) -->
-            {{#if trial_end_date}}
-            <div class="trial-notice">
-                <p>Your free trial ends on <strong>{{ trial_end_date }}</strong>. You won't be charged until then.</p>
-            </div>
-            {{/if}}
-
-            <!-- Subscription Details -->
-            <div class="subscription-details">
-                <h2>Subscription Details</h2>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Plan</span>
-                    <span class="detail-value">{{ plan_name }}</span>
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Plan</h3>
+                    <p>{{ plan_name }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Amount</span>
-                    <span class="detail-value price">{{ amount }} / {{ interval }}</span>
+                <div class="meta-group">
+                    <h3>Amount</h3>
+                    <p class="text-rust">{{ amount }} / {{ interval }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Subscription ID</span>
-                    <span class="detail-value">#{{ subscription_id }}</span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Next Billing Date</span>
-                    <span class="detail-value">{{ next_billing_date }}</span>
+                <div class="meta-group">
+                    <h3>Next Billing</h3>
+                    <p>{{ next_billing_date }}</p>
                 </div>
             </div>
 
-            <!-- Billing Info -->
-            <div class="info-box">
-                <h3>Billing Schedule</h3>
-                <p>You will be charged {{ amount }} every {{ interval }}. We'll send you an email reminder before each billing date. You can manage your subscription, update payment methods, or cancel anytime from your account dashboard.</p>
-            </div>
+            <table class="subscription-details">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Detail</th>
+                        <th style="width: 50%; text-align: right;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="item-name">Subscription ID</span>
+                        </td>
+                        <td class="col-price">#{{ subscription_id }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="item-name">Plan</span>
+                        </td>
+                        <td class="col-price">{{ plan_name }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="item-name">Billing Interval</span>
+                        </td>
+                        <td class="col-price">{{ interval }}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="item-name">Amount</span>
+                        </td>
+                        <td class="col-price text-rust">{{ amount }}</td>
+                    </tr>
+                    {{#if trial_end_date}}
+                    <tr>
+                        <td>
+                            <span class="item-name">Trial Ends</span>
+                            <span class="item-meta">No charge until then</span>
+                        </td>
+                        <td class="col-price">{{ trial_end_date }}</td>
+                    </tr>
+                    {{/if}}
+                    <tr>
+                        <td>
+                            <span class="item-name">Next Billing Date</span>
+                        </td>
+                        <td class="col-price">{{ next_billing_date }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-            <!-- CTA -->
-            <div class="cta-container">
-                <a href="#" class="cta-button">Manage Subscription</a>
-            </div>
+            <p class="info-text">You will be charged {{ amount }} every {{ interval }}. We'll send you an email reminder before each billing date. You can manage your subscription, update payment methods, or cancel anytime from your account dashboard.</p>
 
         </div>
 
-        <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
             <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>

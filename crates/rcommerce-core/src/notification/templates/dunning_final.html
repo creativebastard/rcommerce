@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FINAL NOTICE: Payment Failed - R COMMERCE</title>
+    <title>Final Notice: Payment Required - R COMMERCE</title>
     <style>
         /* Import Fonts - Email client support varies, providing web fonts is good practice */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;500;700&display=swap');
@@ -99,123 +99,53 @@
             padding: 40px;
         }
 
-        /* Alert Banner - Final Notice */
-        .alert-banner {
-            background-color: #fef2f2;
-            border: 2px solid #dc2626;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 32px;
+        .order-intro {
             text-align: center;
+            margin-bottom: 40px;
         }
 
-        .alert-badge {
-            display: inline-block;
-            background-color: #dc2626;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            padding: 4px 12px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .alert-icon {
-            width: 56px;
-            height: 56px;
-            background-color: #dc2626;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-            font-size: 28px;
-        }
-
-        .alert-banner h1 {
+        .order-intro h1 {
             font-size: 24px;
             font-weight: 700;
-            margin: 0 0 8px 0;
-            color: #991b1b;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
         }
 
-        .alert-banner p {
-            color: #b91c1c;
+        .order-intro p {
+            color: #6b7280;
+            line-height: 1.5;
             margin: 0;
-            font-size: 14px;
         }
 
-        /* Progress Indicator - All Steps Complete */
-        .progress-section {
-            margin-bottom: 32px;
+        .order-meta {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
         }
 
-        .progress-label {
-            font-size: 12px;
+        .meta-group h3 {
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: #6b7280;
-            margin-bottom: 12px;
+            margin: 0 0 6px 0;
             font-family: 'Martian Mono', monospace;
-            text-align: center;
         }
 
-        .progress-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .progress-step {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Martian Mono', monospace;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .progress-step.completed {
-            background-color: #dc2626;
-            color: #ffffff;
-        }
-
-        .progress-step.current {
-            background-color: #dc2626;
-            color: #ffffff;
-            box-shadow: 0 0 0 4px #fecaca;
-        }
-
-        .progress-connector {
-            width: 40px;
-            height: 2px;
-            background-color: #dc2626;
-        }
-
-        .progress-text {
-            text-align: center;
+        .meta-group p {
             font-size: 14px;
-            color: #dc2626;
             font-weight: 600;
+            margin: 0;
+            font-family: 'Martian Mono', monospace;
         }
 
         /* Message Section */
         .message-section {
             margin-bottom: 32px;
-        }
-
-        .message-section h2 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0 0 16px 0;
         }
 
         .message-section p {
@@ -225,53 +155,10 @@
             font-size: 14px;
         }
 
-        /* Order Meta */
-        .order-meta {
-            background-color: #fef2f2;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 32px;
-            border: 1px solid #fecaca;
-        }
-
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #fecaca;
-        }
-
-        .meta-row:last-child {
-            border-bottom: none;
-        }
-
-        .meta-row.critical {
-            background-color: #fee2e2;
-            margin: 0 -20px;
-            padding: 12px 20px;
-            border-bottom: none;
-        }
-
-        .meta-label {
-            font-size: 12px;
-            color: #7f1d1d;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .meta-value {
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .meta-value.critical {
-            color: #dc2626;
-        }
-
-        /* Cancellation Warning Box */
+        /* Cancellation Box */
         .cancellation-box {
             background-color: #fef2f2;
-            border: 2px solid #dc2626;
+            border: 1px solid #fecaca;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 32px;
@@ -279,10 +166,12 @@
         }
 
         .cancellation-box h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #991b1b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #dc2626;
             margin: 0 0 12px 0;
+            font-family: 'Martian Mono', monospace;
         }
 
         .cancellation-box .date-highlight {
@@ -299,47 +188,35 @@
             font-size: 14px;
         }
 
-        /* CTA Section */
+        /* CTA Links */
         .cta-section {
             text-align: center;
             margin: 32px 0;
         }
 
-        .cta-button {
-            display: inline-block;
-            background-color: #dc2626;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 18px 36px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 16px;
-            font-family: 'Inter', Helvetica, Arial, sans-serif;
-            border: none;
-            cursor: pointer;
-            margin-bottom: 12px;
-        }
-
-        .cta-button:hover {
-            background-color: #b91c1c;
-        }
-
-        .cta-secondary {
-            display: inline-block;
-            background-color: #ffffff;
-            color: #dc2626;
-            text-decoration: none;
-            padding: 14px 28px;
-            border-radius: 6px;
+        .cta-link {
+            color: #EB4F27;
+            text-decoration: underline;
             font-weight: 600;
             font-size: 14px;
             font-family: 'Inter', Helvetica, Arial, sans-serif;
-            border: 2px solid #dc2626;
-            cursor: pointer;
+        }
+
+        .cta-link:hover {
+            color: #c43d1b;
+        }
+
+        .cta-secondary {
+            color: #6b7280;
+            text-decoration: underline;
+            font-weight: 500;
+            font-size: 14px;
+            font-family: 'Inter', Helvetica, Arial, sans-serif;
+            margin-left: 24px;
         }
 
         .cta-secondary:hover {
-            background-color: #fef2f2;
+            color: #374151;
         }
 
         .cta-note {
@@ -348,49 +225,34 @@
             color: #6b7280;
         }
 
-        /* Contact Options */
+        /* Contact Section */
         .contact-section {
             background-color: #f9fafb;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             padding: 20px;
             margin-top: 32px;
-        }
-
-        .contact-section h3 {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-            margin: 0 0 16px 0;
-            font-family: 'Martian Mono', monospace;
             text-align: center;
         }
 
-        .contact-options {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
+        .contact-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin: 0 0 12px 0;
+            font-family: 'Martian Mono', monospace;
         }
 
-        .contact-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            text-decoration: none;
-            color: #374151;
+        .contact-section p {
+            color: #4b5563;
+            margin: 0;
             font-size: 14px;
-            font-weight: 500;
         }
 
-        .contact-option:hover {
-            border-color: #dc2626;
-            color: #dc2626;
+        .contact-section a {
+            color: #EB4F27;
+            text-decoration: underline;
         }
 
         /* Footer */
@@ -427,33 +289,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .content {
-                padding: 24px;
-            }
-            .alert-banner {
-                padding: 16px;
-            }
-            .meta-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
-            }
-            .meta-row.critical {
-                margin: 0 -16px;
-                padding: 12px 16px;
-            }
-            .progress-connector {
-                width: 20px;
-            }
-            .cta-button,
-            .cta-secondary {
-                width: 100%;
-                box-sizing: border-box;
-            }
-            .contact-options {
-                flex-direction: column;
-            }
-            .contact-option {
-                justify-content: center;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -472,78 +311,52 @@
         <!-- Main Content -->
         <div class="content">
             
-            <!-- Alert Banner -->
-            <div class="alert-banner">
-                <div class="alert-badge">Final Notice</div>
-                <div class="alert-icon">🚨</div>
-                <h1>Your Order Is At Risk</h1>
+            <div class="order-intro">
+                <h1>Final Notice: Payment Required</h1>
                 <p>This is your final reminder before order cancellation</p>
             </div>
 
-            <!-- Progress Indicator -->
-            <div class="progress-section">
-                <div class="progress-label">Final Payment Attempt</div>
-                <div class="progress-bar">
-                    <div class="progress-step completed">1</div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step completed">2</div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step completed">3</div>
-                    <div class="progress-connector"></div>
-                    <div class="progress-step current">4</div>
+            <!-- Key Order Data -->
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
                 </div>
-                <div class="progress-text">Final attempt — immediate action required</div>
+                <div class="meta-group">
+                    <h3>Amount Due</h3>
+                    <p>${{ amount }}</p>
+                </div>
+                <div class="meta-group">
+                    <h3>Final Deadline</h3>
+                    <p class="text-red">{{ final_date }}</p>
+                </div>
             </div>
 
             <!-- Personal Message -->
             <div class="message-section">
-                <h2>Hi {{ customer_name }},</h2>
-                <p>We've made multiple attempts to process your payment, but unfortunately they've all been unsuccessful. <strong>This is your final notice.</strong></p>
-                <p>If we cannot process your payment by the deadline below, your order <strong>#{{ order_number }}</strong> will be automatically cancelled and any reserved items will be released.</p>
-            </div>
-
-            <!-- Order Details -->
-            <div class="order-meta">
-                <div class="meta-row">
-                    <span class="meta-label">Order Number</span>
-                    <span class="meta-value text-rust">#{{ order_number }}</span>
-                </div>
-                <div class="meta-row">
-                    <span class="meta-label">Amount Due</span>
-                    <span class="meta-value">${{ amount }}</span>
-                </div>
-                <div class="meta-row critical">
-                    <span class="meta-label">Final Payment Deadline</span>
-                    <span class="meta-value critical">{{ final_date }}</span>
-                </div>
+                <p>Hi {{ customer_name }},</p>
+                <p>We've made multiple attempts to process your payment, but unfortunately they've all been unsuccessful. This is your final notice.</p>
+                <p>If we cannot process your payment by the deadline below, your order will be automatically cancelled and any reserved items will be released.</p>
             </div>
 
             <!-- Cancellation Warning -->
             <div class="cancellation-box">
-                <h3>⚠️ Order Will Be Cancelled On</h3>
+                <h3>Order Will Be Cancelled On</h3>
                 <div class="date-highlight">{{ cancellation_date }}</div>
                 <p>Unless payment is received before this date</p>
             </div>
 
             <!-- Call to Action -->
             <div class="cta-section">
-                <a href="{{ update_payment_url }}" class="cta-button">Pay Now to Keep Your Order</a>
-                <p class="cta-note">Click above to update your payment method immediately</p>
+                <a href="{{ update_payment_url }}" class="cta-link">Update Payment Method</a>
+                <a href="{{ contact_support_url }}" class="cta-secondary">Contact Support</a>
+                <p class="cta-note">Update your payment method immediately to keep your order</p>
             </div>
 
-            <!-- Contact Options -->
+            <!-- Contact Section -->
             <div class="contact-section">
-                <h3>Need Help? Contact Us</h3>
-                <div class="contact-options">
-                    <a href="mailto:{{ support_email }}" class="contact-option">
-                        <span>✉️</span>
-                        <span>Email Support</span>
-                    </a>
-                    <a href="{{ contact_support_url }}" class="contact-option">
-                        <span>💬</span>
-                        <span>Live Chat</span>
-                    </a>
-                </div>
+                <h3>Need Help?</h3>
+                <p>Contact our support team at <a href="mailto:{{ support_email }}">{{ support_email }}</a> or use the live chat.</p>
             </div>
 
         </div>
@@ -551,7 +364,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Questions? Contact our support team at <a href="mailto:{{ support_email }}" style="color: #fff; text-decoration: underline;">{{ support_email }}</a></p>
-            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">© 2026 {{ company_name }}</p>
+            <p class="font-mono" style="margin-top: 20px; opacity: 0.6;">&copy; 2026 {{ company_name }}</p>
             
             <div class="footer-links">
                 <a href="#" class="footer-link">View Order</a>

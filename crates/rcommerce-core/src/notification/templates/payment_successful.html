@@ -35,10 +35,6 @@
             color: #EB4F27;
         }
 
-        .text-success {
-            color: #10b981;
-        }
-
         .text-sm {
             font-size: 14px;
         }
@@ -99,110 +95,48 @@
             padding: 40px;
         }
 
-        .payment-intro {
+        .order-intro {
             text-align: center;
             margin-bottom: 40px;
         }
 
-        .success-icon {
-            width: 64px;
-            height: 64px;
-            background-color: #d1fae5;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-
-        .success-icon svg {
-            width: 32px;
-            height: 32px;
-            color: #10b981;
-        }
-
-        .payment-intro h1 {
+        .order-intro h1 {
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 12px;
             letter-spacing: -0.02em;
         }
 
-        .payment-intro p {
+        .order-intro p {
             color: #6b7280;
             line-height: 1.5;
             margin: 0;
         }
 
-        .payment-details {
-            background-color: #f9fafb;
-            border: 1px solid #f3f4f6;
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 32px;
-        }
-
-        .payment-details h2 {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 20px 0;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-family: 'Martian Mono', monospace;
-        }
-
-        .detail-row {
+        .order-meta {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            border: 1px solid #f3f4f6;
         }
 
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-
-        .detail-label {
+        .meta-group h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             color: #6b7280;
-            font-size: 14px;
-        }
-
-        .detail-value {
-            font-weight: 600;
-            font-size: 14px;
+            margin: 0 0 6px 0;
             font-family: 'Martian Mono', monospace;
         }
 
-        .detail-value.amount {
-            color: #10b981;
-            font-size: 16px;
-        }
-
-        .cta-button {
-            display: block;
-            width: 100%;
-            background-color: #000;
-            color: #fff;
-            text-align: center;
-            padding: 16px 24px;
-            text-decoration: none;
-            border-radius: 6px;
+        .meta-group p {
+            font-size: 14px;
             font-weight: 600;
-            font-size: 14px;
-            margin-top: 32px;
+            margin: 0;
             font-family: 'Martian Mono', monospace;
-        }
-
-        .cta-button:hover {
-            background-color: #374151;
-        }
-
-        .help-text {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 14px;
-            color: #6b7280;
         }
 
         /* Footer */
@@ -239,12 +173,10 @@
                 width: 100% !important;
                 border: none;
             }
-            .payment-details {
-                padding: 16px;
-            }
-            .detail-row {
+            .order-meta {
                 flex-direction: column;
-                gap: 4px;
+                gap: 16px;
+                text-align: center;
             }
         }
     </style>
@@ -263,46 +195,30 @@
         <!-- Main Content -->
         <div class="content">
             
-            <div class="payment-intro">
-                <div class="success-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <h1>Payment Successful</h1>
-                <p>Hi {{ customer_name }}, your payment has been confirmed. Thank you for your purchase!</p>
+            <div class="order-intro">
+                <h1>Payment Confirmed</h1>
+                <p>Hi {{ customer_name }}, your payment has been confirmed. Thank you for your purchase.</p>
             </div>
 
             <!-- Payment Details -->
-            <div class="payment-details">
-                <h2>Payment Details</h2>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Order Number</span>
-                    <span class="detail-value text-rust">#{{ order_number }}</span>
+            <div class="order-meta">
+                <div class="meta-group">
+                    <h3>Order Number</h3>
+                    <p class="text-rust">#{{ order_number }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Amount Paid</span>
-                    <span class="detail-value amount">{{ amount }}</span>
+                <div class="meta-group">
+                    <h3>Amount</h3>
+                    <p>{{ amount }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Payment Method</span>
-                    <span class="detail-value">{{ payment_method }}</span>
+                <div class="meta-group">
+                    <h3>Method</h3>
+                    <p>{{ payment_method }}</p>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Payment Date</span>
-                    <span class="detail-value">{{ payment_date }}</span>
+                <div class="meta-group">
+                    <h3>Date</h3>
+                    <p>{{ payment_date }}</p>
                 </div>
             </div>
-
-            <a href="#" class="cta-button">View Order Details</a>
-
-            <p class="help-text">
-                A receipt has been sent to your email. If you have any questions, please contact us at <a href="mailto:{{ support_email }}" style="color: #EB4F27; text-decoration: none;">{{ support_email }}</a>
-            </p>
 
         </div>
 
