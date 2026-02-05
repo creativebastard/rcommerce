@@ -19,6 +19,7 @@ R Commerce provides a complete API-first ecommerce platform with:
 | [02-error-codes.md](02-error-codes.md) | Complete error code reference |
 | [03-cart-api.md](03-cart-api.md) | Shopping cart API endpoints |
 | [04-coupon-api.md](04-coupon-api.md) | Coupon and discount API |
+| [statistics.md](statistics.md) | Statistics and analytics API |
 
 ## API Endpoints
 
@@ -30,6 +31,7 @@ R Commerce provides a complete API-first ecommerce platform with:
 - **Cart** - Shopping cart operations
 - **Coupons** - Discount codes and promotions
 - **Payments** - Payment processing and refunds
+- **Statistics** - Analytics, reporting, and metrics
 
 ### Authentication
 

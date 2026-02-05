@@ -85,6 +85,7 @@ plugins:
             Cart: 购物车
             Coupons: 优惠券
             Payments: 支付
+            Statistics: 统计
             Webhooks: Webhooks
             GraphQL: GraphQL
             Payment Gateways: 支付网关
@@ -121,6 +122,7 @@ plugins:
             Media Storage: 媒体存储
             Guides: 指南
             API Keys: API 密钥
+            Dunning: 催缴管理
             Scopes: 权限范围
             Development: 开发
             Local Setup: 本地设置
@@ -248,6 +250,7 @@ nav:
     - Cart: api-reference/cart.md
     - Coupons: api-reference/coupons.md
     - Payments: api-reference/payments.md
+    - Statistics: api-reference/statistics.md
     - Webhooks: api-reference/webhooks.md
     - GraphQL: api-reference/graphql.md
   
@@ -294,6 +297,7 @@ nav:
   
   - Guides:
     - API Keys: guides/api-keys.md
+    - Dunning: guides/dunning.md
   
   - Development:
     - Overview: development/index.md

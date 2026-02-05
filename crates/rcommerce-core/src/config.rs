@@ -36,6 +36,9 @@ pub struct Config {
     
     #[serde(default)]
     pub tls: TlsConfig,
+    
+    #[serde(default)]
+    pub dunning: DunningConfig,
 }
 
 impl Default for Config {
@@ -52,6 +55,7 @@ impl Default for Config {
             features: FeatureFlags::default(),
             import: ImportConfig::default(),
             tls: TlsConfig::default(),
+            dunning: DunningConfig::default(),
         }
     }
 }
@@ -1133,6 +1137,179 @@ fn default_cert_cache_dir() -> PathBuf {
 
 fn default_hsts_max_age() -> u64 {
     31_536_000 // 1 year
+}
+
+/// Dunning (payment retry) configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningConfig {
+    /// Enable dunning process
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Number of retry attempts before cancellation
+    #[serde(default = "default_max_retries")]
+    pub max_retries: i32,
+
+    /// Retry intervals in days (e.g., [1, 3, 7] = retry after 1 day, 3 days, 7 days)
+    #[serde(default = "default_retry_intervals")]
+    pub retry_intervals_days: Vec<i32>,
+
+    /// Grace period in days (subscription remains active during retries)
+    #[serde(default = "default_grace_period_days")]
+    pub grace_period_days: i32,
+
+    /// Send email on first failure
+    #[serde(default = "default_true")]
+    pub email_on_first_failure: bool,
+
+    /// Send email on final failure (before cancellation)
+    #[serde(default = "default_true")]
+    pub email_on_final_failure: bool,
+
+    /// Apply late fees after N retries (None = no late fees)
+    #[serde(default)]
+    pub late_fee_after_retry: Option<i32>,
+
+    /// Late fee amount
+    #[serde(default)]
+    pub late_fee_amount: Option<rust_decimal::Decimal>,
+
+    /// Per-gateway dunning configurations
+    #[serde(default)]
+    pub gateway_configs: std::collections::HashMap<String, GatewayDunningConfig>,
+
+    /// Email template configuration
+    #[serde(default)]
+    pub email_templates: DunningEmailTemplates,
+
+    /// Background job interval in minutes
+    #[serde(default = "default_dunning_job_interval")]
+    pub job_interval_minutes: i32,
+}
+
+impl Default for DunningConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            max_retries: 3,
+            retry_intervals_days: vec![1, 3, 7],
+            grace_period_days: 14,
+            email_on_first_failure: true,
+            email_on_final_failure: true,
+            late_fee_after_retry: None,
+            late_fee_amount: None,
+            gateway_configs: std::collections::HashMap::new(),
+            email_templates: DunningEmailTemplates::default(),
+            job_interval_minutes: 60,
+        }
+    }
+}
+
+/// Per-gateway dunning configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GatewayDunningConfig {
+    /// Override max retries for this gateway
+    #[serde(default)]
+    pub max_retries: Option<i32>,
+
+    /// Override retry intervals for this gateway
+    #[serde(default)]
+    pub retry_intervals_days: Option<Vec<i32>>,
+
+    /// Gateway-specific grace period
+    #[serde(default)]
+    pub grace_period_days: Option<i32>,
+
+    /// Enable/disable dunning for this gateway
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+/// Dunning email template configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningEmailTemplates {
+    /// Template for first failure notification
+    #[serde(default = "default_first_failure_template")]
+    pub first_failure: String,
+
+    /// Template for retry failure notification
+    #[serde(default = "default_retry_failure_template")]
+    pub retry_failure: String,
+
+    /// Template for final notice before cancellation
+    #[serde(default = "default_final_notice_template")]
+    pub final_notice: String,
+
+    /// Template for cancellation notification
+    #[serde(default = "default_cancellation_template")]
+    pub cancellation: String,
+
+    /// Template for payment recovered confirmation
+    #[serde(default = "default_recovered_template")]
+    pub recovered: String,
+
+    /// Email sender name
+    #[serde(default)]
+    pub from_name: Option<String>,
+
+    /// Email sender address
+    #[serde(default)]
+    pub from_email: Option<String>,
+
+    /// Reply-to address
+    #[serde(default)]
+    pub reply_to: Option<String>,
+}
+
+impl Default for DunningEmailTemplates {
+    fn default() -> Self {
+        Self {
+            first_failure: default_first_failure_template(),
+            retry_failure: default_retry_failure_template(),
+            final_notice: default_final_notice_template(),
+            cancellation: default_cancellation_template(),
+            recovered: default_recovered_template(),
+            from_name: None,
+            from_email: None,
+            reply_to: None,
+        }
+    }
+}
+
+fn default_max_retries() -> i32 {
+    3
+}
+
+fn default_retry_intervals() -> Vec<i32> {
+    vec![1, 3, 7]
+}
+
+fn default_grace_period_days() -> i32 {
+    14
+}
+
+fn default_dunning_job_interval() -> i32 {
+    60 // Run every hour
+}
+
+fn default_first_failure_template() -> String {
+    "dunning/first_failure".to_string()
+}
+
+fn default_retry_failure_template() -> String {
+    "dunning/retry_failure".to_string()
+}
+
+fn default_final_notice_template() -> String {
+    "dunning/final_notice".to_string()
+}
+
+fn default_cancellation_template() -> String {
+    "dunning/cancellation".to_string()
+}
+
+fn default_recovered_template() -> String {
+    "dunning/recovered".to_string()
 }
 
 #[cfg(test)]

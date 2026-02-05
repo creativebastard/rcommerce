@@ -811,3 +811,57 @@ destination = "s3"
 bucket = "${BACKUP_S3_BUCKET}"
 region = "${AWS_REGION}"
 prefix = "backups/rcommerce/"
+
+# ============================================================================
+# DUNNING (PAYMENT RETRY) CONFIGURATION
+# ============================================================================
+[dunning]
+# Enable automatic payment retry (dunning process)
+enabled = true
+
+# Number of retry attempts before cancelling subscription
+max_retries = 3
+
+# Retry intervals in days (e.g., [1, 3, 7] = retry after 1 day, 3 days, 7 days)
+retry_intervals_days = [1, 3, 7]
+
+# Grace period in days (subscription remains active during retries)
+grace_period_days = 14
+
+# Send email notification on first payment failure
+email_on_first_failure = true
+
+# Send email notification on final failure (before cancellation)
+email_on_final_failure = true
+
+# Apply late fees after N retries (None = no late fees)
+late_fee_after_retry = null
+
+# Late fee amount (only used if late_fee_after_retry is set)
+late_fee_amount = null
+
+# Background job interval in minutes
+job_interval_minutes = 60
+
+# Per-gateway dunning configurations (optional)
+# [dunning.gateway_configs.stripe]
+# enabled = true
+# max_retries = 4
+# retry_intervals_days = [1, 3, 5, 7]
+# grace_period_days = 16
+
+# [dunning.gateway_configs.paypal]
+# enabled = true
+# max_retries = 2
+# retry_intervals_days = [1, 5]
+
+# Email template configuration (optional)
+# [dunning.email_templates]
+# first_failure = "dunning/first_failure"
+# retry_failure = "dunning/retry_failure"
+# final_notice = "dunning/final_notice"
+# cancellation = "dunning/cancellation"
+# recovered = "dunning/recovered"
+# from_name = "Billing Department"
+# from_email = "billing@yourstore.com"
+# reply_to = "support@yourstore.com"

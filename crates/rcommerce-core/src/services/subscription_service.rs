@@ -40,6 +40,11 @@ impl<R: SubscriptionRepository> SubscriptionService<R> {
             dunning_config: config,
         }
     }
+
+    /// Get the dunning configuration
+    pub fn config(&self) -> &DunningConfig {
+        &self.dunning_config
+    }
     
     // --- Subscription Management ---
     

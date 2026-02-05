@@ -402,6 +402,13 @@ fn log_routes(config: &Config) {
     info!("  GET  /api/v1/payments/:id         - Get payment status");
     info!("  POST /api/v1/payments/:id/complete - Complete payment");
     info!("  POST /api/v1/payments/:id/refund  - Refund payment");
+    info!("  GET  /api/v1/admin/statistics/dashboard - Dashboard stats (admin)");
+    info!("  GET  /api/v1/admin/statistics/sales     - Sales statistics (admin)");
+    info!("  GET  /api/v1/admin/statistics/orders    - Order statistics (admin)");
+    info!("  GET  /api/v1/admin/statistics/products  - Product performance (admin)");
+    info!("  GET  /api/v1/admin/statistics/customers - Customer statistics (admin)");
+    info!("  GET  /api/v1/admin/statistics/revenue   - Revenue trends (admin)");
+    info!("  GET  /api/v1/admin/statistics/compare   - Period comparison (admin)");
 
     if config.tls.enabled {
         info!("  (HTTP port {} redirects to HTTPS)", config.tls.http_port);
@@ -473,6 +480,7 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
     // Admin routes (admin auth required)
     let admin_routes = Router::new()
         .nest("/admin", crate::routes::admin_router())
+        .merge(crate::routes::statistics_router())
         .route_layer(middleware::from_fn_with_state(app_state, admin_middleware));
 
     Router::new()

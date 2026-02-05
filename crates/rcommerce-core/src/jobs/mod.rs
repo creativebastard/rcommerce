@@ -58,6 +58,7 @@ pub mod scheduler;
 pub mod retry;
 pub mod metrics;
 pub mod dead_letter;
+pub mod dunning_job;
 
 // Re-export main types
 pub use config::{JobConfig, WorkerConfig, SchedulerConfig};
@@ -68,6 +69,7 @@ pub use scheduler::JobScheduler;
 pub use retry::{RetryPolicy, ExponentialBackoff, RetryHistory, RetryAttempt};
 pub use metrics::{JobMetrics, MetricsSummary};
 pub use dead_letter::{DeadLetterQueue, DeadLetter};
+pub use dunning_job::{DunningJob, DunningJobResult, DunningJobStats, DunningJobScheduler};
 // JobError is defined in this module and re-exported automatically
 
 /// Job processing result type

@@ -138,6 +138,9 @@ pub enum CacheNamespace {
     
     /// Session data
     Session,
+    
+    /// Statistics cache
+    Statistics,
 }
 
 impl CacheNamespace {
@@ -150,6 +153,7 @@ impl CacheNamespace {
             CacheNamespace::MessageQueue => "msg:queue",
             CacheNamespace::ApiResponse => "api:cache",
             CacheNamespace::Session => "session",
+            CacheNamespace::Statistics => "stats",
         }
     }
     
@@ -158,6 +162,10 @@ impl CacheNamespace {
         format!("{}:{}", self.prefix(), key.as_ref())
     }
 }
+
+
+
+
 
 #[cfg(test)]
 mod tests {

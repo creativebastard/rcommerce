@@ -7,6 +7,8 @@ pub mod order;
 pub mod payment;
 pub mod product;
 pub mod subscription;
+pub mod statistics;
+pub mod dunning;
 
 pub use admin::router as admin_router;
 pub use auth::router as auth_router;
@@ -17,6 +19,8 @@ pub use order::router as order_router;
 pub use payment::router as payment_router;
 pub use product::router as product_router;
 pub use subscription::router as subscription_router;
+pub use statistics::router as statistics_router;
+pub use dunning::router as dunning_router;
 
 use crate::state::AppState;
 use axum::{routing::get, Router};
@@ -52,6 +56,8 @@ fn api_v1_routes() -> Router<AppState> {
         .merge(payment_router())
         .merge(subscription_router())
         .merge(admin_router())
+        .merge(statistics_router())
+        .merge(dunning_router())
 }
 
 /// Health check endpoint
