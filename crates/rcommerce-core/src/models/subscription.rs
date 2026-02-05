@@ -181,7 +181,7 @@ pub struct CreateSubscriptionRequest {
 }
 
 /// Update subscription request
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Validate)]
 pub struct UpdateSubscriptionRequest {
     pub status: Option<SubscriptionStatus>,
     pub interval: Option<super::SubscriptionInterval>,

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use rcommerce_core::cache::RedisPool;
-use rcommerce_core::repository::{Database, PostgresApiKeyRepository};
-use rcommerce_core::services::{AuthService, CustomerService, ProductService};
+use rcommerce_core::repository::{Database, PostgresApiKeyRepository, PostgresSubscriptionRepository};
+use rcommerce_core::services::{AuthService, CustomerService, ProductService, SubscriptionService};
 
 use crate::middleware::AuthRateLimiter;
 
@@ -11,6 +11,8 @@ pub struct AppState {
     pub product_service: ProductService,
     pub customer_service: CustomerService,
     pub auth_service: AuthService,
+    pub subscription_service: SubscriptionService<PostgresSubscriptionRepository>,
+    pub subscription_repository: Arc<PostgresSubscriptionRepository>,
     pub db: Database,
     pub redis: Option<RedisPool>,
     pub auth_rate_limiter: AuthRateLimiter,
@@ -25,14 +27,20 @@ impl AppState {
         db: Database,
         redis: Option<RedisPool>,
         api_key_repository: PostgresApiKeyRepository,
+        subscription_repository: PostgresSubscriptionRepository,
     ) -> Self {
         // Create auth rate limiter: 5 attempts per minute per IP
         let auth_rate_limiter = AuthRateLimiter::new(5, 60);
+        
+        // Create subscription service
+        let subscription_service = SubscriptionService::new(subscription_repository.clone());
         
         Self {
             product_service,
             customer_service,
             auth_service,
+            subscription_service,
+            subscription_repository: Arc::new(subscription_repository),
             db,
             redis,
             auth_rate_limiter,

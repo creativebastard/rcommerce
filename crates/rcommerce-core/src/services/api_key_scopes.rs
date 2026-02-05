@@ -258,7 +258,7 @@ impl ScopeChecker {
 
 /// Predefined scope sets for common use cases
 pub mod presets {
-    use super::*;
+    
 
     /// Read-only access to all resources
     pub fn read_only() -> Vec<String> {

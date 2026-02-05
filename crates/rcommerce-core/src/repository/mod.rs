@@ -9,11 +9,13 @@ pub mod postgres;
 pub mod cart_repository;
 pub mod coupon_repository;
 pub mod api_key_repository;
+pub mod subscription_repository;
 
-// Re-export cart, coupon, and api_key traits
+// Re-export cart, coupon, api_key, and subscription traits
 pub use cart_repository::CartRepository;
 pub use coupon_repository::CouponRepository;
 pub use api_key_repository::{ApiKeyRepository, ApiKeyRecord, CreateApiKeyRequest, PostgresApiKeyRepository};
+pub use subscription_repository::{SubscriptionRepository, PostgresSubscriptionRepository};
 
 // PostgreSQL exports
 pub use postgres::{
