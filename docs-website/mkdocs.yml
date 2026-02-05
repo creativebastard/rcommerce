@@ -86,6 +86,7 @@ plugins:
             Coupons: 优惠券
             Payments: 支付
             Statistics: 统计
+            Subscriptions: 订阅
             Webhooks: Webhooks
             GraphQL: GraphQL
             Payment Gateways: 支付网关
@@ -251,6 +252,7 @@ nav:
     - Coupons: api-reference/coupons.md
     - Payments: api-reference/payments.md
     - Statistics: api-reference/statistics.md
+    - Subscriptions: api-reference/subscriptions.md
     - Webhooks: api-reference/webhooks.md
     - GraphQL: api-reference/graphql.md
   

@@ -29,27 +29,72 @@ cargo build --release
 ### 选项 2：Docker（快速开始推荐）
 
 ```bash
-# 使用 Docker Compose 启动
+# 克隆仓库
+git clone https://github.com/creativebastard/rcommerce.git
+cd gocart
+
+# 启动所有服务
 docker-compose up -d
 
-# 这将启动：
-# - R Commerce API (端口 8080)
-# - PostgreSQL 数据库
-# - Redis 缓存
+# 检查状态
+docker-compose ps
 ```
 
-## 数据库设置
+## 配置
 
-### PostgreSQL
+### 1. 创建配置文件
+
+创建 `config/development.toml` 文件：
+
+```toml
+[server]
+host = "127.0.0.1"
+port = 8080
+log_level = "debug"
+
+[database]
+type = "postgres"
+host = "localhost"
+port = 5432
+username = "rcommerce_dev"
+password = "devpass"
+database = "rcommerce_dev"
+pool_size = 5
+
+[cache]
+provider = "memory"  # 开发环境使用内存缓存
+
+[payments]
+default_gateway = "mock"
+
+[logging]
+level = "debug"
+format = "text"
+
+[features]
+development_mode = true
+debug_api = true
+```
+
+### 2. 设置数据库
+
+**PostgreSQL：**
 
 ```bash
 # 创建数据库
-createdb rcommerce_dev
+psql -U postgres -c "CREATE DATABASE rcommerce_dev;"
+psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
+```
 
-# 创建用户并授权
-psql rcommerce_dev << EOF
-CREATE USER rcommerce_dev WITH PASSWORD 'devpass';
-GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;
+**MySQL：**
+
+```bash
+mysql -u root -p <<EOF
+CREATE DATABASE rcommerce_dev;
+CREATE USER 'rcommerce_dev'@'localhost' IDENTIFIED BY 'devpass';
+GRANT ALL PRIVILEGES ON rcommerce_dev.* TO 'rcommerce_dev'@'localhost';
+FLUSH PRIVILEGES;
 EOF
 ```
 
@@ -78,53 +123,90 @@ cargo run -- --config config/development.toml
 ### 生产模式
 
 ```bash
-# 使用发布构建
-./target/release/rcommerce server --config config/production.toml
+# 构建发布二进制文件
+cargo build --release
+
+# 使用生产配置运行
+./target/release/rcommerce --config config/production.toml
 ```
 
 ## 验证安装
 
+### 健康检查
+
 ```bash
-# 健康检查
 curl http://localhost:8080/health
+```
 
-# 预期响应：OK
+预期响应：
 
-# 获取 API 信息
-curl http://localhost:8080/
+```json
+{
+  "status": "healthy",
+  "version": "0.1.0",
+  "database": "connected",
+  "cache": "connected",
+  "timestamp": "2024-01-23T14:13:35Z"
+}
+```
+
+### 创建您的第一个产品
+
+```bash
+curl -X POST http://localhost:8080/api/v1/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "name": "Test Product",
+    "slug": "test-product",
+    "description": "A test product",
+    "price": 29.99,
+    "status": "active"
+  }'
 ```
 
 ## 下一步
 
-- [配置指南](configuration.md) - 自定义您的安装
-- [API 参考](../api-reference/index.md) - 探索 API
-- [部署指南](../deployment/docker.md) - 生产部署
+- [安装指南](installation.zh.md) - 详细的安装说明
+- [配置指南](configuration.zh.md) - 完整的配置参考
+- [API 参考](../api-reference/index.md) - 开始使用 API 构建
+- [开发指南](../development/index.md) - 设置开发环境
 
 ## 故障排除
 
-### 数据库连接错误
-
-确保 PostgreSQL 正在运行且凭据正确：
+### 端口已被占用
 
 ```bash
-# 测试连接
-psql -h localhost -U rcommerce_dev -d rcommerce_dev
+# 查找使用端口 8080 的进程
+lsof -i :8080
+
+# 终止进程或使用不同端口
+# 编辑 config/development.toml 并更改端口
 ```
 
-### 端口冲突
-
-如果端口 8080 已被占用：
+### 数据库连接失败
 
 ```bash
-# 使用不同端口
-cargo run -- server -p 8081
+# 检查 PostgreSQL 是否正在运行
+pg_isready -h localhost -p 5432
+
+# 检查凭据
+psql -U rcommerce_dev -d rcommerce_dev -h localhost -W
 ```
 
 ### 构建错误
 
-确保您使用的是最新稳定版 Rust：
-
 ```bash
+# 更新 Rust
 rustup update
-rustc --version  # 应为 1.70+
+
+# 清理并重新构建
+cargo clean
+cargo build --release
 ```
+
+## 获取帮助
+
+- **文档**：浏览完整文档
+- **GitHub Issues**：报告错误和请求功能
+- **Discord**：加入社区获取实时帮助

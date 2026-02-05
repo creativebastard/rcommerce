@@ -10,13 +10,13 @@ rcommerce [OPTIONS] <COMMAND>
 选项：
   -c, --config <CONFIG>        配置文件路径
   -l, --log-level <LOG_LEVEL>  设置日志级别（debug、info、warn、error）
-  -h, --help                   打印帮助信息
-  -V, --version                打印版本信息
+  -h, --help                   打印帮助
+  -V, --version                打印版本
 ```
 
 ## 命令
 
-### 服务器
+### Server（服务器）
 
 启动 API 服务器：
 
@@ -24,8 +24,8 @@ rcommerce [OPTIONS] <COMMAND>
 rcommerce server [OPTIONS]
 
 选项：
-  -H, --host <HOST>      绑定地址 [默认值：0.0.0.0]
-  -P, --port <PORT>      端口号 [默认值：8080]
+  -H, --host <HOST>      绑定地址 [默认：0.0.0.0]
+  -P, --port <PORT>      端口号 [默认：8080]
       --skip-migrate     跳过自动数据库迁移
 ```
 
@@ -38,11 +38,11 @@ rcommerce server
 # 在自定义端口启动
 rcommerce server -P 3000
 
-# 不执行迁移启动
+# 不迁移启动
 rcommerce server --skip-migrate
 ```
 
-### 数据库
+### Database（数据库）
 
 数据库管理命令：
 
@@ -72,7 +72,7 @@ rcommerce db reset -c config.toml
 rcommerce db seed -c config.toml
 ```
 
-### API 密钥管理
+### API Key 管理
 
 管理服务间认证的 API 密钥：
 
@@ -83,7 +83,7 @@ rcommerce api-key <COMMAND>
   list       列出所有 API 密钥
   create     创建新的 API 密钥
   get        获取 API 密钥详情
-  revoke     吊销 API 密钥
+  revoke     撤销 API 密钥
   delete     永久删除 API 密钥
 ```
 
@@ -119,7 +119,7 @@ rcommerce api-key create [OPTIONS]
 选项：
   -u, --customer-id <ID>     客户 ID（系统密钥可选）
   -n, --name <NAME>          密钥名称/描述
-  -s, --scopes <SCOPES>      权限范围（逗号分隔）[默认值：read]
+  -s, --scopes <SCOPES>      权限范围（逗号分隔）[默认：read]
   -e, --expires-days <DAYS>  过期天数（可选）
 ```
 
@@ -136,7 +136,7 @@ rcommerce api-key create \
 ```
 ✅ API 密钥创建成功！
 
-重要：立即复制此密钥 - 它只会显示一次！
+重要：立即复制此密钥 - 不会再次显示！
 
   密钥：aB3dEfGh.sEcReTkEy123456789
 
@@ -173,13 +173,13 @@ API 密钥详情
   最后使用：   从未使用
 ```
 
-#### 吊销 API 密钥
+#### 撤销 API 密钥
 
 ```bash
 rcommerce api-key revoke [OPTIONS] <PREFIX>
 
 选项：
-  -r, --reason <REASON>  吊销原因
+  -r, --reason <REASON>  撤销原因
 ```
 
 **示例：**
@@ -188,12 +188,12 @@ rcommerce api-key revoke [OPTIONS] <PREFIX>
 rcommerce api-key revoke \
   -c config.toml \
   aB3dEfGh \
-  --reason "密钥泄露"
+  --reason "密钥已泄露"
 ```
 
 #### 删除 API 密钥
 
-永久删除 API 密钥（不可恢复）：
+永久删除 API 密钥（不可逆）：
 
 ```bash
 rcommerce api-key delete [OPTIONS] <PREFIX>
@@ -212,7 +212,7 @@ rcommerce api-key delete -c config.toml aB3dEfGh
 rcommerce api-key delete -c config.toml aB3dEfGh --force
 ```
 
-### 产品管理
+### Product 管理
 
 ```bash
 rcommerce product <COMMAND>
@@ -234,10 +234,10 @@ rcommerce product list -c config.toml
 输出：
 ```
 产品
-ID                                    标题                          价格       货币       状态
+ID                                    标题                          价格      货币   状态
 ----------------------------------------------------------------------------------------------------
-550e8400-e29b-41d4-a716-446655440000  Premium T-Shirt               29.99      USD        ✓ 激活
-550e8400-e29b-41d4-a716-446655440001  Wireless Headphones           149.99     USD        ✓ 激活
+550e8400-e29b-41d4-a716-446655440000  Premium T-Shirt                29.99      USD        ✓ Active
+550e8400-e29b-41d4-a716-446655440001  Wireless Headphones            149.99     USD        ✓ Active
 
 总计：2 个产品
 ```
@@ -252,15 +252,15 @@ rcommerce product create -c config.toml
 
 ```
 📦 创建新产品
-随时按 Ctrl+C 取消。
+按 Ctrl+C 随时取消。
 
 产品标题：Premium T-Shirt
-URL 别名 [premium-t-shirt]: premium-t-shirt
+URL slug [premium-t-shirt]: premium-t-shirt
 产品类型：
-  > 简单产品
-    可变产品
-    数字产品
-    捆绑产品
+  > Simple
+    Variable
+    Digital
+    Bundle
 价格：29.99
 货币：
   > USD
@@ -273,15 +273,15 @@ URL 别名 [premium-t-shirt]: premium-t-shirt
     HKD
     SGD
 SKU（可选）：TSHIRT-001
-库存数量 [0]: 100
+库存数量 [0]：100
 描述（可选）：High quality cotton t-shirt
 激活产品？[Y/n]: y
 标记为精选？[y/N]: n
 
 📋 产品摘要
   标题：       Premium T-Shirt
-  别名：       premium-t-shirt
-  类型：       简单产品
+  Slug：       premium-t-shirt
+  类型：       Simple
   价格：       29.99 USD
   SKU：        TSHIRT-001
   库存：       100
@@ -294,21 +294,21 @@ SKU（可选）：TSHIRT-001
 ✅ 产品创建成功！
   ID：    550e8400-e29b-41d4-a716-446655440000
   标题：  Premium T-Shirt
-  别名：  premium-t-shirt
+  Slug：  premium-t-shirt
   价格：  29.99 USD
 ```
 
 **交互式提示包括：**
-- 产品标题（必填，最多 255 个字符）
-- URL 别名（从标题自动生成，可编辑）
-- 产品类型选择（简单产品/可变产品/数字产品/捆绑产品）
+- 产品标题（必填，最多 255 字符）
+- URL slug（从标题自动生成，可编辑）
+- 产品类型选择（Simple/Variable/Digital/Bundle）
 - 价格（数字验证）
 - 货币选择（USD/EUR/GBP/JPY/AUD/CAD/CNY/HKD/SGD）
-- SKU（可选，最多 100 个字符）
-- 库存数量（默认值：0）
+- SKU（可选，最多 100 字符）
+- 库存数量（默认：0）
 - 描述（可选）
-- 激活状态（默认值：是）
-- 精选状态（默认值：否）
+- 激活状态（默认：是）
+- 精选状态（默认：否）
 
 #### 获取产品详情
 
@@ -327,9 +327,9 @@ rcommerce product get -c config.toml 550e8400-e29b-41d4-a716-446655440000
 产品详情
   ID：          550e8400-e29b-41d4-a716-446655440000
   标题：        Premium T-Shirt
-  别名：        premium-t-shirt
+  Slug：        premium-t-shirt
   价格：        29.99 USD
-  状态：        ✓ 激活
+  状态：        ✓ Active
   库存：        100
   创建时间：    2024-01-31 10:30:00 UTC
   描述：        High quality cotton t-shirt
@@ -349,12 +349,12 @@ rcommerce product delete -c config.toml 550e8400-e29b-41d4-a716-446655440000
 
 这将提示确认：
 ```
-⚠️  删除产品
+⚠️  产品删除
 输入 'yes' 删除产品 '550e8400-e29b-41d4-a716-446655440000'：yes
 ✅ 产品 '550e8400-e29b-41d4-a716-446655440000' 已删除
 ```
 
-### 订单管理
+### Order 管理
 
 ```bash
 rcommerce order <COMMAND>
@@ -375,15 +375,15 @@ rcommerce order list -c config.toml
 输出：
 ```
 订单
-ID                                    客户                 状态         总金额          创建时间
+ID                                    客户                 状态       总计           创建时间
 ----------------------------------------------------------------------------------------------------
-550e8400-e29b-41d4-a716-446655440000  john@example.com     pending      149.99          2024-01-31
-550e8400-e29b-41d4-a716-446655440001  jane@example.com     completed    299.98          2024-01-30
+550e8400-e29b-41d4-a716-446655440000  john@example.com     pending    149.99         2024-01-31
+550e8400-e29b-41d4-a716-446655440001  jane@example.com     completed  299.98         2024-01-30
 
 总计：2 个订单
 ```
 
-### 客户管理
+### Customer 管理
 
 ```bash
 rcommerce customer <COMMAND>
@@ -421,7 +421,7 @@ rcommerce customer create -c config.toml
 
 ```
 👤 创建新客户
-随时按 Ctrl+C 取消。
+按 Ctrl+C 随时取消。
 
 邮箱地址：john@example.com
 名字：John
@@ -437,7 +437,7 @@ rcommerce customer create -c config.toml
     CNY
     HKD
     SGD
-接收营销邮件？[y/N]: n
+接受营销邮件？[y/N]: n
 密码：********
 确认密码：********
 
@@ -446,7 +446,7 @@ rcommerce customer create -c config.toml
   邮箱：              john@example.com
   电话：              +1234567890
   货币：              USD
-  接收营销：          否
+  接受营销：          否
 
 创建此客户？[Y/n]: y
 
@@ -458,12 +458,12 @@ rcommerce customer create -c config.toml
 
 **交互式提示包括：**
 - 邮箱地址（必填，已验证）
-- 名字（必填，最多 100 个字符）
-- 姓氏（必填，最多 100 个字符）
+- 名字（必填，最多 100 字符）
+- 姓氏（必填，最多 100 字符）
 - 电话号码（可选）
 - 首选货币选择
-- 营销同意（默认值：否）
-- 密码（最少 8 个字符，需确认）
+- 营销同意（默认：否）
+- 密码（最少 8 字符，带确认）
 
 #### 获取客户详情
 
@@ -471,7 +471,7 @@ rcommerce customer create -c config.toml
 rcommerce customer get -c config.toml <customer-id>
 ```
 
-### 配置
+### Configuration（配置）
 
 显示加载的配置：
 
@@ -479,7 +479,7 @@ rcommerce customer get -c config.toml <customer-id>
 rcommerce config -c config.toml
 ```
 
-### 导入
+### Import（导入）
 
 从外部平台或文件导入数据：
 
@@ -505,19 +505,19 @@ rcommerce import platform <PLATFORM> [OPTIONS]
   -u, --api-url <URL>          API 端点 URL
   -k, --api-key <KEY>          API 密钥或访问令牌
       --api-secret <SECRET>    API 密钥（如需要）
-  -e, --entities <ENTITIES>    逗号分隔列表：products,customers,orders [默认值：all]
-      --limit <LIMIT>          每个实体最大导入记录数
-      --dry-run                验证数据但不导入
+  -e, --entities <ENTITIES>    逗号分隔列表：products,customers,orders [默认：all]
+      --limit <LIMIT>          每实体最大导入记录数
+      --dry-run                验证数据而不导入
 ```
 
 **支持的平台：**
 
 | 平台 | 状态 | 认证方式 | 实体 |
 |------|------|----------|------|
-| Shopify | ✅ 完整 | API 密钥 + 密码 | 产品、客户、订单 |
-| WooCommerce | ✅ 完整 | 消费者密钥 + 密钥 | 产品、客户、订单 |
-| Magento | 🚧 计划中 | OAuth/API 令牌 | 产品、客户、订单 |
-| Medusa | 🚧 计划中 | API 令牌 | 产品、客户、订单 |
+| Shopify | ✅ 完整 | API Key + Password | Products、Customers、Orders |
+| WooCommerce | ✅ 完整 | Consumer Key + Secret | Products、Customers、Orders |
+| Magento | 🚧 计划中 | OAuth/API Token | Products、Customers、Orders |
+| Medusa | 🚧 计划中 | API Token | Products、Customers、Orders |
 
 **示例：**
 
@@ -538,7 +538,7 @@ rcommerce import platform shopify \
   --entities products,customers \
   --dry-run
 
-# 从 WooCommerce 导入并限制数量
+# 从 WooCommerce 导入（带限制）
 rcommerce import platform woocommerce \
   -c config.toml \
   --api-url https://your-store.com/wp-json/wc/v3 \
@@ -557,7 +557,7 @@ rcommerce import platform shopify ... --dry-run
 
 输出：
 ```
-🧪 试运行模式 - 不会导入任何数据
+🧪 试运行模式 - 不会导入数据
 从 Shopify 获取产品（试运行）...
 验证：Premium T-Shirt
 验证：Wireless Headphones
@@ -567,12 +567,12 @@ rcommerce import platform shopify ... --dry-run
 ========================
 实体：products
   总计：     150
-  创建：     150
-  更新：     0
-  跳过：     0
+  已创建：   150
+  已更新：   0
+  已跳过：   0
   错误：     0
 
-✅ 验证完成。运行时不加 --dry-run 参数即可导入。
+✅ 验证完成。不带 --dry-run 运行以导入。
 ```
 
 #### 从文件导入
@@ -587,7 +587,7 @@ rcommerce import file [OPTIONS] --file <PATH> --format <FORMAT> --entity <ENTITY
   -F, --format <FORMAT>    文件格式：csv、json、xml
   -e, --entity <ENTITY>    实体类型：products、customers、orders
   -l, --limit <LIMIT>      最大导入记录数
-      --dry-run            验证数据但不导入
+      --dry-run            验证数据而不导入
 ```
 
 **文件格式支持：**
@@ -600,21 +600,21 @@ rcommerce import file [OPTIONS] --file <PATH> --format <FORMAT> --entity <ENTITY
 
 **CSV 格式：**
 
-每种实体类型预期的列：
+每个实体类型的预期列：
 
-**产品：**
+**Products：**
 ```csv
 id,title,slug,description,price,compare_at_price,sku,inventory_quantity,status,product_type
 TSHIRT-001,Premium T-Shirt,premium-t-shirt,High quality cotton,29.99,39.99,TSHIRT-001,100,active,physical
 ```
 
-**客户：**
+**Customers：**
 ```csv
 id,email,first_name,last_name,phone,address1,city,state,postal_code,country
 cust-001,john@example.com,John,Doe,+1234567890,123 Main St,New York,NY,10001,US
 ```
 
-**订单：**
+**Orders：**
 ```csv
 id,order_number,customer_id,email,status,total,subtotal,tax_total,shipping_total
 ORD-001,1001,cust-001,john@example.com,confirmed,59.98,54.99,4.99,0.00
@@ -670,10 +670,10 @@ rcommerce import file \
 
 ```toml
 [import]
-# 导入的默认批处理大小
+# 导入的默认批次大小
 batch_size = 100
 
-# 出错时继续（跳过失败的记录）
+# 出错时继续（跳过失败记录）
 continue_on_error = true
 
 # 跳过现有记录（基于唯一标识符）
@@ -681,7 +681,7 @@ skip_existing = true
 
 [import.shopify]
 api_version = "2024-01"
-# 商店特定设置
+# 店铺特定设置
 
 [import.woocommerce]
 verify_ssl = true
@@ -694,7 +694,7 @@ CLI 尊重以下环境变量：
 | 变量 | 描述 |
 |------|------|
 | `RCOMMERCE_CONFIG` | 默认配置文件路径 |
-| `RUST_LOG` | 日志级别（debug、info、warn、error） |
+| `RUST_LOG` | 日志级别（debug、info、warn、error）|
 
 ## 退出码
 
@@ -706,39 +706,39 @@ CLI 尊重以下环境变量：
 | 3 | 数据库错误 |
 | 4 | 配置错误 |
 
-## 安全功能
+## 安全特性
 
-CLI 包含多项安全功能：
+CLI 包含多项安全特性：
 
-### 防止 root 用户运行
+### Root 用户阻止
 
 出于安全原因，CLI 将拒绝以 root 用户运行：
 
 ```
 ❌ 错误：不允许以 root 运行！
-   rcommerce CLI 不应以 root 身份运行。
+   rcommerce CLI 不应以 root 运行。
    请以非特权用户运行。
 ```
 
 ### 配置文件权限
 
-如果您的配置文件权限过于宽松，CLI 会发出警告：
+如果配置文件权限过于宽松，CLI 会发出警告：
 
 ```
-⚠️  警告：配置文件可被全局读取
+⚠️  警告：配置文件可被所有人读取
    路径：/etc/rcommerce/config.toml
    建议运行：chmod 600 /etc/rcommerce/config.toml
 ```
 
-## 交互功能
+## 交互特性
 
 CLI 使用 `dialoguer` crate 提供交互式提示：
 
-- **输入验证**：实时验证并提供有用的错误信息
+- **输入验证**：实时验证和有用的错误消息
 - **选择菜单**：使用方向键导航枚举和选项
-- **确认提示**：带默认值的确认/取消
-- **密码输入**：隐藏输入并确认匹配
-- **摘要预览**：最终提交前审查所有数据
+- **确认提示**：带默认值的 是/否 确认
+- **密码输入**：带确认匹配的隐藏输入
+- **摘要预览**：最终提交前查看所有数据
 
 在交互式提示期间随时按 `Ctrl+C` 取消操作。
 

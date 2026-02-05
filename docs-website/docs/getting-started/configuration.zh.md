@@ -75,7 +75,7 @@ max_age = "1h"
 
 ```toml
 [database]
-db_type = "Postgres"
+type = "postgres"
 host = "localhost"
 port = 5432
 username = "rcommerce"
@@ -89,128 +89,329 @@ idle_timeout = "10min"
 connection_timeout = "30s"
 
 # SSL/TLS 设置
-ssl_mode = "prefer"  # 选项："disable", "prefer", "require"
+ssl_mode = "prefer"  # 选项："disable"、"prefer"、"require"
+```
+
+### MySQL
+
+```toml
+[database]
+type = "mysql"
+host = "localhost"
+port = 3306
+username = "rcommerce"
+password = "secure_password"
+database = "rcommerce_prod"
+
+# 连接池
+pool_size = 20
+max_lifetime = "30min"
+idle_timeout = "10min"
+connection_timeout = "30s"
 ```
 
 ## 缓存配置
-
-### 内存缓存
-
-```toml
-[cache]
-cache_type = "Memory"
-max_size_mb = 100
-```
 
 ### Redis 缓存
 
 ```toml
 [cache]
-cache_type = "Redis"
-redis_url = "redis://localhost:6379/0"
-redis_pool_size = 20
+provider = "redis"
+
+[cache.redis]
+host = "127.0.0.1"
+port = 6379
+database = 0
+password = "your_redis_password"
+
+# 连接池
+pool_size = 10
+max_lifetime = "30min"
+idle_timeout = "10min"
+connection_timeout = "5s"
+
+# 键前缀
+key_prefix = "rcommerce:"
+
+# 缓存命名空间
+[cache.namespaces]
+products = { ttl_seconds = 3600 }
+orders = { ttl_seconds = 1800 }
+customers = { ttl_seconds = 3600 }
+sessions = { ttl_seconds = 7200 }
+rate_limits = { ttl_seconds = 60 }
 ```
 
-## 安全配置
+### 内存缓存
 
 ```toml
-[security]
-# JWT 设置
-jwt_secret = "your-secret-key-min-32-chars-long"
-jwt_expiry_hours = 24
+[cache]
+provider = "memory"
 
-# API 密钥设置
-api_key_prefix_length = 8
-api_key_secret_length = 32
+[cache.memory]
+max_size_mb = 100
+ttl_seconds = 300
+```
 
-# 密码策略
-min_password_length = 8
-require_uppercase = true
-require_lowercase = true
-require_numbers = true
-require_special_chars = true
+## 支付配置
 
-# 会话设置
-session_timeout = "24h"
-max_sessions_per_user = 5
+```toml
+[payments]
+default_gateway = "stripe"
+auto_capture = true
+capture_delay_seconds = 0
+supported_currencies = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"]
+
+# 欺诈检测
+enable_fraud_check = true
+risk_threshold = 75
+
+# Stripe 配置
+[payments.stripe]
+enabled = true
+secret_key = "sk_live_your_secret_key"
+publishable_key = "pk_live_your_publishable_key"
+webhook_secret = "whsec_your_webhook_secret"
+
+# Airwallex 配置
+[payments.airwallex]
+enabled = false
+client_id = "your_client_id"
+api_key = "your_api_key"
+webhook_secret = "your_webhook_secret"
+
+# PayPal 配置
+[payments.paypal]
+enabled = false
+client_id = "your_client_id"
+client_secret = "your_client_secret"
+
+# 手动/银行转账
+[payments.manual]
+enabled = true
+instructions = "Please transfer to: Bank: ... Account: ..."
+```
+
+## 配送配置
+
+```toml
+[shipping]
+default_provider = "shipstation"
+default_weight_unit = "lb"
+default_dimension_unit = "in"
+
+# ShipStation 配置
+[shipping.shipstation]
+enabled = true
+api_key = "your_api_key"
+api_secret = "your_api_secret"
+
+# EasyPost 配置
+[shipping.easypost]
+enabled = false
+api_key = "your_api_key"
+```
+
+## 通知配置
+
+```toml
+[notifications]
+from_name = "Your Store"
+from_email = "orders@yourstore.com"
+queue_size = 1000
+worker_count = 2
+retry_attempts = 3
+
+# 邮件配置
+[notifications.email]
+provider = "smtp"
+
+[notifications.email.smtp]
+host = "smtp.sendgrid.net"
+port = 587
+username = "apikey"
+password = "SG.your_api_key"
+use_tls = true
+
+# 短信配置
+[notifications.sms]
+enabled = false
+provider = "twilio"
+
+[notifications.sms.twilio]
+account_sid = "your_account_sid"
+auth_token = "your_auth_token"
+from_number = "+1234567890"
 ```
 
 ## 日志配置
 
 ```toml
 [logging]
-level = "info"  # 选项：trace, debug, info, warn, error
-format = "json" # 选项：json, pretty
+level = "info"
+format = "json"
 
-# 日志输出
-output = "stdout" # 选项：stdout, file, both
-log_file = "/var/log/rcommerce/app.log"
+[logging.outputs]
+console = { enabled = true, format = "text" }
 
-# 日志轮转
-max_log_size_mb = 100
-max_log_files = 10
+[logging.file]
+enabled = true
+path = "/var/log/rcommerce/rcommerce.log"
+rotation = "daily"
+max_size = "100MB"
+max_files = 10
+```
+
+## 安全配置
+
+```toml
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
+
+# JWT 设置
+[security.jwt]
+secret = "your_jwt_secret_key_here_32_chars_min"
+expiry_hours = 24
+
+# 会话设置
+[security.sessions]
+enabled = true
+ttl_hours = 24
+
+# Webhook 安全
+[security.webhooks]
+require_https = true
+verify_signatures = true
+```
+
+## 功能开关
+
+```toml
+[features]
+products = true
+orders = true
+customers = true
+payments = true
+shipping = true
+discounts = true
+taxes = true
+inventory = true
+returns = true
+gift_cards = true
+graphql_api = true
+webhooks = true
+realtime_updates = true
+caching = true
+background_jobs = true
 ```
 
 ## 环境变量覆盖
 
-任何配置值都可以通过环境变量覆盖：
+所有配置选项都可以使用以下模式通过环境变量覆盖：
 
 ```bash
-# 格式：RCOMMERCE_<SECTION>_<KEY>
-export RCOMMERCE_SERVER_PORT=9000
-export RCOMMERCE_DATABASE_PASSWORD=secret
-export RCOMMERCE_SECURITY_JWT_SECRET=mysecret
+RCOMMERCE_<SECTION>_<SUBSECTION>_<KEY>=value
 ```
 
-## 完整示例
+示例：
 
-```toml
-[server]
-host = "0.0.0.0"
-port = 8080
-worker_threads = 4
+```bash
+# 服务器
+export RCOMMERCE_SERVER_HOST=0.0.0.0
+export RCOMMERCE_SERVER_PORT=3000
 
-[database]
-db_type = "Postgres"
-host = "localhost"
-port = 5432
-database = "rcommerce"
-username = "rcommerce"
-password = "password"
-pool_size = 20
+# 数据库
+export RCOMMERCE_DATABASE_TYPE=postgres
+export RCOMMERCE_DATABASE_HOST=db.example.com
+export RCOMMERCE_DATABASE_PASSWORD=secure_password
 
-[cache]
-cache_type = "Redis"
-redis_url = "redis://localhost:6379/0"
-redis_pool_size = 20
+# 支付
+export RCOMMERCE_PAYMENTS_STRIPE_SECRET_KEY=sk_live_xxx
 
-[security]
-jwt_secret = "your-secret-key-change-in-production"
-jwt_expiry_hours = 24
-
-[logging]
-level = "info"
-format = "json"
+# 安全
+export RCOMMERCE_SECURITY_JWT_SECRET=your_secret_here
 ```
 
 ## 配置验证
 
+验证您的配置：
+
 ```bash
-# 验证配置
-rcommerce config --check
+# 验证配置文件
+rcommerce config validate
 
-# 测试配置并显示有效配置
-rcommerce config --test
+# 测试数据库连接
+rcommerce db check
 
-# 显示当前配置
-rcommerce config show
+# 测试支付网关配置
+rcommerce gateway test stripe
 ```
 
-## 生产环境建议
+## 生产配置示例
 
-1. **使用强密码** - 数据库和 JWT 密钥
-2. **启用 SSL/TLS** - 用于数据库和 API
-3. **配置防火墙** - 限制对服务的访问
-4. **使用 Redis** - 用于缓存和会话
-5. **启用日志轮转** - 防止磁盘空间不足
-6. **监控和告警** - 设置健康检查
+```toml
+# 生产配置
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 0
+rate_limit_per_minute = 1000
+
+[database]
+type = "postgres"
+host = "prod-db.internal.example.com"
+port = 5432
+username = "rcommerce_prod"
+password = "${DB_PASSWORD}"
+ssl_mode = "require"
+pool_size = 50
+
+[payments]
+default_gateway = "stripe"
+auto_capture = true
+
+[payments.stripe]
+secret_key = "${STRIPE_SECRET_KEY}"
+webhook_secret = "${STRIPE_WEBHOOK_SECRET}"
+
+[cache]
+provider = "redis"
+
+[cache.redis]
+host = "cache.internal.example.com"
+port = 6379
+password = "${REDIS_PASSWORD}"
+pool_size = 20
+
+[notifications.email]
+provider = "sendgrid"
+
+[notifications.email.sendgrid]
+api_key = "${SENDGRID_API_KEY}"
+
+[logging]
+level = "info"
+format = "json"
+
+[security.jwt]
+secret = "${JWT_SECRET}"
+
+[cors]
+enabled = true
+allowed_origins = ["https://store.example.com"]
+allow_credentials = true
+
+[features]
+products = true
+orders = true
+customers = true
+payments = true
+shipping = true
+```
+
+## 下一步
+
+- [开发指南](../development/index.md) - 设置开发环境
+- [部署指南](../deployment/index.md) - 部署到生产环境
+- [API 参考](../api-reference/index.md) - 开始使用 API 构建
