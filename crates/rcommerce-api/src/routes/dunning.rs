@@ -14,7 +14,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::state::AppState;
-use rcommerce_core::{DunningService, DunningHistory, RetryProcessingResult};
+use rcommerce_core::DunningService;
 use rcommerce_core::models::DunningConfig;
 
 /// Query parameters for listing pending retries
@@ -75,7 +75,7 @@ async fn admin_list_pending_retries(
             
             let total: i64 = invoices.len() as i64;
             let start = ((page - 1) * per_page) as usize;
-            let end = (start + per_page as usize).min(invoices.len());
+            let _end = (start + per_page as usize).min(invoices.len());
             
             let paginated: Vec<_> = invoices.into_iter()
                 .skip(start)

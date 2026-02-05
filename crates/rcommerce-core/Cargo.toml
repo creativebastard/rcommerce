@@ -97,6 +97,9 @@ cron = { workspace = true }
 # Crypto for JWT and passwords
 jsonwebtoken = { workspace = true }
 jwt-simple = { workspace = true }
+
+# Email sending
+lettre = { workspace = true }
 bcrypt = "0.15"
 
 # Time utilities

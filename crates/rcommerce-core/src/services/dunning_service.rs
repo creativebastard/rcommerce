@@ -189,8 +189,8 @@ impl<R: SubscriptionRepository + Clone> DunningService<R> {
         let next_retry = Utc::now() + Duration::days(days as i64);
 
         info!(
-            "Scheduled retry for subscription {}: attempt {} in {} days at {}",
-            subscription_id, attempt_number + 1, days, next_retry
+            "Scheduled retry for subscription {} invoice {}: attempt {} in {} days at {}",
+            subscription_id, invoice_id, attempt_number + 1, days, next_retry
         );
 
         Ok(next_retry)
@@ -351,7 +351,7 @@ impl<R: SubscriptionRepository + Clone> DunningService<R> {
         self.repository.record_dunning_email(email).await?;
 
         // Send actual email if service is configured
-        if let Some(ref email_service) = self.email_service {
+        if let Some(ref _email_service) = self.email_service {
             // TODO: Get customer email from customer service
             // For now, we just log that the email would be sent
             info!(
