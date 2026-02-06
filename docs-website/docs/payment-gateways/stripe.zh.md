@@ -42,7 +42,7 @@ statement_descriptor = "RCOMMERCE"
 ### 获取可用支付方式
 
 ```http
-POST /api/v2/payments/methods
+POST /api/v1/payments/methods
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -101,7 +101,7 @@ Authorization: Bearer <token>
 直接发送卡数据到 R Commerce API（服务器端处理）：
 
 ```http
-POST /api/v2/payments
+POST /api/v1/payments
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -164,7 +164,7 @@ Authorization: Bearer <token>
 客户完成 3D 安全验证后：
 
 ```http
-POST /api/v2/payments/pay_xxx/complete
+POST /api/v1/payments/pay_xxx/complete
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -179,7 +179,7 @@ Authorization: Bearer <token>
 ### 退款
 
 ```http
-POST /api/v2/payments/pay_xxx/refund
+POST /api/v1/payments/pay_xxx/refund
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -207,7 +207,7 @@ async function processPayment() {
   };
   
   // 2. 发送到 R Commerce API
-  const response = await fetch('/api/v2/payments', {
+  const response = await fetch('/api/v1/payments', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ async function handle3DReturn() {
   const paymentIntent = urlParams.get('payment_intent');
   const paymentId = sessionStorage.getItem('pending_payment_id');
   
-  const response = await fetch(`/api/v2/payments/${paymentId}/complete`, {
+  const response = await fetch(`/api/v1/payments/${paymentId}/complete`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ async function handle3DReturn() {
 
 ```bash
 # 发起支付
-curl -X POST http://localhost:8080/api/v2/payments \
+curl -X POST http://localhost:8080/api/v1/payments \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{

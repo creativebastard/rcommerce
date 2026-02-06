@@ -4,7 +4,7 @@ The Payments API handles payment processing through a provider-agnostic interfac
 
 ## Overview
 
-The v2 Payments API provides a unified interface for processing payments through multiple gateways (Stripe, Airwallex, WeChat Pay, Alipay) without requiring frontend integration with provider SDKs.
+The Payments API provides a unified interface for processing payments through multiple gateways (Stripe, Airwallex, WeChat Pay, Alipay) without requiring frontend integration with provider SDKs.
 
 **Key Benefits:**
 - **Server-side processing**: Card data is sent to R Commerce API, not directly to providers
@@ -15,7 +15,7 @@ The v2 Payments API provides a unified interface for processing payments through
 ## Base URL
 
 ```
-/api/v2/payments
+/api/v1/payments
 ```
 
 ## Authentication
@@ -35,10 +35,10 @@ sequenceDiagram
     participant G as Payment Gateway
     participant P as Provider (Stripe)
     
-    F->>A: POST /v2/payments/methods
+    F->>A: POST /api/v1/payments/methods
     A-->>F: Available methods & fields
     
-    F->>A: POST /v2/payments (with card data)
+    F->>A: POST /api/v1/payments (with card data)
     A->>G: Process payment
     G->>P: Create payment intent
     P-->>G: Payment intent response
@@ -50,7 +50,7 @@ sequenceDiagram
         A-->>F: {type: "requires_action", ...}
         F->>P: Complete 3D Secure
         P-->>F: Redirect back
-        F->>A: POST /v2/payments/:id/complete
+        F->>A: POST /api/v1/payments/:id/complete
         A-->>F: {type: "success", ...}
     end
 ```
@@ -62,7 +62,7 @@ sequenceDiagram
 Retrieve available payment methods for a checkout session.
 
 ```http
-POST /api/v2/payments/methods
+POST /api/v1/payments/methods
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -140,7 +140,7 @@ Authorization: Bearer <token>
 Create a new payment. The payment is processed server-side by R Commerce.
 
 ```http
-POST /api/v2/payments
+POST /api/v1/payments
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -269,7 +269,7 @@ Authorization: Bearer <token>
 Complete a payment that requires additional action (3D Secure, redirect, etc.).
 
 ```http
-POST /api/v2/payments/{payment_id}/complete
+POST /api/v1/payments/{payment_id}/complete
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -310,7 +310,7 @@ Authorization: Bearer <token>
 Retrieve the current status of a payment.
 
 ```http
-GET /api/v2/payments/{payment_id}
+GET /api/v1/payments/{payment_id}
 Authorization: Bearer <token>
 ```
 
@@ -339,7 +339,7 @@ Authorization: Bearer <token>
 Refund a captured payment.
 
 ```http
-POST /api/v2/payments/{payment_id}/refund
+POST /api/v1/payments/{payment_id}/refund
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -510,7 +510,7 @@ async function processPayment() {
   };
   
   // 2. Send to R Commerce API
-  const response = await fetch('/api/v2/payments', {
+  const response = await fetch('/api/v1/payments', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -562,7 +562,7 @@ async function handleThreeDSecure(paymentResult) {
 
 // Called when customer returns from 3DS/redirect
 async function completePayment(paymentId) {
-  const response = await fetch(`/api/v2/payments/${paymentId}/complete`, {
+  const response = await fetch(`/api/v1/payments/${paymentId}/complete`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -635,7 +635,7 @@ const result = await stripe.confirmCardPayment(client_secret, { ... });
 ### v2 (New) - Server-Side Processing
 
 ```javascript
-const result = await fetch('/api/v2/payments', {
+const result = await fetch('/api/v1/payments', {
   method: 'POST',
   body: JSON.stringify({
     gateway_id: 'stripe',

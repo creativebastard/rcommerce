@@ -128,12 +128,12 @@ sequenceDiagram
     end
 ```
 
-## API 端点 (v2)
+## API 端点
 
 ### 获取可用支付方式
 
 ```http
-POST /api/v2/payments/methods
+POST /api/v1/payments/methods
 {
   "currency": "USD",
   "amount": "99.99"
@@ -143,7 +143,7 @@ POST /api/v2/payments/methods
 ### 发起支付
 
 ```http
-POST /api/v2/payments
+POST /api/v1/payments
 {
   "gateway_id": "stripe",
   "amount": "99.99",
@@ -163,7 +163,7 @@ POST /api/v2/payments
 ### 完成支付操作
 
 ```http
-POST /api/v2/payments/:id/complete
+POST /api/v1/payments/:id/complete
 {
   "action_type": "three_d_secure",
   "action_data": { ... }
@@ -188,7 +188,7 @@ const result = await stripe.confirmCardPayment(client_secret, {
 
 ```javascript
 // 不需要 Stripe.js！
-const result = await fetch('/api/v2/payments', {
+const result = await fetch('/api/v1/payments', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

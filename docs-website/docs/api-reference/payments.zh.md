@@ -4,7 +4,7 @@
 
 ## 概述
 
-v2 支付 API 提供了一个统一的接口，用于通过多个网关（Stripe、Airwallex、微信支付、支付宝）处理支付，无需前端与提供商 SDK 集成。
+支付 API 提供了一个统一的接口，用于通过多个网关（Stripe、Airwallex、微信支付、支付宝）处理支付，无需前端与提供商 SDK 集成。
 
 **主要优势：**
 - **服务器端处理**：卡数据发送到 R Commerce API，而不是直接发送给提供商
@@ -15,7 +15,7 @@ v2 支付 API 提供了一个统一的接口，用于通过多个网关（Stripe
 ## 基础 URL
 
 ```
-/api/v2/payments
+/api/v1/payments
 ```
 
 ## 认证
@@ -35,7 +35,7 @@ sequenceDiagram
     participant G as 支付网关
     participant P as 提供商 (Stripe)
     
-    F->>A: POST /v2/payments/methods
+    F->>A: POST /api/v1/payments/methods
     A-->>F: 可用方法和字段
     
     F->>A: POST /v2/payments (带卡数据)
@@ -50,7 +50,7 @@ sequenceDiagram
         A-->>F: {type: "requires_action", ...}
         F->>P: 完成 3D 安全验证
         P-->>F: 重定向返回
-        F->>A: POST /v2/payments/:id/complete
+        F->>A: POST /api/v1/payments/:id/complete
         A-->>F: {type: "success", ...}
     end
 ```
@@ -62,7 +62,7 @@ sequenceDiagram
 检索结账会话的可用支付方式。
 
 ```http
-POST /api/v2/payments/methods
+POST /api/v1/payments/methods
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -140,7 +140,7 @@ Authorization: Bearer <token>
 创建新支付。支付由 R Commerce 在服务器端处理。
 
 ```http
-POST /api/v2/payments
+POST /api/v1/payments
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -269,7 +269,7 @@ Authorization: Bearer <token>
 完成需要额外操作的支付（3D 安全验证、重定向等）。
 
 ```http
-POST /api/v2/payments/{payment_id}/complete
+POST /api/v1/payments/{payment_id}/complete
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -310,7 +310,7 @@ Authorization: Bearer <token>
 检索支付的当前状态。
 
 ```http
-GET /api/v2/payments/{payment_id}
+GET /api/v1/payments/{payment_id}
 Authorization: Bearer <token>
 ```
 
@@ -339,7 +339,7 @@ Authorization: Bearer <token>
 对已捕获的支付进行退款。
 
 ```http
-POST /api/v2/payments/{payment_id}/refund
+POST /api/v1/payments/{payment_id}/refund
 Content-Type: application/json
 Authorization: Bearer <token>
 ```
@@ -510,7 +510,7 @@ async function processPayment() {
   };
   
   // 2. 发送到 R Commerce API
-  const response = await fetch('/api/v2/payments', {
+  const response = await fetch('/api/v1/payments', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -562,7 +562,7 @@ async function handleThreeDSecure(paymentResult) {
 
 // 客户从 3DS/重定向返回时调用
 async function completePayment(paymentId) {
-  const response = await fetch(`/api/v2/payments/${paymentId}/complete`, {
+  const response = await fetch(`/api/v1/payments/${paymentId}/complete`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -635,7 +635,7 @@ const result = await stripe.confirmCardPayment(client_secret, { ... });
 ### v2 (新版) - 服务器端处理
 
 ```javascript
-const result = await fetch('/api/v2/payments', {
+const result = await fetch('/api/v1/payments', {
   method: 'POST',
   body: JSON.stringify({
     gateway_id: 'stripe',
