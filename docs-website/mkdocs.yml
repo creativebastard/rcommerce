@@ -72,26 +72,50 @@ plugins:
           nav_translations:
             Home: 首页
             Getting Started: 开始使用
+            Overview: 概览
             Quick Start: 快速开始
             Installation: 安装
             Configuration: 配置
             API Reference: API 参考
-            Overview: 概览
             Authentication: 认证
+            Scopes & Permissions: 权限范围
             Error Codes: 错误代码
+            Pagination & Filtering: 分页与过滤
+            Rate Limiting: 速率限制
             Products: 产品
             Orders: 订单
             Customers: 客户
+            Addresses: 地址
             Cart: 购物车
             Coupons: 优惠券
             Payments: 支付
-            Statistics: 统计
             Subscriptions: 订阅
+            Dunning: 催缴管理
+            Shipping: 运输
+            Inventory: 库存
+            Fulfillment: 履行
+            Statistics: 统计
+            Admin: 管理
             Webhooks: Webhooks
             GraphQL: GraphQL
+            SDKs & Integration: SDK 与集成
+            JavaScript/TypeScript: JavaScript/TypeScript
+            Python: Python
+            Rust: Rust
+            PHP: PHP
+            Go: Go
+            Webhook Integration: Webhook 集成
             Payment Gateways: 支付网关
             AliPay: 支付宝
             WeChat Pay: 微信支付
+            Guides: 指南
+            API Keys: API 密钥
+            Working with Webhooks: Webhook 使用
+            Error Handling: 错误处理
+            Testing: 测试
+            Shipping Configuration: 运输配置
+            Dunning Management: 催缴管理
+            Notifications: 通知
             Deployment: 部署
             Docker: Docker
             Linux: Linux
@@ -121,15 +145,11 @@ plugins:
             Order Management: 订单管理
             Notifications: 通知
             Media Storage: 媒体存储
-            Guides: 指南
-            API Keys: API 密钥
-            Dunning: 催缴管理
-            Shipping: 运输
-            Scopes: 权限范围
+            Payment System: 支付系统
+            Subscription Lifecycle: 订阅生命周期
             Development: 开发
             Local Setup: 本地设置
             Contributing: 贡献
-            Testing: 测试
             CLI Reference: CLI 参考
             Migration: 迁移
             Shopify: Shopify
@@ -155,9 +175,9 @@ plugins:
         'operations/reverse-proxies/haproxy.md': 'deployment/reverse-proxies/haproxy.md'
         'operations/reverse-proxies/traefik.md': 'deployment/reverse-proxies/traefik.md'
         'operations/scaling.md': 'deployment/scaling.md'
-        'operations/monitoring.md': 'deployment/monitoring/monitoring.md'
-        'operations/backups.md': 'deployment/backups/backups.md'
-        'operations/security.md': 'deployment/security/security.md'
+        'operations/monitoring.md': 'deployment/monitoring.md'
+        'operations/backups.md': 'deployment/backups.md'
+        'operations/security.md': 'deployment/security.md'
         'operations/redis.md': 'deployment/redis.md'
 
 # Extra CSS and JavaScript
@@ -244,7 +264,7 @@ nav:
   - API Reference:
     - Overview: api-reference/index.md
     - Authentication: api-reference/authentication.md
-    - Scopes: api-reference/scopes.md
+    - Scopes & Permissions: api-reference/scopes.md
     - Error Codes: api-reference/errors.md
     - Products: api-reference/products.md
     - Orders: api-reference/orders.md
@@ -252,8 +272,11 @@ nav:
     - Cart: api-reference/cart.md
     - Coupons: api-reference/coupons.md
     - Payments: api-reference/payments.md
-    - Statistics: api-reference/statistics.md
     - Subscriptions: api-reference/subscriptions.md
+    - Shipping: api-reference/shipping.md
+    - Inventory: api-reference/inventory.md
+    - Notifications: api-reference/notifications.md
+    - Statistics: api-reference/statistics.md
     - Webhooks: api-reference/webhooks.md
     - GraphQL: api-reference/graphql.md
   
@@ -264,6 +287,12 @@ nav:
     - AliPay: payment-gateways/alipay.md
     - WeChat Pay: payment-gateways/wechatpay.md
     - Webhooks: payment-gateways/webhooks.md
+  
+  - Guides:
+    - API Keys: guides/api-keys.md
+    - Shipping Configuration: guides/shipping.md
+    - Dunning Management: guides/dunning.md
+    - Notifications: guides/notifications.md
   
   - Deployment:
     - Overview: deployment/index.md
@@ -297,11 +326,6 @@ nav:
     - Order Management: architecture/order-management.md
     - Notifications: architecture/notifications.md
     - Media Storage: architecture/media-storage.md
-  
-  - Guides:
-    - API Keys: guides/api-keys.md
-    - Dunning: guides/dunning.md
-    - Shipping: guides/shipping.md
   
   - Development:
     - Overview: development/index.md

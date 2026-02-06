@@ -1,10 +1,10 @@
-# 催缴管理指南
+# 催缴管理设置指南
 
-本指南涵盖在 R Commerce 中配置和使用催缴系统进行失败支付恢复所需了解的一切内容。
+本指南介绍如何在 R Commerce 中配置和优化催缴系统以恢复失败的付款。
 
-## 催缴管理简介
+## 什么是催缴管理？
 
-**催缴管理**是自动重试失败的订阅付款并与客户沟通以恢复收入的过程。当客户付款失败时，催缴系统会接管以：
+**催缴管理**是自动重试失败的订阅付款并与客户沟通以恢复收入的过程。当客户付款失败时，催缴系统会：
 
 1. **在战略间隔重试付款**
 2. **向客户发送**有用的提醒邮件
@@ -20,7 +20,7 @@
 - **非自愿流失**（付款失败）通常超过主动取消
 - 每次恢复的付款都保留了**客户生命周期价值**
 
-### R Commerce 催缴管理的工作原理
+## 催缴管理的工作原理
 
 ```
 付款失败
@@ -64,9 +64,7 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 配置催缴设置
-
-### 基本配置
+## 步骤 1：配置催缴设置
 
 将催缴配置添加到您的 `config.toml`：
 
@@ -88,7 +86,7 @@ email_on_first_failure = true
 email_on_final_failure = true
 ```
 
-### 配置选项说明
+### 配置选项
 
 | 选项 | 描述 | 默认值 | 推荐值 |
 |--------|-------------|---------|-------------|
@@ -156,7 +154,7 @@ late_fee_amount = "5.00"
 - 在服务条款中明确沟通滞纳金政策
 - 考虑对首次失败免除滞纳金
 
-## 设置催缴邮件
+## 步骤 2：设置催缴邮件
 
 ### 默认邮件模板
 
@@ -275,196 +273,126 @@ templates/
 - ❌ 使用全大写或过多标点符号
 - ❌ 包含不必要的技术细节
 
-## 监控失败付款
+## 步骤 3：配置客户细分
 
-### 仪表板概览
+不同客户细分可能需要不同的催缴策略：
 
-在 `/admin/dunning` 访问催缴仪表板：
+```toml
+# 高价值客户获得延长宽限期
+[dunning.segments.premium]
+max_retries = 5
+retry_intervals_days = [3, 7, 14, 21, 30]
+grace_period_days = 45
+email_template_prefix = "premium_"
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ 催缴管理仪表板                                                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  恢复指标（最近 30 天）                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
-│  │   恢复率     │  │   已恢复     │  │    平均      │              │
-│  │              │  │   收入       │  │   尝试次数   │              │
-│  │    72.5%     │  │  $24,500     │  │    1.8       │              │
-│  └──────────────┘  └──────────────┘  └──────────────┘              │
-│                                                                     │
-│  活跃催缴案例（12）                                                  │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ 客户            │ 产品                 │ 重试  │ 下次重试   │  │
-│  ├──────────────────────────────────────────────────────────────┤  │
-│  │ john@email.com  │ Premium Plan         │ 1/3   │ 今天       │  │
-│  │ jane@email.com  │ Basic Subscription   │ 2/3   │ 明天       │  │
-│  │ bob@email.com   │ Enterprise Plan      │ 3/3   │ 2 天后     │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  按尝试次数的恢复情况                                                │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │ 尝试 1: ████████████████████ 45%                            │  │
-│  │ 尝试 2: ██████████████ 28%                                  │  │
-│  │ 尝试 3: ████████ 15%                                        │  │
-│  │ 已取消: ██████ 12%                                          │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+# 标准客户使用默认值
+[dunning.segments.standard]
+max_retries = 3
+retry_intervals_days = [1, 3, 7]
+grace_period_days = 14
+
+# 低价值或试用客户
+[dunning.segments.basic]
+max_retries = 2
+retry_intervals_days = [1, 3]
+grace_period_days = 7
 ```
 
-### API 端点
-
-#### 列出失败付款
+通过标签或元数据为客户分配细分：
 
 ```bash
-GET /api/v1/admin/dunning/failed-payments
+# 通过 CLI 设置客户细分
+rcommerce customer set-segment <customer-id> --segment premium
 ```
 
-**响应：**
-```json
-{
-  "data": [
-    {
-      "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
-      "customer": {
-        "id": "550e8400-e29b-41d4-a716-446655440001",
-        "email": "customer@example.com",
-        "name": "John Doe"
-      },
-      "product_name": "Premium Subscription",
-      "amount": "29.99",
-      "currency": "USD",
-      "failed_attempts": 2,
-      "max_attempts": 3,
-      "next_retry_at": "2026-01-15T10:00:00Z",
-      "status": "past_due",
-      "first_failed_at": "2026-01-10T08:30:00Z"
-    }
-  ],
-  "meta": {
-    "total": 12,
-    "page": 1,
-    "per_page": 20
-  }
-}
+## 步骤 4：设置付款更新页面
+
+创建一个客户-facing 的页面用于更新付款方式：
+
+### 配置
+
+```toml
+[dunning.payment_update]
+page_url = "https://shop.example.com/payment/update"
+require_login = false  # 允许从邮件通过令牌访问
+session_duration_minutes = 30
+success_redirect = "https://shop.example.com/account"
 ```
 
-#### 获取催缴指标
+### 页面要求
+
+付款更新页面应该：
+- 预填充客户信息
+- 支持多种付款方式
+- 针对移动设备优化
+- 显示应付金额和重试计划
+- 立即确认成功更新
+
+## 步骤 5：监控和优化
+
+### 需要跟踪的关键指标
+
+| 指标 | 目标 | 低于目标时的行动 |
+|--------|--------|----------------------|
+| 恢复率 | >65% | 审查邮件模板 |
+| 首次尝试恢复率 | >40% | 优化重试时间 |
+| 邮件打开率 | >50% | 改进主题行 |
+| 点击率 | >15% | 更好的行动号召 |
+
+### 使用仪表板
+
+在 `/admin/dunning` 访问催缴仪表板以查看：
+
+- **恢复指标**：恢复率、已恢复收入、平均尝试次数
+- **活跃案例**：当前催缴案例及其重试状态
+- **按尝试次数的恢复情况**：哪些重试尝试最成功
+- **趋势分析**：随时间变化的恢复率趋势
+
+### 用于监控的 CLI 命令
 
 ```bash
-GET /api/v1/admin/dunning/metrics?period=30d
+# 查看催缴指标
+rcommerce dunning metrics --period 30d
+
+# 列出活跃催缴案例
+rcommerce dunning list --status active
+
+# 获取订阅催缴历史
+rcommerce subscription dunning-status <subscription-id>
 ```
 
-**响应：**
-```json
-{
-  "period": "30d",
-  "total_failures": 156,
-  "total_recoveries": 113,
-  "recovery_rate": 72.44,
-  "recovered_revenue": "24500.00",
-  "lost_revenue": "3200.00",
-  "recovery_by_attempt": [
-    { "attempt": 1, "recoveries": 70, "rate": 44.87 },
-    { "attempt": 2, "recoveries": 28, "rate": 17.95 },
-    { "attempt": 3, "recoveries": 15, "rate": 9.62 }
-  ],
-  "average_recovery_time_hours": 72.5
-}
-```
+## 步骤 6：人工干预
 
-#### 获取订阅催缴历史
+有时需要对高价值客户进行人工干预：
+
+### 何时进行人工干预
+
+- 高价值客户（企业账户）
+- 长期客户（2 年以上）
+- 联系支持的客户
+- 技术故障（非付款问题）
+
+### CLI 命令
 
 ```bash
-GET /api/v1/subscriptions/{id}/dunning-history
+# 查看订阅催缴状态
+rcommerce subscription dunning-status <subscription-id>
+
+# 手动触发重试
+rcommerce subscription retry-payment <subscription-id>
+
+# 延长宽限期
+rcommerce subscription extend-grace <subscription-id> --days 7 --reason "Customer contacted support"
+
+# 立即取消订阅
+rcommerce subscription cancel <subscription-id> --reason "payment_failed" --immediate
 ```
 
-**响应：**
-```json
-{
-  "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "active",
-  "retry_attempts": [
-    {
-      "attempt_number": 1,
-      "attempted_at": "2026-01-10T08:30:00Z",
-      "succeeded": false,
-      "error_message": "Card declined",
-      "error_code": "insufficient_funds"
-    },
-    {
-      "attempt_number": 2,
-      "attempted_at": "2026-01-13T08:30:00Z",
-      "succeeded": true,
-      "payment_id": "pi_1234567890"
-    }
-  ],
-  "emails_sent": [
-    {
-      "type": "first_failure",
-      "sent_at": "2026-01-10T08:30:00Z",
-      "opened_at": "2026-01-10T09:15:00Z",
-      "clicked_at": "2026-01-10T09:16:00Z"
-    }
-  ]
-}
-```
-
-### Webhook 事件
-
-订阅催缴相关的 webhooks：
-
-```json
-{
-  "event": "dunning.payment_failed",
-  "data": {
-    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
-    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
-    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
-    "attempt_number": 1,
-    "max_attempts": 3,
-    "next_retry_at": "2026-01-15T10:00:00Z",
-    "error_message": "Card declined",
-    "amount": "29.99",
-    "currency": "USD"
-  }
-}
-```
-
-```json
-{
-  "event": "dunning.payment_recovered",
-  "data": {
-    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
-    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
-    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
-    "attempt_number": 2,
-    "payment_id": "pi_1234567890",
-    "amount": "29.99",
-    "currency": "USD"
-  }
-}
-```
-
-```json
-{
-  "event": "dunning.subscription_cancelled",
-  "data": {
-    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
-    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
-    "reason": "payment_failed",
-    "total_attempts": 3,
-    "cancelled_at": "2026-01-20T10:00:00Z"
-  }
-}
-```
-
-## 付款恢复最佳实践
+## 最佳实践
 
 ### 1. 优化重试计划
 
-**测试不同的计划**以找到适合您业务的方案：
+测试不同的计划以找到适合您业务的方案：
 
 | 业务类型 | 推荐计划 |
 |--------------|---------------------|
@@ -475,7 +403,7 @@ GET /api/v1/subscriptions/{id}/dunning-history
 
 ### 2. 简化付款更新
 
-**减少付款更新过程中的摩擦：**
+减少付款更新过程中的摩擦：
 
 ```
 ✅ 应该：
@@ -492,66 +420,36 @@ GET /api/v1/subscriptions/{id}/dunning-history
 • 使用过期或损坏的链接
 ```
 
-### 3. 分段方法
+### 3. 主动预防
 
-**针对不同客户的不同策略：**
+在失败发生前减少失败：
 
+**过期提醒：**
 ```toml
-# 高价值客户获得延长宽限期
-[dunning.segments.premium]
-max_retries = 5
-retry_intervals_days = [3, 7, 14, 21, 30]
-grace_period_days = 45
-
-# 标准客户使用默认值
-[dunning.segments.standard]
-max_retries = 3
-retry_intervals_days = [1, 3, 7]
-grace_period_days = 14
-
-# 低价值或试用客户
-[dunning.segments.basic]
-max_retries = 2
-retry_intervals_days = [1, 3]
-grace_period_days = 7
+[notifications.expiration]
+enabled = true
+days_before_expiration = 30
+template = "card_expiring_soon"
 ```
 
-### 4. 监控和响应
+**预催缴邮件：**
+```toml
+[notifications.pre_dunning]
+enabled = true
+days_before_billing = 3
+template = "upcoming_billing"
+```
 
-**需要跟踪的关键指标：**
+**账户更新服务：**
+```toml
+[payment.account_updater]
+enabled = true
+providers = ["visa", "mastercard"]
+```
 
-| 指标 | 目标 | 低于目标时的行动 |
-|--------|--------|----------------------|
-| 恢复率 | >65% | 审查邮件模板 |
-| 首次尝试恢复率 | >40% | 优化重试时间 |
-| 邮件打开率 | >50% | 改进主题行 |
-| 点击率 | >15% | 更好的行动号召 |
+### 4. 客户沟通语气
 
-### 5. 主动预防
-
-**在失败发生前减少失败：**
-
-1. **过期提醒**
-   ```
-   在卡片过期前 30 天邮件客户
-   包含更新付款方式的直接链接
-   ```
-
-2. **预催缴邮件**
-   ```
-   账单前 3 天："您的订阅即将续订"
-   包含金额和存档的付款方式
-   ```
-
-3. **账户更新服务**
-   ```
-   与 Visa/Mastercard 账户更新集成
-   自动更新过期的卡号
-   ```
-
-### 6. 客户沟通
-
-**催缴过程中的语气递进：**
+在催缴阶段递进语气：
 
 | 阶段 | 语气 | 示例开头 |
 |-------|------|-----------------|
@@ -560,128 +458,46 @@ grace_period_days = 7
 | 最终通知 | 严肃、明确 | "需要操作以保持您的订阅..." |
 | 取消 | 专业、开放 | "我们期待您的回归..." |
 
-### 7. 人工干预
+## 故障排除
 
-**何时进行人工干预：**
+### 常见问题
 
-- 高价值客户（企业账户）
-- 长期客户（2 年以上）
-- 联系支持的客户
-- 技术故障（非付款问题）
+**恢复率低**
+- 检查邮件主题行
+- 检查付款更新页面的可用性
+- 验证重试计划时间
+- 测试不同的邮件模板
 
-**催缴的 CLI 命令：**
+**取消率高**
+- 延长宽限期
+- 添加更多重试尝试
+- 改进邮件消息
+- 提供付款计划选项
 
-```bash
-# 查看订阅催缴状态
-rcommerce subscription dunning-status <subscription-id>
+**付款更新页面无法使用**
+- 检查令牌验证
+- 验证 SSL 证书
+- 在移动设备上测试
+- 检查错误日志
 
-# 手动触发重试
-rcommerce subscription retry-payment <subscription-id>
+**邮件未发送**
+- 验证邮件提供商配置
+- 检查模板语法
+- 检查垃圾邮件文件夹放置
+- 测试邮件可送达性
 
-# 延长宽限期
-rcommerce subscription extend-grace <subscription-id> --days 7 --reason "Customer contacted support"
+### 调试模式
 
-# 立即取消订阅
-rcommerce subscription cancel <subscription-id> --reason "payment_failed" --immediate
+为催缴启用调试日志：
+
+```toml
+[dunning.debug]
+log_emails = true
+log_retries = true
+log_webhooks = true
 ```
-
-## 催缴工作流程示例
-
-### 场景：月度订阅失败
-
-**背景：**
-- 客户：Sarah Johnson
-- 订阅：Premium Plan（$49/月）
-- 付款方式：Visa 尾号 4242
-- 账单日期：每月 1 日
-
-**时间线：**
-
-**2026 年 2 月 1 日 - 初始账单失败**
-```
-08:00: 自动账单尝试失败
-08:05: 催缴系统处理失败
-08:10: 订阅状态 → 逾期
-08:15: 向 Sarah 发送首次失败邮件
-08:15: 下次重试计划为 2 月 2 日
-```
-
-**2026 年 2 月 1 日 - 收到邮件**
-```
-主题：付款失败 - 请更新您的付款方式
-
-Hi Sarah,
-
-我们无法处理您的 Premium Plan 订阅付款。
-
-应付金额：$49.00
-下次重试：2026 年 2 月 2 日
-
-别担心 - 您的订阅仍然有效！
-请更新您的付款方式：
-
-[更新付款方式]
-```
-
-**2026 年 2 月 2 日 - 重试 #1（静默）**
-```
-08:00: 使用同一张卡自动重试
-08:01: 卡片再次被拒绝（资金不足）
-08:05: 下次重试计划为 2 月 5 日
-```
-
-**2026 年 2 月 5 日 - 重试 #2**
-```
-08:00: 自动重试
-08:01: 卡片再次被拒绝
-08:05: 发送重试失败邮件
-08:05: 下次重试计划为 2 月 12 日
-```
-
-**2026 年 2 月 5 日 - 收到邮件**
-```
-主题：付款再次失败 - 需要操作
-
-Hi Sarah,
-
-您的 Premium Plan 付款再次失败（尝试 2/3）。
-
-应付金额：$49.00
-下次重试：2026 年 2 月 12 日
-
-要保持您的订阅活跃，请更新您的付款方式：
-
-[立即更新付款方式]
-```
-
-**2026 年 2 月 10 日 - 客户操作**
-```
-14:30: Sarah 点击邮件链接
-14:35: 更新为新的 Mastercard
-14:40: 付款成功处理
-14:45: 订阅恢复为活跃状态
-14:50: 发送付款恢复邮件
-```
-
-**2026 年 2 月 10 日 - 成功邮件**
-```
-主题：付款成功 - 订阅已激活 ✓
-
-Hi Sarah,
-
-好消息！您的付款已成功处理。
-
-已扣款金额：$49.00
-下次账单：2026 年 3 月 1 日
-
-您的 Premium Plan 订阅现已激活！
-```
-
-**结果：** 在第 2 次重试时恢复付款。总恢复时间：9 天。
 
 ## 常见问题
-
-### 一般问题
 
 **Q：什么是催缴管理？**
 
@@ -695,52 +511,6 @@ A：通过适当的配置，催缴管理通常可以恢复 60-80% 的失败订�
 
 A：是的，一旦配置，整个催缴过程都是自动化的。系统无需人工干预即可处理重试、邮件和取消。
 
-### 配置问题
-
-**Q：我可以自定义重试计划吗？**
-
-A：是的，您可以在 `config.toml` 中配置重试次数和间隔：
-
-```toml
-[dunning]
-max_retries = 3
-retry_intervals_days = [1, 3, 7]
-```
-
-**Q：推荐的重试计划是什么？**
-
-A：默认计划 `[1, 3, 7]` 适用于大多数企业：
-- 重试 1：失败后 1 天（捕获临时问题）
-- 重试 2：3 天后（给客户操作时间）
-- 重试 3：7 天后（最终尝试）
-
-**Q：我可以禁用催缴管理吗？**
-
-A：虽然不推荐，但您可以通过以下设置有效禁用催缴管理：
-
-```toml
-[dunning]
-max_retries = 0
-```
-
-这将导致在付款失败时立即取消订阅。
-
-### 邮件问题
-
-**Q：我可以自定义催缴邮件吗？**
-
-A：是的，邮件模板存储在 `templates/dunning/` 中，可以使用 HTML 和模板变量进行完全自定义。
-
-**Q：有哪些模板变量可用？**
-
-A：常用变量包括 `{{customer_name}}`、`{{amount}}`、`{{next_retry_date}}`、`{{update_payment_url}}` 等。请参阅[设置催缴邮件](#设置催缴邮件)部分获取完整列表。
-
-**Q：我可以发送短信通知代替邮件吗？**
-
-A：短信通知计划在未来的版本中推出。目前，催缴管理仅支持邮件通知。
-
-### 客户体验问题
-
 **Q：客户在催缴期间会失去访问权限吗？**
 
 A：不会，客户在宽限期内（默认：14 天）保留访问权限。订阅状态变为"逾期"，但在取消前服务继续。
@@ -748,68 +518,6 @@ A：不会，客户在宽限期内（默认：14 天）保留访问权限。订�
 **Q：客户可以在催缴期间更新付款方式吗？**
 
 A：是的，客户可以在催缴过程中的任何时候更新他们的付款方式。下次计划重试将使用新的付款方式。
-
-**Q：如果客户更新他们的卡片会发生什么？**
-
-A：如果客户更新他们的付款方式，下次计划重试将使用新卡。您也可以通过 API 或 CLI 触发立即重试。
-
-### 账单问题
-
-**Q：我可以对逾期付款收取滞纳金吗？**
-
-A：是的，您可以在催缴设置中配置滞纳金：
-
-```toml
-[dunning]
-late_fee_after_retry = 2
-late_fee_amount = "5.00"
-```
-
-**Q：滞纳金是添加到原始发票还是新发票？**
-
-A：滞纳金添加到原始发票总额中。当最终处理付款时，它包括订阅金额和任何累积的滞纳金。
-
-**Q：如果催缴需要一段时间，客户会被收取多个月的费用吗？**
-
-A：不会，催缴只尝试收取当前失败的发票。新的账单周期暂停，直到逾期发票解决。
-
-### 恢复问题
-
-**Q：我可以手动重试付款吗？**
-
-A：是的，您可以使用 CLI 手动触发重试：
-
-```bash
-rcommerce subscription retry-payment <subscription-id>
-```
-
-或通过 API：
-
-```bash
-POST /api/v1/subscriptions/{id}/retry-payment
-```
-
-**Q：我可以为特定客户延长宽限期吗？**
-
-A：是的，您可以延长宽限期：
-
-```bash
-rcommerce subscription extend-grace <subscription-id> --days 7 --reason "Customer contacted support"
-```
-
-**Q：所有重试失败后会发生什么？**
-
-A：订阅将以"payment_failed"原因取消。客户会收到取消通知邮件，可以通过下新订单重新激活他们的订阅。
-
-### 分析问题
-
-**Q：如何跟踪催缴绩效？**
-
-A：使用 `/admin/dunning` 的催缴仪表板或指标 API：
-
-```bash
-GET /api/v1/admin/dunning/metrics
-```
 
 **Q：什么是好的恢复率？**
 
@@ -819,37 +527,9 @@ A：行业基准：
 - 平均：45-60%
 - 需要改进：<45%
 
-**Q：如何提高恢复率？**
+## 下一步
 
-A：关键策略：
-1. 优化邮件主题行以提高打开率
-2. 简化付款更新流程
-3. 测试不同的重试计划
-4. 按价值/ tenure 细分客户
-5. 发送预催缴过期提醒
-
-### 集成问题
-
-**Q：催缴管理与所有支付网关兼容吗？**
-
-A：是的，催缴管理与所有支持的支付网关（Stripe、Airwallex、Alipay、WeChat Pay）兼容。系统使用标准支付网关接口进行重试。
-
-**Q：我可以接收催缴事件的 webhooks 吗？**
-
-A：是的，订阅这些 webhook 事件：
-- `dunning.payment_failed`
-- `dunning.payment_recovered`
-- `dunning.subscription_cancelled`
-
-**Q：催缴管理处理 3D Secure / SCA 吗？**
-
-A：对于需要认证的付款方式，系统会发送带有认证链接的邮件，而不是尝试自动重试。
-
----
-
-## 相关文档
-
-- [支付](../api-reference/payments.md)
-- [支付网关](../payment-gateways/index.md)
-- [Webhooks](../api-reference/webhooks.md)
-- [CLI 参考](../development/cli-reference.md)
+- [配置通知](../guides/notifications.md)
+- [设置支付网关](../payment-gateways/index.md)
+- [API 参考：订阅](../api-reference/subscriptions.md)
+- [Webhooks 参考](../api-reference/webhooks.md)

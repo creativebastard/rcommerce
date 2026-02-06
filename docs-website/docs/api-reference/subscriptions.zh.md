@@ -488,6 +488,236 @@ Authorization: Bearer sk_live_xxx
 }
 ```
 
+## 催缴管理端点
+
+### 列出失败付款
+
+```http
+GET /api/v1/admin/dunning/failed-payments
+```
+
+检索当前处于催缴状态的失败付款订阅列表。
+
+#### 查询参数
+
+| 参数 | 类型 | 描述 |
+|-----------|------|-------------|
+| `status` | string | 按状态筛选：`past_due`、`in_dunning` |
+| `page` | integer | 页码（默认：1） |
+| `per_page` | integer | 每页项目数（默认：20，最大：100） |
+
+#### 示例响应
+
+```json
+{
+  "data": [
+    {
+      "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "email": "customer@example.com",
+        "name": "John Doe"
+      },
+      "product_name": "Premium Subscription",
+      "amount": "29.99",
+      "currency": "USD",
+      "failed_attempts": 2,
+      "max_attempts": 3,
+      "next_retry_at": "2026-01-15T10:00:00Z",
+      "status": "past_due",
+      "first_failed_at": "2026-01-10T08:30:00Z"
+    }
+  ],
+  "meta": {
+    "total": 12,
+    "page": 1,
+    "per_page": 20
+  }
+}
+```
+
+### 获取催缴指标
+
+```http
+GET /api/v1/admin/dunning/metrics?period=30d
+```
+
+检索催缴绩效指标。
+
+#### 查询参数
+
+| 参数 | 类型 | 描述 |
+|-----------|------|-------------|
+| `period` | string | 时间段：`7d`、`30d`、`90d`、`1y`（默认：30d） |
+
+#### 示例响应
+
+```json
+{
+  "period": "30d",
+  "total_failures": 156,
+  "total_recoveries": 113,
+  "recovery_rate": 72.44,
+  "recovered_revenue": "24500.00",
+  "lost_revenue": "3200.00",
+  "recovery_by_attempt": [
+    { "attempt": 1, "recoveries": 70, "rate": 44.87 },
+    { "attempt": 2, "recoveries": 28, "rate": 17.95 },
+    { "attempt": 3, "recoveries": 15, "rate": 9.62 }
+  ],
+  "average_recovery_time_hours": 72.5
+}
+```
+
+### 获取订阅催缴历史
+
+```http
+GET /api/v1/subscriptions/{id}/dunning-history
+```
+
+检索特定订阅的完整催缴历史。
+
+#### 示例响应
+
+```json
+{
+  "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "active",
+  "retry_attempts": [
+    {
+      "attempt_number": 1,
+      "attempted_at": "2026-01-10T08:30:00Z",
+      "succeeded": false,
+      "error_message": "Card declined",
+      "error_code": "insufficient_funds"
+    },
+    {
+      "attempt_number": 2,
+      "attempted_at": "2026-01-13T08:30:00Z",
+      "succeeded": true,
+      "payment_id": "pi_1234567890"
+    }
+  ],
+  "emails_sent": [
+    {
+      "type": "first_failure",
+      "sent_at": "2026-01-10T08:30:00Z",
+      "opened_at": "2026-01-10T09:15:00Z",
+      "clicked_at": "2026-01-10T09:16:00Z"
+    }
+  ]
+}
+```
+
+### 手动重试付款
+
+```http
+POST /api/v1/subscriptions/{id}/retry-payment
+```
+
+为处于催缴状态的订阅手动触发付款重试。
+
+#### 示例响应
+
+```json
+{
+  "success": true,
+  "message": "Payment retry initiated",
+  "payment_id": "pi_1234567890",
+  "status": "processing"
+}
+```
+
+### 延长宽限期
+
+```http
+POST /api/v1/subscriptions/{id}/extend-grace
+```
+
+延长处于催缴状态订阅的宽限期。
+
+#### 请求体
+
+```json
+{
+  "days": 7,
+  "reason": "Customer contacted support"
+}
+```
+
+#### 示例响应
+
+```json
+{
+  "success": true,
+  "message": "Grace period extended by 7 days",
+  "new_grace_period_end": "2026-01-25T10:00:00Z"
+}
+```
+
+## 催缴管理 Webhook 事件
+
+订阅这些 webhook 事件以获取催缴通知：
+
+| 事件 | 描述 |
+|-------|-------------|
+| `dunning.payment_failed` | 付款失败并进入催缴 |
+| `dunning.payment_recovered` | 失败的付款已成功恢复 |
+| `dunning.subscription_cancelled` | 催缴失败后订阅被取消 |
+| `dunning.retry_attempted` | 已进行重试尝试 |
+| `dunning.email_sent` | 已发送催缴邮件 |
+| `dunning.grace_period_extended` | 宽限期已手动延长 |
+
+### Webhook 负载示例
+
+**dunning.payment_failed：**
+```json
+{
+  "event": "dunning.payment_failed",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
+    "attempt_number": 1,
+    "max_attempts": 3,
+    "next_retry_at": "2026-01-15T10:00:00Z",
+    "error_message": "Card declined",
+    "amount": "29.99",
+    "currency": "USD"
+  }
+}
+```
+
+**dunning.payment_recovered：**
+```json
+{
+  "event": "dunning.payment_recovered",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
+    "attempt_number": 2,
+    "payment_id": "pi_1234567890",
+    "amount": "29.99",
+    "currency": "USD"
+  }
+}
+```
+
+**dunning.subscription_cancelled：**
+```json
+{
+  "event": "dunning.subscription_cancelled",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "reason": "payment_failed",
+    "total_attempts": 3,
+    "cancelled_at": "2026-01-20T10:00:00Z"
+  }
+}
+```
+
 ## 管理员端点
 
 ### 列出所有订阅（管理员）

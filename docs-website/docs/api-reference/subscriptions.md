@@ -488,6 +488,236 @@ Authorization: Bearer sk_live_xxx
 }
 ```
 
+## Dunning Endpoints
+
+### List Failed Payments
+
+```http
+GET /api/v1/admin/dunning/failed-payments
+```
+
+Retrieve a list of subscriptions with failed payments currently in dunning.
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `status` | string | Filter by status: `past_due`, `in_dunning` |
+| `page` | integer | Page number (default: 1) |
+| `per_page` | integer | Items per page (default: 20, max: 100) |
+
+#### Example Response
+
+```json
+{
+  "data": [
+    {
+      "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+      "customer": {
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "email": "customer@example.com",
+        "name": "John Doe"
+      },
+      "product_name": "Premium Subscription",
+      "amount": "29.99",
+      "currency": "USD",
+      "failed_attempts": 2,
+      "max_attempts": 3,
+      "next_retry_at": "2026-01-15T10:00:00Z",
+      "status": "past_due",
+      "first_failed_at": "2026-01-10T08:30:00Z"
+    }
+  ],
+  "meta": {
+    "total": 12,
+    "page": 1,
+    "per_page": 20
+  }
+}
+```
+
+### Get Dunning Metrics
+
+```http
+GET /api/v1/admin/dunning/metrics?period=30d
+```
+
+Retrieve dunning performance metrics.
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `period` | string | Time period: `7d`, `30d`, `90d`, `1y` (default: 30d) |
+
+#### Example Response
+
+```json
+{
+  "period": "30d",
+  "total_failures": 156,
+  "total_recoveries": 113,
+  "recovery_rate": 72.44,
+  "recovered_revenue": "24500.00",
+  "lost_revenue": "3200.00",
+  "recovery_by_attempt": [
+    { "attempt": 1, "recoveries": 70, "rate": 44.87 },
+    { "attempt": 2, "recoveries": 28, "rate": 17.95 },
+    { "attempt": 3, "recoveries": 15, "rate": 9.62 }
+  ],
+  "average_recovery_time_hours": 72.5
+}
+```
+
+### Get Subscription Dunning History
+
+```http
+GET /api/v1/subscriptions/{id}/dunning-history
+```
+
+Retrieve the complete dunning history for a specific subscription.
+
+#### Example Response
+
+```json
+{
+  "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "active",
+  "retry_attempts": [
+    {
+      "attempt_number": 1,
+      "attempted_at": "2026-01-10T08:30:00Z",
+      "succeeded": false,
+      "error_message": "Card declined",
+      "error_code": "insufficient_funds"
+    },
+    {
+      "attempt_number": 2,
+      "attempted_at": "2026-01-13T08:30:00Z",
+      "succeeded": true,
+      "payment_id": "pi_1234567890"
+    }
+  ],
+  "emails_sent": [
+    {
+      "type": "first_failure",
+      "sent_at": "2026-01-10T08:30:00Z",
+      "opened_at": "2026-01-10T09:15:00Z",
+      "clicked_at": "2026-01-10T09:16:00Z"
+    }
+  ]
+}
+```
+
+### Retry Payment Manually
+
+```http
+POST /api/v1/subscriptions/{id}/retry-payment
+```
+
+Manually trigger a payment retry for a subscription in dunning.
+
+#### Example Response
+
+```json
+{
+  "success": true,
+  "message": "Payment retry initiated",
+  "payment_id": "pi_1234567890",
+  "status": "processing"
+}
+```
+
+### Extend Grace Period
+
+```http
+POST /api/v1/subscriptions/{id}/extend-grace
+```
+
+Extend the grace period for a subscription in dunning.
+
+#### Request Body
+
+```json
+{
+  "days": 7,
+  "reason": "Customer contacted support"
+}
+```
+
+#### Example Response
+
+```json
+{
+  "success": true,
+  "message": "Grace period extended by 7 days",
+  "new_grace_period_end": "2026-01-25T10:00:00Z"
+}
+```
+
+## Dunning Webhook Events
+
+Subscribe to these webhook events for dunning notifications:
+
+| Event | Description |
+|-------|-------------|
+| `dunning.payment_failed` | A payment failed and entered dunning |
+| `dunning.payment_recovered` | A failed payment was successfully recovered |
+| `dunning.subscription_cancelled` | Subscription cancelled after failed dunning |
+| `dunning.retry_attempted` | A retry attempt was made |
+| `dunning.email_sent` | A dunning email was sent |
+| `dunning.grace_period_extended` | Grace period was manually extended |
+
+### Webhook Payload Examples
+
+**dunning.payment_failed:**
+```json
+{
+  "event": "dunning.payment_failed",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
+    "attempt_number": 1,
+    "max_attempts": 3,
+    "next_retry_at": "2026-01-15T10:00:00Z",
+    "error_message": "Card declined",
+    "amount": "29.99",
+    "currency": "USD"
+  }
+}
+```
+
+**dunning.payment_recovered:**
+```json
+{
+  "event": "dunning.payment_recovered",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "invoice_id": "550e8400-e29b-41d4-a716-446655440002",
+    "attempt_number": 2,
+    "payment_id": "pi_1234567890",
+    "amount": "29.99",
+    "currency": "USD"
+  }
+}
+```
+
+**dunning.subscription_cancelled:**
+```json
+{
+  "event": "dunning.subscription_cancelled",
+  "data": {
+    "subscription_id": "550e8400-e29b-41d4-a716-446655440000",
+    "customer_id": "550e8400-e29b-41d4-a716-446655440001",
+    "reason": "payment_failed",
+    "total_attempts": 3,
+    "cancelled_at": "2026-01-20T10:00:00Z"
+  }
+}
+```
+
 ## Admin Endpoints
 
 ### List All Subscriptions (Admin)
