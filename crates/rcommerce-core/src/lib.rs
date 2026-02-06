@@ -16,6 +16,7 @@ pub mod cache;
 pub mod jobs;
 pub mod performance;
 pub mod import;
+pub mod shipping;
 
 // Re-export commonly used types
 pub use error::{Error, Result};
@@ -30,7 +31,41 @@ pub use payment::{PaymentGateway, CreatePaymentRequest, PaymentMethod, CardDetai
 pub use payment::gateways::{stripe::StripeGateway, wechatpay::WeChatPayGateway, alipay::AliPayGateway};
 pub use inventory::{InventoryService, StockAlertLevel, StockReservation, ReservationStatus, InventoryLevel, StockMovement, StockStatus, LowStockAlert, InventoryConfig, InventoryLocation, ProductInventory, LocationInventory};
 // Order types come from the order module (not models), which includes lifecycle, fulfillment, etc.
-pub use order::{Order, OrderItem, OrderStatus, PaymentStatus as OrderPaymentStatus, OrderFilter, CreateOrderRequest, CreateOrderItem, Fulfillment, FulfillmentStatus, TrackingInfo, OrderCalculator, OrderTotals, OrderService as OrderManager};
+pub use order::{Order, OrderItem, OrderStatus, PaymentStatus as OrderPaymentStatus, OrderFilter, CreateOrderRequest, CreateOrderItem, Fulfillment, FulfillmentStatus, TrackingInfo as OrderTrackingInfo, OrderCalculator, OrderTotals, OrderService as OrderManager};
+
+// Shipping module exports
+pub use shipping::{
+    ShippingProvider, ShippingRate, Shipment, ShipmentStatus, TrackingInfo, TrackingStatus, TrackingEvent,
+    Package, RateOptions, AddressValidation, ShippingService, ServiceFeature, CustomsInfo, CustomsItem,
+    ContentsType, NonDeliveryOption, ShippingProviderFactory, ShippingRateAggregator,
+};
+
+// Shipping calculation exports
+pub use shipping::calculation::{
+    ShippingCalculator, VolumetricWeightCalculator, WeightConverter, WeightUnit, 
+    LengthConverter, LengthUnit, ChargeableWeight, ShippingCalculation, TieredShippingCalculator,
+};
+
+// Shipping packaging exports
+pub use shipping::packaging::{
+    PackageType, PackageRegistry, PackagingCalculator, ItemDimensions, PackageRecommendation,
+};
+
+// Shipping zones exports
+pub use shipping::zones::{
+    ShippingZone, ZoneRate, ZoneCalculator, ZonePresets,
+};
+
+// Shipping rules exports
+pub use shipping::rules::{
+    ShippingRule, ShippingRuleEngine, RuleCondition, RuleAction, RulePresets,
+};
+
+// Shipping carriers
+pub use shipping::carriers::{DhlProvider, FedExProvider, UpsProvider, UspsProvider};
+
+// Shipping providers (aggregators)
+pub use shipping::providers::{EasyPostProvider, ShipStationProvider};
 
 /// Current version of rcommerce
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
