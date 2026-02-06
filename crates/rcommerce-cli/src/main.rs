@@ -135,6 +135,12 @@ pub enum Commands {
     
     /// Show configuration
     Config,
+    
+    /// Email testing and management
+    Email {
+        #[command(subcommand)]
+        command: EmailCommands,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -296,6 +302,45 @@ pub enum TlsCommands {
         #[arg(short, long, help = "Domain to show info for")]
         domain: String,
     },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum EmailCommands {
+    /// Test all email templates with mock data (saves to filesystem)
+    TestAll {
+        #[arg(short, long, help = "Output directory for test emails", default_value = "./test-emails")]
+        output_dir: String,
+        
+        #[arg(short, long, help = "Recipient email address for test")]
+        recipient: Option<String>,
+    },
+    
+    /// Test a specific email template
+    Test {
+        #[arg(help = "Template type (order_confirmation, order_shipped, payment_failed, payment_successful, subscription_created, subscription_renewal, subscription_cancelled, dunning_first, dunning_retry, dunning_final, welcome, password_reset, abandoned_cart)")]
+        template: String,
+        
+        #[arg(short, long, help = "Output directory for test email", default_value = "./test-emails")]
+        output_dir: String,
+        
+        #[arg(short, long, help = "Recipient email address")]
+        recipient: Option<String>,
+    },
+    
+    /// Send a test email via SMTP (requires SMTP configuration)
+    Send {
+        #[arg(help = "Template type to send")]
+        template: String,
+        
+        #[arg(short, long, help = "Recipient email address (required)")]
+        to: String,
+        
+        #[arg(short, long, help = "Use mock mode instead of SMTP")]
+        mock: bool,
+    },
+    
+    /// List all available email templates
+    List,
 }
 
 #[derive(Subcommand, Debug)]
@@ -1287,6 +1332,105 @@ async fn main() -> Result<()> {
             );
             println!("{:#?}", config);
         }
+        
+        Commands::Email { command } => {
+            use colored::*;
+            
+            match command {
+                EmailCommands::List => {
+                    println!("{}", "Available Email Templates".bold().underline());
+                    println!();
+                    
+                    let templates = vec![
+                        ("order_confirmation", "Order Confirmation", "Sent when a new order is placed"),
+                        ("order_shipped", "Order Shipped", "Sent when an order is shipped"),
+                        ("order_cancelled", "Order Cancelled", "Sent when an order is cancelled"),
+                        ("payment_successful", "Payment Successful", "Sent when payment is confirmed"),
+                        ("payment_failed", "Payment Failed", "Sent when payment fails"),
+                        ("refund_processed", "Refund Processed", "Sent when a refund is processed"),
+                        ("subscription_created", "Subscription Created", "Sent when a subscription is created"),
+                        ("subscription_renewal", "Subscription Renewal", "Sent when a subscription renews"),
+                        ("subscription_cancelled", "Subscription Cancelled", "Sent when a subscription is cancelled"),
+                        ("dunning_first", "Dunning: First Notice", "First payment failure notice"),
+                        ("dunning_retry", "Dunning: Retry Notice", "Subsequent payment retry notice"),
+                        ("dunning_final", "Dunning: Final Notice", "Final notice before cancellation"),
+                        ("welcome", "Welcome", "Sent to new customers"),
+                        ("password_reset", "Password Reset", "Sent for password reset requests"),
+                        ("abandoned_cart", "Abandoned Cart", "Sent for abandoned cart reminders"),
+                    ];
+                    
+                    println!("{:<25} {:<30} {}", "Template ID", "Name", "Description");
+                    println!("{}", "-".repeat(100));
+                    for (id, name, desc) in &templates {
+                        println!("{:<25} {:<30} {}", id.cyan(), name, desc.dimmed());
+                    }
+                    println!();
+                    println!("Total: {} templates", templates.len());
+                }
+                
+                EmailCommands::TestAll { output_dir, recipient } => {
+                    let recipient = recipient.unwrap_or_else(|| "test@example.com".to_string());
+                    println!("{}", "Testing All Email Templates".bold().underline());
+                    println!("  Output directory: {}", output_dir.cyan());
+                    println!("  Recipient: {}", recipient.cyan());
+                    println!();
+                    
+                    match test_all_email_templates(&output_dir, &recipient).await {
+                        Ok(count) => {
+                            println!("\n{}", format!("✅ Successfully generated {} test emails", count).green().bold());
+                            println!("  Files saved to: {}", output_dir.cyan());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to generate test emails: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                EmailCommands::Test { template, output_dir, recipient } => {
+                    let recipient = recipient.unwrap_or_else(|| "test@example.com".to_string());
+                    println!("{}", format!("Testing Email Template: {}", template).bold().underline());
+                    println!("  Output directory: {}", output_dir.cyan());
+                    println!("  Recipient: {}", recipient.cyan());
+                    println!();
+                    
+                    match test_email_template(&template, &output_dir, &recipient).await {
+                        Ok(filepath) => {
+                            println!("\n{}", "✅ Test email generated successfully".green().bold());
+                            println!("  File: {}", filepath.cyan());
+                        }
+                        Err(e) => {
+                            eprintln!("{}", format!("❌ Failed to generate test email: {}", e).red());
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                
+                EmailCommands::Send { template, to, mock } => {
+                    println!("{}", format!("Sending Test Email: {}", template).bold().underline());
+                    println!("  Recipient: {}", to.cyan());
+                    println!("  Mode: {}", if mock { "Mock (console output)".yellow() } else { "SMTP".green() });
+                    println!();
+                    
+                    if mock {
+                        match send_mock_email(&template, &to).await {
+                            Ok(_) => {
+                                println!("\n{}", "✅ Mock email sent to console".green());
+                            }
+                            Err(e) => {
+                                eprintln!("{}", format!("❌ Failed to send mock email: {}", e).red());
+                                std::process::exit(1);
+                            }
+                        }
+                    } else {
+                        // SMTP mode requires configuration
+                        eprintln!("{}", "❌ SMTP sending not yet implemented via CLI".red());
+                        eprintln!("Use --mock flag to test with console output, or use the API.");
+                        std::process::exit(1);
+                    }
+                }
+            }
+        }
     }
     
     Ok(())
@@ -2065,6 +2209,481 @@ async fn obtain_certificate_stub(le_config: &LetsEncryptConfig, domain: &str) ->
         domain
     );
     Ok(cert_info)
+}
+
+// Email testing functions
+
+use rcommerce_core::notification::{EmailNotificationFactory, Notification, NotificationTemplate, TemplateVariables};
+use rcommerce_core::notification::email_templates::{OrderItem, Address};
+use std::fs::File;
+use std::io::Write;
+
+/// Generate a test order confirmation email
+fn generate_order_confirmation_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let items = vec![
+        OrderItem {
+            name: "High-Performance Server Blade".to_string(),
+            sku: "SRV-BLD-01".to_string(),
+            quantity: 2,
+            price: "3,200.00".to_string(),
+        },
+        OrderItem {
+            name: "Enterprise Rust Support".to_string(),
+            sku: "LIC-ENT-YR".to_string(),
+            quantity: 1,
+            price: "850.00".to_string(),
+        },
+    ];
+    
+    let shipping = Address {
+        name: "John Doe".to_string(),
+        street: "123 Main Street, Suite 100".to_string(),
+        city: "San Francisco".to_string(),
+        state: "CA".to_string(),
+        zip: "94102".to_string(),
+        country: "United States".to_string(),
+    };
+    
+    let billing = Address {
+        name: "John Doe".to_string(),
+        street: "456 Business Ave".to_string(),
+        city: "New York".to_string(),
+        state: "NY".to_string(),
+        zip: "10001".to_string(),
+        country: "United States".to_string(),
+    };
+    
+    EmailNotificationFactory::order_confirmation(
+        recipient,
+        "John Doe",
+        "ORD-2026-001234",
+        "Feb 5, 2026",
+        "7,250.00",
+        &items,
+        &shipping,
+        &billing,
+    )
+}
+
+/// Generate a test order shipped email
+fn generate_order_shipped_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("order_shipped_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("order_date", "Feb 5, 2026");
+    vars.insert("tracking_number", "1Z999AA10123456784");
+    vars.insert("tracking_url", "https://tracking.example.com/1Z999AA10123456784");
+    vars.insert("shipping_carrier", "UPS");
+    vars.insert("estimated_delivery", "Feb 8, 2026");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test payment successful email
+fn generate_payment_successful_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("payment_successful_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("amount", "$7,250.00");
+    vars.insert("payment_method", "Visa ending in 4242");
+    vars.insert("payment_date", "Feb 5, 2026");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test payment failed email
+fn generate_payment_failed_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("payment_failed_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("amount", "$7,250.00");
+    vars.insert("error_message", "Your card was declined. Please try a different payment method.");
+    vars.insert("retry_url", "https://rcommerce.local/payment/retry/ORD-2026-001234");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test subscription created email
+fn generate_subscription_created_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("subscription_created_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("subscription_id", "SUB-2026-001");
+    vars.insert("plan_name", "Enterprise Plan");
+    vars.insert("amount", "$299.00");
+    vars.insert("interval", "Monthly");
+    vars.insert("next_billing_date", "Mar 5, 2026");
+    vars.insert("trial_end_date", "Feb 12, 2026");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test subscription renewal email
+fn generate_subscription_renewal_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("subscription_renewal_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("plan_name", "Enterprise Plan");
+    vars.insert("amount", "$299.00");
+    vars.insert("billing_date", "Feb 5, 2026");
+    vars.insert("next_billing_date", "Mar 5, 2026");
+    vars.insert("invoice_url", "https://rcommerce.local/invoices/INV-2026-001");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test subscription cancelled email
+fn generate_subscription_cancelled_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("subscription_cancelled_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("plan_name", "Enterprise Plan");
+    vars.insert("cancellation_date", "Feb 5, 2026");
+    vars.insert("end_date", "Mar 5, 2026");
+    vars.insert("access_until", "Mar 5, 2026");
+    vars.insert("reason", "Customer requested cancellation");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test dunning first email
+fn generate_dunning_first_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("dunning_first_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("amount", "$299.00");
+    vars.insert("payment_method", "Visa ending in 4242");
+    vars.insert("error_message", "Your card was declined.");
+    vars.insert("retry_url", "https://rcommerce.local/payment/update");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test dunning retry email
+fn generate_dunning_retry_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("dunning_retry_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("amount", "$299.00");
+    vars.insert("attempt_number", "2");
+    vars.insert("max_attempts", "4");
+    vars.insert("next_retry_date", "Feb 7, 2026");
+    vars.insert("update_payment_url", "https://rcommerce.local/payment/update");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test dunning final email
+fn generate_dunning_final_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("dunning_final_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("amount", "$299.00");
+    vars.insert("final_date", "Feb 10, 2026");
+    vars.insert("cancellation_date", "Feb 12, 2026");
+    vars.insert("update_payment_url", "https://rcommerce.local/payment/update");
+    vars.insert("contact_support_url", "https://rcommerce.local/support");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test welcome email
+fn generate_welcome_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("welcome_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("login_url", "https://rcommerce.local/login");
+    vars.insert("shop_url", "https://rcommerce.local/shop");
+    vars.insert("support_email", "support@rcommerce.local");
+    vars.insert("help_center_url", "https://rcommerce.local/help");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test password reset email
+fn generate_password_reset_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("password_reset_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("reset_url", "https://rcommerce.local/reset-password?token=abc123xyz");
+    vars.insert("reset_token", "ABC123XYZ789");
+    vars.insert("expires_in", "24 hours");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test abandoned cart email
+fn generate_abandoned_cart_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("abandoned_cart_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("cart_items", "High-Performance Server Blade (x2), Enterprise Rust Support (x1)");
+    vars.insert("cart_total", "$7,250.00");
+    vars.insert("cart_url", "https://rcommerce.local/cart");
+    vars.insert("discount_code", "COMEBACK10");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test order cancelled email
+fn generate_order_cancelled_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("order_cancelled_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("order_date", "Feb 5, 2026");
+    vars.insert("cancellation_reason", "Customer requested cancellation");
+    vars.insert("refund_amount", "$7,250.00");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Generate a test refund processed email
+fn generate_refund_processed_email(recipient: &str) -> rcommerce_core::Result<Notification> {
+    let template = NotificationTemplate::load("refund_processed_html")?;
+    
+    let mut vars = TemplateVariables::new();
+    vars.insert("customer_name", "John Doe");
+    vars.insert("order_number", "ORD-2026-001234");
+    vars.insert("refund_amount", "$7,250.00");
+    vars.insert("refund_method", "Original payment method (Visa ending in 4242)");
+    vars.insert("processing_time", "5-7 business days");
+    vars.insert("company_name", "R Commerce");
+    vars.insert("support_email", "support@rcommerce.local");
+    
+    create_notification_from_template(recipient, &template, vars)
+}
+
+/// Helper function to create a notification from a template
+fn create_notification_from_template(
+    recipient: &str,
+    template: &NotificationTemplate,
+    variables: TemplateVariables,
+) -> rcommerce_core::Result<Notification> {
+    use rcommerce_core::notification::types::{NotificationPriority, DeliveryStatus};
+    
+    let subject = template.render_subject(&variables)?;
+    let body = template.render(&variables)?;
+    let html_body = template.render_html(&variables)?;
+    
+    Ok(Notification {
+        id: uuid::Uuid::new_v4(),
+        channel: rcommerce_core::notification::NotificationChannel::Email,
+        recipient: recipient.to_string(),
+        subject,
+        body,
+        html_body,
+        priority: NotificationPriority::Normal,
+        status: DeliveryStatus::Pending,
+        attempt_count: 0,
+        max_attempts: 3,
+        error_message: None,
+        metadata: serde_json::json!({"template_id": template.id}),
+        scheduled_at: None,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    })
+}
+
+/// Test all email templates and save to filesystem
+async fn test_all_email_templates(output_dir: &str, recipient: &str) -> rcommerce_core::Result<usize> {
+    use std::fs;
+    
+    // Create output directory
+    fs::create_dir_all(output_dir)
+        .map_err(|e| rcommerce_core::Error::config(format!("Failed to create output directory: {}", e)))?;
+    
+    let generators: Vec<(&str, Box<dyn Fn(&str) -> rcommerce_core::Result<Notification>>)> = vec![
+        ("order_confirmation", Box::new(generate_order_confirmation_email)),
+        ("order_shipped", Box::new(generate_order_shipped_email)),
+        ("order_cancelled", Box::new(generate_order_cancelled_email)),
+        ("payment_successful", Box::new(generate_payment_successful_email)),
+        ("payment_failed", Box::new(generate_payment_failed_email)),
+        ("refund_processed", Box::new(generate_refund_processed_email)),
+        ("subscription_created", Box::new(generate_subscription_created_email)),
+        ("subscription_renewal", Box::new(generate_subscription_renewal_email)),
+        ("subscription_cancelled", Box::new(generate_subscription_cancelled_email)),
+        ("dunning_first", Box::new(generate_dunning_first_email)),
+        ("dunning_retry", Box::new(generate_dunning_retry_email)),
+        ("dunning_final", Box::new(generate_dunning_final_email)),
+        ("welcome", Box::new(generate_welcome_email)),
+        ("password_reset", Box::new(generate_password_reset_email)),
+        ("abandoned_cart", Box::new(generate_abandoned_cart_email)),
+    ];
+    
+    let mut count = 0;
+    for (name, generator) in generators {
+        match generator(recipient) {
+            Ok(notification) => {
+                let filename = format!("{}_{}.html", name, chrono::Utc::now().format("%Y%m%d_%H%M%S"));
+                let filepath = format!("{}/{}", output_dir, filename);
+                
+                // Save email to file
+                let mut content = format!("<!-- Subject: {} -->\n", notification.subject);
+                content.push_str(&format!("<!-- To: {} -->\n", notification.recipient));
+                content.push_str(&format!("<!-- Template: {} -->\n\n", name));
+                
+                if let Some(ref html) = notification.html_body {
+                    content.push_str(html);
+                } else {
+                    content.push_str(&notification.body);
+                }
+                
+                let mut file = File::create(&filepath)
+                    .map_err(|e| rcommerce_core::Error::config(format!("Failed to create file: {}", e)))?;
+                file.write_all(content.as_bytes())
+                    .map_err(|e| rcommerce_core::Error::config(format!("Failed to write file: {}", e)))?;
+                
+                println!("  ✓ Generated: {} -> {}", name.cyan(), filepath.dimmed());
+                count += 1;
+            }
+            Err(e) => {
+                eprintln!("  ✗ Failed to generate {}: {}", name.red(), e);
+            }
+        }
+    }
+    
+    Ok(count)
+}
+
+/// Test a specific email template
+async fn test_email_template(template: &str, output_dir: &str, recipient: &str) -> rcommerce_core::Result<String> {
+    use std::fs;
+    
+    // Create output directory
+    fs::create_dir_all(output_dir)
+        .map_err(|e| rcommerce_core::Error::config(format!("Failed to create output directory: {}", e)))?;
+    
+    let notification = match template {
+        "order_confirmation" => generate_order_confirmation_email(recipient),
+        "order_shipped" => generate_order_shipped_email(recipient),
+        "order_cancelled" => generate_order_cancelled_email(recipient),
+        "payment_successful" => generate_payment_successful_email(recipient),
+        "payment_failed" => generate_payment_failed_email(recipient),
+        "refund_processed" => generate_refund_processed_email(recipient),
+        "subscription_created" => generate_subscription_created_email(recipient),
+        "subscription_renewal" => generate_subscription_renewal_email(recipient),
+        "subscription_cancelled" => generate_subscription_cancelled_email(recipient),
+        "dunning_first" => generate_dunning_first_email(recipient),
+        "dunning_retry" => generate_dunning_retry_email(recipient),
+        "dunning_final" => generate_dunning_final_email(recipient),
+        "welcome" => generate_welcome_email(recipient),
+        "password_reset" => generate_password_reset_email(recipient),
+        "abandoned_cart" => generate_abandoned_cart_email(recipient),
+        _ => return Err(rcommerce_core::Error::validation(format!("Unknown template: {}", template))),
+    }?;
+    
+    let filename = format!("{}_{}.html", template, chrono::Utc::now().format("%Y%m%d_%H%M%S"));
+    let filepath = format!("{}/{}", output_dir, filename);
+    
+    // Save email to file
+    let mut content = format!("<!-- Subject: {} -->\n", notification.subject);
+    content.push_str(&format!("<!-- To: {} -->\n", notification.recipient));
+    content.push_str(&format!("<!-- Template: {} -->\n\n", template));
+    
+    if let Some(ref html) = notification.html_body {
+        content.push_str(html);
+    } else {
+        content.push_str(&notification.body);
+    }
+    
+    let mut file = File::create(&filepath)
+        .map_err(|e| rcommerce_core::Error::config(format!("Failed to create file: {}", e)))?;
+    file.write_all(content.as_bytes())
+        .map_err(|e| rcommerce_core::Error::config(format!("Failed to write file: {}", e)))?;
+    
+    Ok(filepath)
+}
+
+/// Send a mock email (outputs to console)
+async fn send_mock_email(template: &str, recipient: &str) -> rcommerce_core::Result<()> {
+    let notification = match template {
+        "order_confirmation" => generate_order_confirmation_email(recipient),
+        "order_shipped" => generate_order_shipped_email(recipient),
+        "order_cancelled" => generate_order_cancelled_email(recipient),
+        "payment_successful" => generate_payment_successful_email(recipient),
+        "payment_failed" => generate_payment_failed_email(recipient),
+        "refund_processed" => generate_refund_processed_email(recipient),
+        "subscription_created" => generate_subscription_created_email(recipient),
+        "subscription_renewal" => generate_subscription_renewal_email(recipient),
+        "subscription_cancelled" => generate_subscription_cancelled_email(recipient),
+        "dunning_first" => generate_dunning_first_email(recipient),
+        "dunning_retry" => generate_dunning_retry_email(recipient),
+        "dunning_final" => generate_dunning_final_email(recipient),
+        "welcome" => generate_welcome_email(recipient),
+        "password_reset" => generate_password_reset_email(recipient),
+        "abandoned_cart" => generate_abandoned_cart_email(recipient),
+        _ => return Err(rcommerce_core::Error::validation(format!("Unknown template: {}", template))),
+    }?;
+    
+    // Output to console in mock format
+    println!("╔══════════════════════════════════════════════════════════════╗");
+    println!("║                     MOCK EMAIL SENT                          ║");
+    println!("╠══════════════════════════════════════════════════════════════╣");
+    println!("║ To:      {:<50} ║", notification.recipient);
+    println!("║ Subject: {:<50} ║", notification.subject);
+    println!("╠══════════════════════════════════════════════════════════════╣");
+    
+    for line in notification.body.lines() {
+        if line.len() > 60 {
+            println!("║ {:<60} ║", &line[..60]);
+        } else {
+            println!("║ {:<60} ║", line);
+        }
+    }
+    
+    if let Some(ref html) = notification.html_body {
+        println!("╠══════════════════════════════════════════════════════════════╣");
+        println!("║ HTML Body: {:<48} ║", format!("{} bytes", html.len()));
+    }
+    
+    println!("╚══════════════════════════════════════════════════════════════╝");
+    
+    Ok(())
 }
 
 #[cfg(test)]

@@ -39,10 +39,26 @@ impl NotificationTemplate {
     /// Load from file or database
     pub fn load(id: &str) -> Result<Self> {
         match id {
+            // Plain text templates
             "order_confirmation" => Ok(Self::order_confirmation()),
-            "order_confirmation_html" => Ok(Self::order_confirmation_html()),
             "order_shipped" => Ok(Self::order_shipped()),
             "low_stock_alert" => Ok(Self::low_stock_alert()),
+            // HTML templates
+            "order_confirmation_html" => Ok(Self::order_confirmation_html()),
+            "order_shipped_html" => Ok(Self::order_shipped_html()),
+            "order_cancelled_html" => Ok(Self::order_cancelled_html()),
+            "payment_successful_html" => Ok(Self::payment_successful_html()),
+            "payment_failed_html" => Ok(Self::payment_failed_html()),
+            "refund_processed_html" => Ok(Self::refund_processed_html()),
+            "subscription_created_html" => Ok(Self::subscription_created_html()),
+            "subscription_renewal_html" => Ok(Self::subscription_renewal_html()),
+            "subscription_cancelled_html" => Ok(Self::subscription_cancelled_html()),
+            "dunning_first_html" => Ok(Self::dunning_first_html()),
+            "dunning_retry_html" => Ok(Self::dunning_retry_html()),
+            "dunning_final_html" => Ok(Self::dunning_final_html()),
+            "welcome_html" => Ok(Self::welcome_html()),
+            "password_reset_html" => Ok(Self::password_reset_html()),
+            "abandoned_cart_html" => Ok(Self::abandoned_cart_html()),
             _ => Err(Error::not_found("Template not found")),
         }
     }
@@ -73,6 +89,18 @@ impl NotificationTemplate {
         } else {
             Ok(None)
         }
+    }
+    
+    /// Render subject line with variables
+    pub fn render_subject(&self, variables: &TemplateVariables) -> Result<String> {
+        let mut rendered = self.subject.clone();
+        
+        for (key, value) in variables.iter() {
+            let placeholder = format!("{{{{ {} }}}}", key);
+            rendered = rendered.replace(&placeholder, value);
+        }
+        
+        Ok(rendered)
     }
     
     /// Load HTML template from embedded file
@@ -257,6 +285,297 @@ Recommended Reorder Quantity: {{ reorder_quantity }}
                 "threshold".to_string(),
                 "reorder_quantity".to_string(),
                 "is_critical".to_string(),
+            ],
+        }
+    }
+    
+    // HTML Templates
+    
+    fn order_shipped_html() -> Self {
+        Self {
+            id: "order_shipped_html".to_string(),
+            name: "Order Shipped HTML".to_string(),
+            subject: "Your Order Has Shipped: {{ order_number }}".to_string(),
+            body: "Your order has shipped.".to_string(),
+            html_body: Some(Self::load_html_template("order_shipped.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "order_number".to_string(),
+                "order_date".to_string(),
+                "customer_name".to_string(),
+                "tracking_number".to_string(),
+                "tracking_url".to_string(),
+                "shipping_carrier".to_string(),
+                "estimated_delivery".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn order_cancelled_html() -> Self {
+        Self {
+            id: "order_cancelled_html".to_string(),
+            name: "Order Cancelled HTML".to_string(),
+            subject: "Order Cancelled: {{ order_number }}".to_string(),
+            body: "Your order has been cancelled.".to_string(),
+            html_body: Some(Self::load_html_template("order_cancelled.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "order_number".to_string(),
+                "order_date".to_string(),
+                "customer_name".to_string(),
+                "cancellation_reason".to_string(),
+                "refund_amount".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn payment_successful_html() -> Self {
+        Self {
+            id: "payment_successful_html".to_string(),
+            name: "Payment Successful HTML".to_string(),
+            subject: "Payment Confirmed: {{ order_number }}".to_string(),
+            body: "Your payment was successful.".to_string(),
+            html_body: Some(Self::load_html_template("payment_successful.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "order_number".to_string(),
+                "customer_name".to_string(),
+                "amount".to_string(),
+                "payment_method".to_string(),
+                "payment_date".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn payment_failed_html() -> Self {
+        Self {
+            id: "payment_failed_html".to_string(),
+            name: "Payment Failed HTML".to_string(),
+            subject: "Payment Failed: {{ order_number }}".to_string(),
+            body: "Your payment failed.".to_string(),
+            html_body: Some(Self::load_html_template("payment_failed.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "order_number".to_string(),
+                "customer_name".to_string(),
+                "amount".to_string(),
+                "error_message".to_string(),
+                "retry_url".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn refund_processed_html() -> Self {
+        Self {
+            id: "refund_processed_html".to_string(),
+            name: "Refund Processed HTML".to_string(),
+            subject: "Refund Processed: {{ order_number }}".to_string(),
+            body: "Your refund has been processed.".to_string(),
+            html_body: Some(Self::load_html_template("refund_processed.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "order_number".to_string(),
+                "customer_name".to_string(),
+                "refund_amount".to_string(),
+                "refund_method".to_string(),
+                "processing_time".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn subscription_created_html() -> Self {
+        Self {
+            id: "subscription_created_html".to_string(),
+            name: "Subscription Created HTML".to_string(),
+            subject: "Welcome to {{ plan_name }}".to_string(),
+            body: "Your subscription has been created.".to_string(),
+            html_body: Some(Self::load_html_template("subscription_created.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "subscription_id".to_string(),
+                "plan_name".to_string(),
+                "amount".to_string(),
+                "interval".to_string(),
+                "next_billing_date".to_string(),
+                "trial_end_date".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn subscription_renewal_html() -> Self {
+        Self {
+            id: "subscription_renewal_html".to_string(),
+            name: "Subscription Renewal HTML".to_string(),
+            subject: "Subscription Renewed: {{ plan_name }}".to_string(),
+            body: "Your subscription has been renewed.".to_string(),
+            html_body: Some(Self::load_html_template("subscription_renewal.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "plan_name".to_string(),
+                "amount".to_string(),
+                "billing_date".to_string(),
+                "next_billing_date".to_string(),
+                "invoice_url".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn subscription_cancelled_html() -> Self {
+        Self {
+            id: "subscription_cancelled_html".to_string(),
+            name: "Subscription Cancelled HTML".to_string(),
+            subject: "Subscription Cancelled: {{ plan_name }}".to_string(),
+            body: "Your subscription has been cancelled.".to_string(),
+            html_body: Some(Self::load_html_template("subscription_cancelled.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "plan_name".to_string(),
+                "cancellation_date".to_string(),
+                "end_date".to_string(),
+                "access_until".to_string(),
+                "reason".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn dunning_first_html() -> Self {
+        Self {
+            id: "dunning_first_html".to_string(),
+            name: "Dunning First HTML".to_string(),
+            subject: "Payment Update Required: {{ order_number }}".to_string(),
+            body: "Please update your payment method.".to_string(),
+            html_body: Some(Self::load_html_template("dunning_first.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "order_number".to_string(),
+                "amount".to_string(),
+                "payment_method".to_string(),
+                "error_message".to_string(),
+                "retry_url".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn dunning_retry_html() -> Self {
+        Self {
+            id: "dunning_retry_html".to_string(),
+            name: "Dunning Retry HTML".to_string(),
+            subject: "Action Required: Payment Failed for {{ order_number }}".to_string(),
+            body: "Your payment failed again.".to_string(),
+            html_body: Some(Self::load_html_template("dunning_retry.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "order_number".to_string(),
+                "amount".to_string(),
+                "attempt_number".to_string(),
+                "max_attempts".to_string(),
+                "next_retry_date".to_string(),
+                "update_payment_url".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn dunning_final_html() -> Self {
+        Self {
+            id: "dunning_final_html".to_string(),
+            name: "Dunning Final HTML".to_string(),
+            subject: "Final Notice: Payment Required for {{ order_number }}".to_string(),
+            body: "Final notice for payment.".to_string(),
+            html_body: Some(Self::load_html_template("dunning_final.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "order_number".to_string(),
+                "amount".to_string(),
+                "final_date".to_string(),
+                "cancellation_date".to_string(),
+                "update_payment_url".to_string(),
+                "contact_support_url".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn welcome_html() -> Self {
+        Self {
+            id: "welcome_html".to_string(),
+            name: "Welcome HTML".to_string(),
+            subject: "Welcome to {{ company_name }}!".to_string(),
+            body: "Welcome to our platform!".to_string(),
+            html_body: Some(Self::load_html_template("welcome.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "company_name".to_string(),
+                "login_url".to_string(),
+                "shop_url".to_string(),
+                "support_email".to_string(),
+                "help_center_url".to_string(),
+            ],
+        }
+    }
+    
+    fn password_reset_html() -> Self {
+        Self {
+            id: "password_reset_html".to_string(),
+            name: "Password Reset HTML".to_string(),
+            subject: "Password Reset Request".to_string(),
+            body: "Reset your password.".to_string(),
+            html_body: Some(Self::load_html_template("password_reset.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "reset_url".to_string(),
+                "reset_token".to_string(),
+                "expires_in".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
+            ],
+        }
+    }
+    
+    fn abandoned_cart_html() -> Self {
+        Self {
+            id: "abandoned_cart_html".to_string(),
+            name: "Abandoned Cart HTML".to_string(),
+            subject: "You left something in your cart!".to_string(),
+            body: "Complete your purchase.".to_string(),
+            html_body: Some(Self::load_html_template("abandoned_cart.html").unwrap_or_else(|_| Self::get_default_html_template())),
+            channel: crate::notification::NotificationChannel::Email,
+            variables: vec![
+                "customer_name".to_string(),
+                "cart_items".to_string(),
+                "cart_total".to_string(),
+                "cart_url".to_string(),
+                "discount_code".to_string(),
+                "company_name".to_string(),
+                "support_email".to_string(),
             ],
         }
     }
