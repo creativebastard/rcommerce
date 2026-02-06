@@ -124,6 +124,7 @@ plugins:
             Guides: 指南
             API Keys: API 密钥
             Dunning: 催缴管理
+            Shipping: 运输
             Scopes: 权限范围
             Development: 开发
             Local Setup: 本地设置
@@ -300,6 +301,7 @@ nav:
   - Guides:
     - API Keys: guides/api-keys.md
     - Dunning: guides/dunning.md
+    - Shipping: guides/shipping.md
   
   - Development:
     - Overview: development/index.md
