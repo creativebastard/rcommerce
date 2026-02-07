@@ -289,17 +289,24 @@ impl PlatformImporter for WooCommerceImporter {
                     let db = Database::new(pool.clone());
                     let repo = ProductRepository::new(db);
 
-                    // Check for existing product by SKU
-                    if let Some(ref sku) = product.sku {
-                        if !sku.is_empty() {
-                            // Note: We'd need a find_by_sku method, for now we skip this check
-                            // or could query by slug
-                            if let Ok(Some(_existing)) = repo.find_by_slug(&product.slug).await {
-                                if config.options.skip_existing {
-                                    stats.skipped += 1;
-                                    continue;
-                                }
-                            }
+                    // Generate slug for lookup
+                    let slug = if product.slug.is_empty() {
+                        product.name.to_lowercase().replace(" ", "-")
+                    } else {
+                        product.slug.clone()
+                    };
+
+                    // Check for existing product by slug
+                    match repo.find_by_slug(&slug).await {
+                        Ok(Some(_existing)) => {
+                            tracing::info!("Product with slug '{}' already exists, skipping", slug);
+                            stats.skipped += 1;
+                            continue;
+                        }
+                        Ok(None) => {}
+                        Err(e) => {
+                            tracing::warn!("Failed to check existing product '{}': {}", product.name, e);
+                            // Continue anyway, the insert will fail if duplicate
                         }
                     }
 
@@ -479,57 +486,67 @@ impl PlatformImporter for WooCommerceImporter {
             } else {
                 // Create customer in database
                 if let Some(ref pool) = pool {
-                    let db = Database::new(pool.clone());
-                    let repo = CustomerRepository::new(db);
-
-                    // Check for existing customer by email
-                    match repo.find_by_email(&customer.email).await {
-                        Ok(Some(_existing)) => {
-                            if config.options.skip_existing {
-                                stats.skipped += 1;
-                                continue;
-                            }
-                            // If update_existing is true, we would update here
-                            // For now, just skip
+                    // Check for existing customer by email (using raw SQL to avoid role column issue)
+                    let existing: Option<(Uuid,)> = sqlx::query_as(
+                        "SELECT id FROM customers WHERE email = $1"
+                    )
+                    .bind(&customer.email)
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+                    
+                    if existing.is_some() {
+                        if config.options.skip_existing {
                             stats.skipped += 1;
                             continue;
                         }
-                        Ok(None) => {}
-                        Err(e) => {
-                            stats.errors += 1;
-                            stats.error_details.push(format!(
-                                "Failed to check existing customer '{}': {}",
-                                customer.email, e
-                            ));
-                            if !config.options.continue_on_error {
-                                break;
-                            }
-                            continue;
-                        }
+                        stats.skipped += 1;
+                        continue;
                     }
 
-                    // Create customer request
-                    let create_request = CreateCustomerRequest {
-                        email: customer.email.clone(),
-                        first_name: if customer.first_name.is_empty() {
-                            customer.username.clone()
-                        } else {
-                            customer.first_name.clone()
-                        },
-                        last_name: customer.last_name.clone(),
-                        phone: customer.billing.as_ref().and_then(|b| b.phone.clone()),
-                        accepts_marketing: false,
-                        currency: Currency::USD,
+                    // Create customer using raw SQL (without role column)
+                    let customer_id = Uuid::new_v4();
+                    let first_name = if customer.first_name.is_empty() {
+                        customer.username.clone()
+                    } else {
+                        customer.first_name.clone()
                     };
-
-                    match repo.create_with_request(create_request).await {
-                        Ok(created_customer) => {
+                    let last_name = customer.last_name.clone();
+                    let phone = customer.billing.as_ref().and_then(|b| b.phone.clone());
+                    
+                    match sqlx::query(
+                        r#"
+                        INSERT INTO customers (
+                            id, email, first_name, last_name, phone, accepts_marketing, 
+                            tax_exempt, currency, is_verified, marketing_opt_in,
+                            email_notifications, sms_notifications, push_notifications,
+                            created_at, updated_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+                        "#
+                    )
+                    .bind(customer_id)
+                    .bind(&customer.email)
+                    .bind(&first_name)
+                    .bind(&last_name)
+                    .bind(&phone)
+                    .bind(false)  // accepts_marketing
+                    .bind(false)  // tax_exempt
+                    .bind("USD")  // currency
+                    .bind(false)  // is_verified
+                    .bind(false)  // marketing_opt_in
+                    .bind(true)   // email_notifications
+                    .bind(false)  // sms_notifications
+                    .bind(false)  // push_notifications
+                    .execute(pool)
+                    .await {
+                        Ok(_) => {
                             stats.created += 1;
+                            tracing::info!("Created customer: {}", customer.email);
 
                             // Create addresses if available
                             // Billing address
                             if let Some(ref billing) = customer.billing {
-                                if let Err(e) = self.create_address(pool, created_customer.id, billing, true, false).await {
+                                if let Err(e) = self.create_address(pool, customer_id, billing, true, false).await {
                                     stats.error_details.push(format!(
                                         "Failed to create billing address for customer '{}': {}",
                                         customer.email, e
@@ -541,7 +558,7 @@ impl PlatformImporter for WooCommerceImporter {
                             if let Some(ref shipping) = customer.shipping {
                                 let is_default_shipping = customer.billing.is_none() || 
                                     (shipping.address_1 != customer.billing.as_ref().unwrap().address_1);
-                                if let Err(e) = self.create_address(pool, created_customer.id, shipping, false, is_default_shipping).await {
+                                if let Err(e) = self.create_address(pool, customer_id, shipping, false, is_default_shipping).await {
                                     stats.error_details.push(format!(
                                         "Failed to create shipping address for customer '{}': {}",
                                         customer.email, e
@@ -551,10 +568,9 @@ impl PlatformImporter for WooCommerceImporter {
                         }
                         Err(e) => {
                             stats.errors += 1;
-                            stats.error_details.push(format!(
-                                "Failed to create customer '{}': {}",
-                                customer.email, e
-                            ));
+                            let error_msg = format!("Failed to create customer '{}': {}", customer.email, e);
+                            tracing::error!("{}", error_msg);
+                            stats.error_details.push(error_msg);
                             if !config.options.continue_on_error {
                                 break;
                             }
@@ -873,7 +889,7 @@ impl WooCommerceImporter {
             r#"
             INSERT INTO addresses (
                 id, customer_id, first_name, last_name, company,
-                phone, address1, address2, city, state, country, zip,
+                phone, address1, address2, city, province, country, zip,
                 is_default_shipping, is_default_billing, created_at, updated_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
@@ -945,7 +961,7 @@ impl WooCommerceImporter {
             r#"
             INSERT INTO addresses (
                 id, customer_id, first_name, last_name, company,
-                phone, address1, address2, city, state, country, zip,
+                phone, address1, address2, city, province, country, zip,
                 is_default_shipping, is_default_billing, created_at, updated_at
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
