@@ -1427,6 +1427,7 @@ pub struct ShippingOriginConfig {
     pub address1: String,
     pub address2: Option<String>,
     pub city: String,
+    #[serde(alias = "province")]
     pub state: String,
     pub country: String,
     pub zip: String,

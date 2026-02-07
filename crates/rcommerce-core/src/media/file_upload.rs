@@ -199,7 +199,7 @@ impl FileUploadService {
     }
 
     /// Upload file to S3
-    async fn upload_to_s3(&self, storage_path: &str, data: &[u8], content_type: &str) -> Result<()> {
+    async fn upload_to_s3(&self, _storage_path: &str, _data: &[u8], _content_type: &str) -> Result<()> {
         // S3 upload implementation would go here
         // This requires the aws-sdk-s3 crate
         // For now, return an error indicating S3 is not fully implemented
@@ -250,7 +250,7 @@ impl FileUploadService {
     }
 
     /// Generate S3 presigned URL
-    fn generate_s3_presigned_url(&self, storage_path: &str, expires_in: Duration) -> Result<String> {
+    fn generate_s3_presigned_url(&self, _storage_path: &str, _expires_in: Duration) -> Result<String> {
         // S3 presigned URL generation would go here
         // This requires the aws-sdk-s3 crate
         Err(Error::storage("S3 presigned URLs not yet implemented".to_string()))
