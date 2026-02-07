@@ -1,310 +1,351 @@
-# R Commerce Configuration File
-# =============================
-# This is a comprehensive example configuration file for R Commerce.
-# Copy this file to config.toml and customize it for your deployment.
+# R Commerce Configuration Example
+# This is a complete example configuration file for the R Commerce platform.
+# Copy this file to config.toml and customize for your environment.
 #
-# Environment variables can be used with ${VAR_NAME} syntax.
-# Example: password = "${DB_PASSWORD}"
+# Environment Variables:
+# - RCOMMERCE_CONFIG: Path to config file (overrides default locations)
 
-# ============================================================================
+# =============================================================================
 # SERVER CONFIGURATION
-# ============================================================================
+# =============================================================================
 [server]
-# Host address to bind the server to
-# Use "0.0.0.0" to listen on all interfaces (production)
-# Use "127.0.0.1" for local development only
+# Host address to bind to (default: "0.0.0.0")
+# Use "127.0.0.1" for localhost only, "0.0.0.0" for all interfaces
 host = "0.0.0.0"
 
-# Port number for the HTTP server
+# Port to listen on (default: 8080)
 port = 8080
 
-# Number of worker threads for handling requests
-# 0 = automatic (number of CPU cores)
+# Number of worker threads (default: 0 = use number of CPU cores)
 worker_threads = 0
 
-# Maximum request body size in bytes (default: 10MB)
-max_request_body_size = 10485760
+# Graceful shutdown timeout in seconds (default: 30)
+graceful_shutdown_timeout_secs = 30
 
-# Request timeout in seconds
-request_timeout = 30
-
-# Enable HTTP/2 support
-enable_http2 = true
-
-# Enable compression (gzip, brotli)
-enable_compression = true
-
-# CORS settings
+# CORS (Cross-Origin Resource Sharing) configuration
 [server.cors]
-# Allowed origins (use ["*"] for development, specific domains for production)
-allowed_origins = ["https://yourstore.com", "https://admin.yourstore.com"]
+# Enable CORS (default: true)
+enabled = true
 
-# Allowed HTTP methods
-allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+# Allowed origins (default: ["*"] for all)
+# For production, specify exact domains:
+# allowed_origins = ["https://yourstore.com", "https://admin.yourstore.com"]
+allowed_origins = ["*"]
 
-# Allowed headers
-allowed_headers = ["Authorization", "Content-Type", "X-Request-ID"]
+# Allowed HTTP methods (default: GET, POST, PUT, PATCH, DELETE)
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
 
-# Allow credentials (cookies, authorization headers)
+# Allowed headers (default: Content-Type, Authorization)
+allowed_headers = ["Content-Type", "Authorization"]
+
+# Allow credentials (cookies, authorization headers) (default: true)
 allow_credentials = true
 
-# Max age for CORS preflight cache (in seconds)
+# Max age for preflight cache in seconds (default: 3600)
 max_age = 3600
 
-# ============================================================================
+# Request limits configuration
+[server.limits]
+# Maximum request body size in MB (default: 10)
+max_request_size_mb = 10
+
+# Rate limit per minute (default: 1000)
+rate_limit_per_minute = 1000
+
+# Rate limit burst capacity (default: 200)
+rate_limit_burst = 200
+
+# =============================================================================
 # DATABASE CONFIGURATION
-# ============================================================================
+# =============================================================================
 [database]
-# Database type: Currently only PostgreSQL is supported
+# Database type: "Postgres", "Mysql", or "Sqlite" (default: Postgres)
 db_type = "Postgres"
 
-# Database host
+# Database host (default: "localhost")
 host = "localhost"
 
-# Database port (default: 5432 for PostgreSQL)
+# Database port (default: 5432 for PostgreSQL, 3306 for MySQL)
 port = 5432
 
 # Database name
 database = "rcommerce"
 
-# Database user
+# Database username
 username = "rcommerce"
 
-# Database password (use environment variable in production!)
-password = "${DB_PASSWORD}"
+# Database password
+password = "your_secure_database_password"
 
-# Connection pool size
-# Recommended: 10-20 for most deployments, 50+ for high traffic
+# Connection pool size (default: 20)
 pool_size = 20
 
-# Connection timeout in seconds
-connect_timeout = 10
+# SSL mode: "Disable", "Prefer", or "Require" (default: Prefer)
+ssl_mode = "Prefer"
 
-# Idle connection timeout in seconds (0 = never)
-idle_timeout = 600
+# SQLite database path (only used when db_type = "Sqlite")
+# Default: "./rcommerce.db"
+sqlite_path = "./rcommerce.db"
 
-# Maximum connection lifetime in seconds (0 = never)
-max_lifetime = 1800
-
-# Enable SQL query logging (development only)
-log_queries = false
-
-# Log slow queries (milliseconds, 0 = disabled)
-log_slow_queries = 1000
-
-# SSL/TLS configuration for database connection
-[database.ssl]
-# Enable SSL
-enabled = false
-
-# SSL mode: disable, prefer, require, verify-ca, verify-full
-mode = "prefer"
-
-# Path to CA certificate file (for verify-ca or verify-full)
-ca_cert = "/path/to/ca.crt"
-
-# Path to client certificate file
-client_cert = "/path/to/client.crt"
-
-# Path to client key file
-client_key = "/path/to/client.key"
-
-# ============================================================================
-# CACHE CONFIGURATION
-# ============================================================================
-[cache]
-# Cache type: Memory or Redis
-cache_type = "Memory"
-
-# Maximum cache size in MB (for memory cache)
-max_size_mb = 100
-
-# Redis connection URL (required when cache_type = "Redis")
-# Format: redis://[:password@]host[:port][/database]
-redis_url = "redis://localhost:6379"
-
-# Redis connection pool size
-redis_pool_size = 10
-
-# Default TTL for cached items in seconds
-default_ttl = 300
-
-# Cache key prefix
-key_prefix = "rc:"
-
-# ============================================================================
-# TLS/SSL CONFIGURATION
-# ============================================================================
-[tls]
-# Enable TLS/HTTPS support
-# When enabled, the server will listen on HTTPS (port 443 by default)
-enabled = false
-
-# Minimum TLS version (1.2 or 1.3)
-# Default: 1.3 (strongly recommended for security)
-# TLS 1.3 provides better security and performance than 1.2
-min_tls_version = "1.3"
-
-# Maximum TLS version (1.2 or 1.3)
-# Should match min_tls_version for maximum security
-max_tls_version = "1.3"
-
-# Enable OCSP stapling for improved performance and privacy
-# OCSP stapling allows the server to provide certificate revocation status
-ocsp_stapling = true
-
-# Certificate file path (required when not using Let's Encrypt)
-# Path to the PEM-encoded certificate file
-cert_file = "/path/to/cert.pem"
-
-# Private key file path (required when not using Let's Encrypt)
-# Path to the PEM-encoded private key file
-key_file = "/path/to/private.key"
-
-# Certificate chain file path (optional)
-# Path to intermediate certificates
-chain_file = "/path/to/chain.pem"
-
-# Certificate cache directory for Let's Encrypt
-# Directory to store cached certificates and account data
-cache_dir = "/var/lib/rcommerce/certs"
-
-# Let's Encrypt ACME configuration
-[tls.lets_encrypt]
-# Enable automatic certificate provisioning via Let's Encrypt
-enabled = false
-
-# Email address for Let's Encrypt account registration and notifications
-# Required for certificate expiration notices
-email = "admin@example.com"
-
-# List of domains to request certificates for
-# Must be publicly accessible and point to this server
-domains = ["api.example.com", "store.example.com"]
-
-# Use Let's Encrypt staging server
-# Set to true for testing to avoid rate limits
-# Staging certificates are not trusted by browsers
-use_staging = false
-
-# Enable automatic certificate renewal
-# Certificates will be renewed before expiration
-auto_renew = true
-
-# Days before expiry to trigger renewal
-renewal_threshold_days = 30
-
-# ACME directory URL
-# Production: https://acme-v02.api.letsencrypt.org/directory
-# Staging: https://acme-staging-v02.api.letsencrypt.org/directory
-acme_directory = "https://acme-v02.api.letsencrypt.org/directory"
-
-# HTTP-01 challenge port (usually 80, required for Let's Encrypt validation)
-# This is the port for the HTTP challenge server
-http_port = 80
-
-# HTTPS port for the main server (usually 443)
-https_port = 443
-
-# HSTS (HTTP Strict Transport Security) configuration
-[tls.hsts]
-# Enable HSTS header
-# Forces browsers to use HTTPS for the specified duration
-enabled = true
-
-# Max age in seconds for HSTS policy
-# 31536000 = 1 year (recommended minimum)
-# 63072000 = 2 years
-max_age = 31536000
-
-# Include subdomains in HSTS policy
-# When true, applies to all subdomains
-include_subdomains = true
-
-# Enable HSTS preload
-# WARNING: Only enable if you understand the implications
-# Preloading makes HTTPS permanent and difficult to reverse
-# Submit your domain at https://hstspreload.org/ after enabling
-preload = false
-
-# ============================================================================
-# SECURITY CONFIGURATION
-# ============================================================================
+# =============================================================================
+# SECURITY & AUTHENTICATION
+# =============================================================================
 [security]
-# Enable HTTPS redirection (production only)
-# Redirects all HTTP requests to HTTPS
-force_https = false
+# Length of API key prefix (default: 8)
+api_key_prefix_length = 8
 
-# HSTS max age in seconds (HTTP Strict Transport Security)
-# Deprecated: Use [tls.hsts] section instead
-hsts_max_age = 31536000
-
-# Content Security Policy header
-# Customize based on your frontend requirements
-csp_policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.stripe.com;"
-
-# API Key configuration
-[security.api_key]
-# Length of the API key prefix (visible part)
-prefix_length = 8
-
-# Length of the secret part
-secret_length = 32
+# Length of API key secret (default: 32)
+api_key_secret_length = 32
 
 # JWT (JSON Web Token) configuration
 [security.jwt]
-# JWT secret key for signing tokens (generate a strong random string!)
-# Use: openssl rand -base64 64
-secret = "${JWT_SECRET}"
+# JWT secret key for signing tokens (REQUIRED - must be at least 32 characters)
+# IMPORTANT: Change this in production! Use a cryptographically secure random string.
+# Generate with: openssl rand -base64 48
+secret = "change_this_to_a_secure_random_string_at_least_32_chars_long"
 
-# Token expiration time in hours
+# Token expiry time in hours (default: 24)
 expiry_hours = 24
 
-# Refresh token expiration time in hours
-refresh_expiry_hours = 168
+# =============================================================================
+# CACHE & PERFORMANCE
+# =============================================================================
+[cache]
+# Cache type: "Memory" or "Redis" (default: Memory)
+cache_type = "Memory"
 
-# Token issuer claim
-issuer = "rcommerce"
+# Maximum cache size in MB for in-memory cache (default: 100)
+# Set to null for unlimited (not recommended)
+max_size_mb = 100
 
-# Token audience claim
-audience = "rcommerce-api"
+# Redis connection URL (required when cache_type = "Redis")
+# Example: "redis://localhost:6379"
+# Example with auth: "redis://username:password@localhost:6379/0"
+# redis_url = "redis://localhost:6379"
 
-# Password hashing configuration
-[security.password]
-# BCrypt cost factor (higher = more secure but slower)
-# Recommended: 12 for production
-bcrypt_cost = 12
+# Redis connection pool size (default: 10)
+redis_pool_size = 10
 
-# Minimum password length
-min_length = 8
+# =============================================================================
+# MEDIA & FILES
+# =============================================================================
+[media]
+# Storage type: "Local", "S3", "Gcs", or "Azure" (default: Local)
+storage_type = "Local"
 
-# Require uppercase letters
-require_uppercase = true
+# Local storage settings (when storage_type = "Local")
+local_path = "./uploads"
+local_base_url = "http://localhost:8080/uploads"
 
-# Require lowercase letters
-require_lowercase = true
+# S3-compatible storage settings (when storage_type = "S3")
+# s3_region = "us-east-1"
+# s3_bucket = "my-bucket"
+# s3_access_key = "your-access-key"
+# s3_secret_key = "your-secret-key"
+# s3_endpoint = "https://s3.amazonaws.com"  # For S3-compatible services like MinIO
 
-# Require numbers
-require_numbers = true
+# Image processing configuration
+[media.image_processing]
+# Enable image processing (default: true)
+enabled = true
 
-# Require special characters
-require_special = false
+# Default JPEG quality (1-100, default: 85)
+default_quality = 85
 
-# ============================================================================
-# TLS/HTTPS CONFIGURATION
-# ============================================================================
+# Image sizes to generate (name, width, height, crop)
+[[media.image_processing.sizes]]
+name = "thumbnail"
+width = 150
+height = 150
+crop = true
+
+[[media.image_processing.sizes]]
+name = "small"
+width = 300
+height = 300
+crop = false
+
+[[media.image_processing.sizes]]
+name = "medium"
+width = 600
+height = 600
+crop = false
+
+[[media.image_processing.sizes]]
+name = "large"
+width = 1200
+height = 1200
+crop = false
+
+# =============================================================================
+# NOTIFICATIONS
+# =============================================================================
+[notifications]
+# Enable notifications (default: true)
+enabled = true
+
+# Email configuration
+[notifications.email]
+# SMTP server host
+# smtp_host = "smtp.gmail.com"
+
+# SMTP server port
+# smtp_port = 587
+
+# SMTP username
+# smtp_user = "your-email@gmail.com"
+
+# SMTP password or app-specific password
+# smtp_pass = "your-smtp-password"
+
+# Sender name for emails
+# from_name = "R Commerce Store"
+
+# Sender email address
+# from_email = "noreply@yourstore.com"
+
+# Use TLS for SMTP (default: true)
+smtp_tls = true
+
+# SMS configuration (Twilio)
+[notifications.sms]
+# SMS provider (currently only "twilio" supported)
+# provider = "twilio"
+
+# Twilio Account SID
+# twilio_account_sid = "your-account-sid"
+
+# Twilio Auth Token
+# twilio_auth_token = "your-auth-token"
+
+# Twilio phone number to send from
+# twilio_from_number = "+1234567890"
+
+# =============================================================================
+# RATE LIMITING
+# =============================================================================
+[rate_limiting]
+# Enable rate limiting (default: true)
+enabled = true
+
+# Maximum requests per minute from a single IP (default: 60)
+requests_per_minute = 60
+
+# Maximum requests per hour from a single IP (default: 1000)
+requests_per_hour = 1000
+
+# Maximum requests per day from a single IP (default: 10000)
+requests_per_day = 10000
+
+# Maximum concurrent connections per IP (default: 10)
+max_concurrent_per_ip = 10
+
+# Enable separate rate limiting for API keys (default: true)
+api_key_limiting = true
+
+# Maximum requests per minute with valid API key (default: 1000)
+api_key_requests_per_minute = 1000
+
+# IP addresses to block (blacklist)
+blocklist = []
+
+# IP addresses to allow without rate limiting (whitelist)
+allowlist = []
+
+# Enable DDoS protection mode (default: true)
+# Under attack, stricter limits are applied automatically
+ddos_protection = true
+
+# Expose rate limit headers in responses (default: true)
+expose_headers = true
+
+# Use Redis for rate limit storage (default: false)
+# When false, uses in-memory storage (not shared across instances)
+use_redis = false
+
+# Redis URL for rate limiting (when use_redis = true)
+# redis_url = "redis://localhost:6379"
+
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
+[features]
+# Enable debug API endpoints (default: true)
+# Set to false in production
+debug_api = true
+
+# Enable metrics endpoint (default: true)
+metrics = true
+
+# Enable health check endpoint (default: true)
+health_check = true
+
+# Enable experimental features (default: false)
+# WARNING: Experimental features may be unstable
+experimental = false
+
+# =============================================================================
+# IMPORT & MIGRATIONS
+# =============================================================================
+[import]
+# Default import options
+[import.default_options]
+# Batch size for imports (default: 100)
+batch_size = 100
+
+# Skip existing records (default: true)
+skip_existing = true
+
+# Continue on error (default: true)
+continue_on_error = true
+
+# Shopify import configuration
+# [import.shopify]
+# api_url = "https://your-store.myshopify.com/admin/api/2024-01"
+# api_key = "your-shopify-api-key"
+# entities = ["products", "customers", "orders"]
+# [import.shopify.headers]
+# "X-Shopify-Access-Token" = "your-access-token"
+
+# WooCommerce import configuration
+# [import.woocommerce]
+# api_url = "https://your-store.com/wp-json/wc/v3"
+# api_key = "your-consumer-key"
+# api_secret = "your-consumer-secret"
+# entities = ["products", "customers", "orders"]
+
+# Magento import configuration
+# [import.magento]
+# api_url = "https://your-store.com/rest/V1"
+# api_key = "your-integration-token"
+# entities = ["products", "customers", "orders"]
+
+# Medusa import configuration
+# [import.medusa]
+# api_url = "https://your-medusa-server.com"
+# api_key = "your-api-key"
+# entities = ["products", "customers", "orders"]
+
+# =============================================================================
+# TLS/SSL CONFIGURATION
+# =============================================================================
 [tls]
-# Enable TLS/HTTPS
-# When enabled, the server will listen on both HTTP (port 80) and HTTPS (port 443)
-# HTTP requests will be redirected to HTTPS, except for ACME challenges
+# Enable TLS/HTTPS (default: false)
+# When enabled, you must configure either manual certificates or Let's Encrypt
 enabled = false
 
-# Minimum TLS version (1.2 or 1.3)
-# Strongly recommended: 1.3 for production
+# Minimum TLS version: "1.2" or "1.3" (default: "1.3")
 min_tls_version = "1.3"
 
-# Maximum TLS version
+# Maximum TLS version: "1.2" or "1.3" (default: "1.3")
 max_tls_version = "1.3"
+
+# Manual certificate files (when not using Let's Encrypt)
+# cert_file = "/path/to/cert.pem"
+# key_file = "/path/to/key.pem"
+
+# Enable OCSP stapling (default: true)
+ocsp_stapling = true
 
 # HTTP port for ACME challenges and redirects (default: 80)
 http_port = 80
@@ -312,594 +353,183 @@ http_port = 80
 # HTTPS port (default: 443)
 https_port = 443
 
-# Certificate file path (for manual certificates)
-# cert_file = "/path/to/cert.pem"
-
-# Private key file path (for manual certificates)
-# key_file = "/path/to/key.pem"
-
-# Enable OCSP stapling
-ocsp_stapling = true
+# Let's Encrypt automatic certificate configuration
+# [tls.lets_encrypt]
+# enabled = true
+# email = "admin@yourdomain.com"
+# domains = ["yourdomain.com", "www.yourdomain.com"]
+# acme_directory = "https://acme-v02.api.letsencrypt.org/directory"
+# use_staging = false  # Set to true for testing
+# renewal_threshold_days = 30
+# auto_renew = true
+# cache_dir = "/var/lib/rcommerce/certs"
 
 # HSTS (HTTP Strict Transport Security) configuration
-[tls.hsts]
-# Enable HSTS
-enabled = true
+# [tls.hsts]
+# enabled = true
+# max_age = 31536000  # 1 year in seconds
+# include_subdomains = true
+# preload = false  # Set to true only if you understand the implications
 
-# Max age in seconds (default: 1 year = 31536000)
-max_age = 31536000
+# =============================================================================
+# LOGGING
+# =============================================================================
+[logging]
+# Log level: "trace", "debug", "info", "warn", "error" (default: "info")
+level = "info"
 
-# Include subdomains
-include_subdomains = true
+# Log format: "Json" or "Text" (default: Json)
+format = "Json"
 
-# Preload in browsers (submit to hstspreload.org)
-preload = false
+# File logging configuration (optional)
+# [logging.file]
+# path = "/var/log/rcommerce/app.log"
+# rotation = "Daily"  # "Daily" or "Hourly"
+# max_size_mb = 100
+# max_files = 7
 
-# Let's Encrypt configuration (alternative to manual certificates)
-[tls.lets_encrypt]
-# Enable automatic certificate provisioning
-enabled = false
-
-# Contact email for Let's Encrypt account
-email = "admin@example.com"
-
-# Domain(s) to get certificates for
-domains = ["example.com", "www.example.com"]
-
-# Use staging server for testing (no rate limits)
-use_staging = false
-
-# Certificate renewal threshold (days before expiry)
-renewal_threshold_days = 30
-
-# Auto-renew certificates
-auto_renew = true
-
-# Certificate cache directory
-cache_dir = "/var/lib/rcommerce/certs"
-
-# Rate limiting configuration
-[security.rate_limit]
-# Enable rate limiting
-enabled = true
-
-# Requests per minute per IP
-requests_per_minute = 60
-
-# Burst allowance (concurrent requests)
-burst_size = 10
-
-# Stricter limits for authentication endpoints
-auth_requests_per_minute = 5
-
-# IP whitelist (bypass rate limiting)
-whitelist = ["127.0.0.1", "10.0.0.0/8"]
-
-# ============================================================================
-# PAYMENT CONFIGURATION
-# ============================================================================
+# =============================================================================
+# PAYMENT GATEWAYS
+# =============================================================================
 [payment]
-# Default payment gateway
-default_gateway = "stripe"
+# Default payment gateway ID (default: "mock")
+# Options: "mock", "stripe", "wechatpay", "alipay", "airwallex"
+default_gateway = "mock"
 
-# Enable test mode (use test API keys)
-test_mode = true
-
-# Required 3D Secure threshold in currency units (e.g., 3000 = $30.00)
-# Amounts >= this value require 3D Secure authentication
-tds_threshold = 3000
-
-# Auto-capture payments (true) or manual capture (false)
-auto_capture = true
-
-# Delay capture by N seconds (0 = capture immediately)
-capture_delay_seconds = 0
-
-# Supported currencies
-supported_currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CNY", "HKD", "SGD"]
-
-# Enable fraud detection
-enable_fraud_check = true
-
-# Risk score threshold (0-100, higher = more strict)
-risk_threshold = 75
-
-# Webhook configuration
-[payment.webhook]
-# Webhook secret for signature verification
-secret = "${WEBHOOK_SECRET}"
-
-# Retry failed webhooks
-retry_enabled = true
-
-# Maximum retry attempts
-max_retries = 3
-
-# Retry delay in seconds
-retry_delay = 5
+# Enable test mode for all payments (default: false)
+test_mode = false
 
 # Stripe configuration
 [payment.stripe]
-enabled = true
-
-# API keys (use environment variables!)
-secret_key = "${STRIPE_SECRET_KEY}"
-publishable_key = "${STRIPE_PUBLISHABLE_KEY}"
-webhook_secret = "${STRIPE_WEBHOOK_SECRET}"
-
-# Statement descriptor (appears on customer bank statements)
-statement_descriptor = "R COMMERCE"
-statement_descriptor_suffix = "STORE"
-
-# Enable Stripe Connect (for marketplace features)
-connect_enabled = false
-connect_client_id = "${STRIPE_CONNECT_CLIENT_ID}"
-
-# Stripe-specific settings
-capture_method = "automatic"  # automatic or manual
-setup_future_usage = "off_session"  # on_session, off_session, or none
-
-# Airwallex configuration
-[payment.airwallex]
 enabled = false
-client_id = "${AIRWALLEX_CLIENT_ID}"
-api_key = "${AIRWALLEX_API_KEY}"
-webhook_secret = "${AIRWALLEX_WEBHOOK_SECRET}"
-account_id = "${AIRWALLEX_ACCOUNT_ID}"
+# secret_key = "sk_test_..."
+# webhook_secret = "whsec_..."
+# publishable_key = "pk_test_..."
 
 # WeChat Pay configuration
 [payment.wechatpay]
 enabled = false
-mch_id = "${WECHATPAY_MCH_ID}"
-app_id = "${WECHATPAY_APP_ID}"
-api_key = "${WECHATPAY_API_KEY}"
-serial_no = "${WECHATPAY_SERIAL_NO}"
-private_key = """
------BEGIN PRIVATE KEY-----
-${WECHATPAY_PRIVATE_KEY}
------END PRIVATE KEY-----
-"""
-sandbox = true
+# mch_id = "your-merchant-id"
+# app_id = "your-app-id"
+# api_key = "your-api-v3-key"
+# serial_no = "your-certificate-serial-number"
+# private_key = """-----BEGIN PRIVATE KEY-----
+# ...
+# -----END PRIVATE KEY-----"""
+# sandbox = true
 
-# Alipay configuration
+# AliPay configuration
 [payment.alipay]
 enabled = false
-app_id = "${ALIPAY_APP_ID}"
-private_key = "${ALIPAY_PRIVATE_KEY}"
-alipay_public_key = "${ALIPAY_PUBLIC_KEY}"
-sandbox = true
+# app_id = "your-app-id"
+# private_key = "your-rsa2-private-key"
+# alipay_public_key = "alipay-public-key-for-verification"
+# sandbox = true
 
-# ============================================================================
-# EMAIL CONFIGURATION
-# ============================================================================
-[email]
-# Enable email notifications
+# Airwallex configuration
+[payment.airwallex]
 enabled = false
+# client_id = "your-client-id"
+# api_key = "your-api-key"
+# webhook_secret = "your-webhook-secret"
+# demo = false
 
-# SMTP server configuration
-smtp_host = "smtp.gmail.com"
-smtp_port = 587
-smtp_user = "${SMTP_USER}"
-smtp_password = "${SMTP_PASSWORD}"
-
-# Use TLS for SMTP
-smtp_tls = true
-
-# From address for outgoing emails
-from_address = "noreply@yourstore.com"
-from_name = "R Commerce Store"
-
-# Reply-to address
-reply_to = "support@yourstore.com"
-
-# Email templates directory
-templates_dir = "./templates/email"
-
-# ============================================================================
-# SMS CONFIGURATION (Optional)
-# ============================================================================
-[sms]
-# Enable SMS notifications
-enabled = false
-
-# SMS provider: twilio, aws_sns, or messagebird
-provider = "twilio"
-
-# Twilio configuration
-[sms.twilio]
-account_sid = "${TWILIO_ACCOUNT_SID}"
-auth_token = "${TWILIO_AUTH_TOKEN}"
-from_number = "${TWILIO_PHONE_NUMBER}"
-
-# ============================================================================
-# FILE STORAGE CONFIGURATION
-# ============================================================================
-[storage]
-# Storage type: Local, S3, or GCS
-type = "Local"
-
-# Local storage configuration
-[storage.local]
-# Base directory for uploads
-upload_dir = "./uploads"
-
-# Base URL for serving files
-base_url = "/uploads"
-
-# Maximum file size in MB
-max_file_size = 10
-
-# Allowed file types
-allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]
-
-# AWS S3 configuration
-[storage.s3]
-bucket = "${S3_BUCKET}"
-region = "${AWS_REGION}"
-access_key = "${AWS_ACCESS_KEY_ID}"
-secret_key = "${AWS_SECRET_ACCESS_KEY}"
-endpoint = ""  # For S3-compatible services like MinIO
-cdn_url = ""   # CloudFront or other CDN URL
-
-# Google Cloud Storage configuration
-[storage.gcs]
-bucket = "${GCS_BUCKET}"
-project_id = "${GCS_PROJECT_ID}"
-credentials_file = "${GOOGLE_APPLICATION_CREDENTIALS}"
-cdn_url = ""
-
-# Image processing configuration
-[storage.images]
-# Generate thumbnails
-enable_thumbnails = true
-
-# Thumbnail sizes (width x height)
-thumbnail_sizes = [
-    { name = "small", width = 150, height = 150 },
-    { name = "medium", width = 300, height = 300 },
-    { name = "large", width = 600, height = 600 }
-]
-
-# Image quality (1-100)
-quality = 85
-
-# ============================================================================
+# =============================================================================
 # SHIPPING CONFIGURATION
-# ============================================================================
+# =============================================================================
 [shipping]
-# Default shipping provider: manual, dhl, fedex, ups, usps, shipstation, easypost, or shippo
+# Default shipping provider (default: "manual")
+# Options: "manual", "dhl", "fedex", "ups", "usps"
 default_provider = "manual"
 
-# Enable test mode for shipping (use sandbox APIs)
-test_mode = true
+# Enable test mode for shipping APIs (default: false)
+test_mode = false
 
 # Default shipping origin address
 [shipping.origin]
 name = "Your Store"
 address1 = "123 Commerce St"
-address2 = ""
+# address2 = "Suite 100"
 city = "San Francisco"
-province = "CA"
+state = "CA"
 country = "US"
 zip = "94102"
-phone = "+1-555-123-4567"
+# phone = "+1-555-123-4567"
 
-# DHL Express Configuration
-# Get credentials from: https://developer.dhl.com/
+# DHL Express configuration
 [shipping.dhl]
 enabled = false
-api_key = "${DHL_API_KEY}"
-api_secret = "${DHL_API_SECRET}"
-account_number = "${DHL_ACCOUNT_NUMBER}"
-sandbox = true
+# api_key = "your-dhl-api-key"
+# api_secret = "your-dhl-api-secret"
+# account_number = "your-dhl-account"
+# sandbox = false
 
-# FedEx Configuration
-# Get credentials from: https://developer.fedex.com/
+# FedEx configuration
 [shipping.fedex]
 enabled = false
-api_key = "${FEDEX_API_KEY}"
-api_secret = "${FEDEX_API_SECRET}"
-account_number = "${FEDEX_ACCOUNT_NUMBER}"
-sandbox = true
+# api_key = "your-fedex-client-id"
+# api_secret = "your-fedex-client-secret"
+# account_number = "your-fedex-account"
+# sandbox = false
 
-# UPS Configuration
-# Get credentials from: https://developer.ups.com/
+# UPS configuration
 [shipping.ups]
 enabled = false
-api_key = "${UPS_API_KEY}"
-username = "${UPS_USERNAME}"
-password = "${UPS_PASSWORD}"
-account_number = "${UPS_ACCOUNT_NUMBER}"
-sandbox = true
+# api_key = "your-ups-client-id"
+# username = "your-ups-username"
+# password = "your-ups-password"
+# account_number = "your-ups-account"
+# sandbox = false
 
-# USPS Configuration
-# Get credentials from: https://developer.usps.com/
+# USPS configuration
 [shipping.usps]
 enabled = false
-api_key = "${USPS_API_KEY}"
-sandbox = true
+# api_key = "your-usps-api-key"
+# sandbox = false
 
-# Third-party Shipping Aggregators
-[shipping.shipstation]
-enabled = false
-api_key = "${SHIPSTATION_API_KEY}"
-api_secret = "${SHIPSTATION_API_SECRET}"
-
-[shipping.easypost]
-enabled = false
-api_key = "${EASYPOST_API_KEY}"
-
-# ============================================================================
-# TAX CONFIGURATION
-# ============================================================================
-[tax]
-# Tax calculation provider: manual, taxjar, or avalara
-provider = "manual"
-
-# Default tax rate (percentage)
-default_rate = 0.0
-
-# Tax included in prices (true) or added at checkout (false)
-included_in_price = false
-
-# TaxJar configuration
-[tax.taxjar]
-enabled = false
-api_key = "${TAXJAR_API_KEY}"
-
-# Avalara AvaTax configuration
-[tax.avalara]
-enabled = false
-account_id = "${AVALARA_ACCOUNT_ID}"
-license_key = "${AVALARA_LICENSE_KEY}"
-company_code = "DEFAULT"
-sandbox = true
-
-# ============================================================================
-# INVENTORY CONFIGURATION
-# ============================================================================
-[inventory]
-# Enable inventory tracking
-enabled = true
-
-# Allow overselling (negative inventory)
-allow_oversell = false
-
-# Low stock threshold percentage (triggers alerts)
-low_stock_threshold = 20
-
-# Enable stock reservations (hold stock during checkout)
-enable_reservations = true
-
-# Reservation timeout in minutes
-reservation_timeout_minutes = 30
-
-# Enable multi-location inventory
-multi_location = false
-
-# ============================================================================
-# NOTIFICATION CONFIGURATION
-# ============================================================================
-[notifications]
-# Enable push notifications
-enabled = false
-
-# Push notification provider: firebase, onesignal, or pusher
-provider = "firebase"
-
-[notifications.firebase]
-project_id = "${FIREBASE_PROJECT_ID}"
-credentials_file = "${FIREBASE_CREDENTIALS}"
-
-[notifications.onesignal]
-app_id = "${ONESIGNAL_APP_ID}"
-rest_api_key = "${ONESIGNAL_REST_API_KEY}"
-
-# Webhook configuration for external integrations
-[notifications.webhooks]
-# Order created webhook
-order_created_url = "https://your-integration.com/webhooks/order-created"
-
-# Order paid webhook
-order_paid_url = "https://your-integration.com/webhooks/order-paid"
-
-# Order shipped webhook
-order_shipped_url = "https://your-integration.com/webhooks/order-shipped"
-
-# ============================================================================
-# SEARCH CONFIGURATION
-# ============================================================================
-[search]
-# Search provider: database, meilisearch, or algolia
-provider = "database"
-
-# MeiliSearch configuration
-[search.meilisearch]
-enabled = false
-host = "http://localhost:7700"
-api_key = "${MEILISEARCH_API_KEY}"
-
-# Algolia configuration
-[search.algolia]
-enabled = false
-app_id = "${ALGOLIA_APP_ID}"
-api_key = "${ALGOLIA_API_KEY}"
-
-# ============================================================================
-# ANALYTICS CONFIGURATION
-# ============================================================================
-[analytics]
-# Enable analytics tracking
-enabled = false
-
-# Google Analytics
-[analytics.google]
-enabled = false
-tracking_id = "${GA_TRACKING_ID}"
-
-# Segment
-[analytics.segment]
-enabled = false
-write_key = "${SEGMENT_WRITE_KEY}"
-
-# ============================================================================
-# LOGGING CONFIGURATION
-# ============================================================================
-[logging]
-# Log level: trace, debug, info, warn, error
-level = "info"
-
-# Log format: Json or Text
-format = "Text"
-
-# Enable file logging
-file_logging = false
-log_file = "./logs/rcommerce.log"
-
-# Log rotation
-max_log_size = "100MB"
-max_log_files = 5
-
-# Enable structured logging (JSON)
-structured = false
-
-# Sentry error tracking
-[logging.sentry]
-enabled = false
-dsn = "${SENTRY_DSN}"
-environment = "production"
-
-# ============================================================================
-# FEATURE FLAGS
-# ============================================================================
-[features]
-# Enable debug API endpoints (development only)
-debug_api = false
-
-# Enable metrics endpoint (/metrics)
-metrics = true
-
-# Enable health check endpoint (/health)
-health_check = true
-
-# Enable GraphQL API
-graphql = false
-
-# Enable WebSocket real-time updates
-websockets = true
-
-# Enable multi-currency support
-multi_currency = false
-
-# Enable multi-language support
-multi_language = false
-
-# Enable subscription products
-subscriptions = false
-
-# Enable marketplace/multi-vendor features
-marketplace = false
-
-# Enable gift cards
-gift_cards = false
-
-# Enable loyalty points
-loyalty = false
-
-# Enable wishlist
-wishlist = true
-
-# Enable product reviews
-reviews = true
-
-# Enable live chat
-live_chat = false
-
-# ============================================================================
-# MAINTENANCE MODE
-# ============================================================================
-[maintenance]
-# Enable maintenance mode (blocks all requests except health checks)
-enabled = false
-
-# Maintenance message
-message = "We're currently performing scheduled maintenance. Please check back soon."
-
-# Allowed IPs during maintenance
-allowed_ips = ["127.0.0.1"]
-
-# ============================================================================
-# BACKUP CONFIGURATION
-# ============================================================================
-[backup]
-# Enable automatic backups
-enabled = false
-
-# Backup schedule (cron expression)
-schedule = "0 2 * * *"  # Daily at 2 AM
-
-# Backup retention (number of backups to keep)
-retention = 7
-
-# Backup destination: local, s3, or gcs
-destination = "s3"
-
-# S3 backup configuration
-[backup.s3]
-bucket = "${BACKUP_S3_BUCKET}"
-region = "${AWS_REGION}"
-prefix = "backups/rcommerce/"
-
-# ============================================================================
+# =============================================================================
 # DUNNING (PAYMENT RETRY) CONFIGURATION
-# ============================================================================
+# =============================================================================
 [dunning]
-# Enable automatic payment retry (dunning process)
+# Enable dunning process for failed payments (default: true)
 enabled = true
 
-# Number of retry attempts before cancelling subscription
+# Number of retry attempts before cancellation (default: 3)
 max_retries = 3
 
-# Retry intervals in days (e.g., [1, 3, 7] = retry after 1 day, 3 days, 7 days)
+# Retry intervals in days (default: [1, 3, 7])
 retry_intervals_days = [1, 3, 7]
 
-# Grace period in days (subscription remains active during retries)
+# Grace period in days (subscription remains active during retries) (default: 14)
 grace_period_days = 14
 
-# Send email notification on first payment failure
+# Send email on first failure (default: true)
 email_on_first_failure = true
 
-# Send email notification on final failure (before cancellation)
+# Send email on final failure before cancellation (default: true)
 email_on_final_failure = true
 
-# Apply late fees after N retries (None = no late fees)
-late_fee_after_retry = null
+# Apply late fees after N retries (null = no late fees)
+# late_fee_after_retry = 2
+# late_fee_amount = "5.00"
 
-# Late fee amount (only used if late_fee_after_retry is set)
-late_fee_amount = null
-
-# Background job interval in minutes
+# Background job interval in minutes (default: 60)
 job_interval_minutes = 60
 
-# Per-gateway dunning configurations (optional)
+# Per-gateway dunning configurations
 # [dunning.gateway_configs.stripe]
 # enabled = true
 # max_retries = 4
-# retry_intervals_days = [1, 3, 5, 7]
-# grace_period_days = 16
+# retry_intervals_days = [1, 3, 7, 14]
+# grace_period_days = 21
 
-# [dunning.gateway_configs.paypal]
-# enabled = true
-# max_retries = 2
-# retry_intervals_days = [1, 5]
-
-# Email template configuration (optional)
-# [dunning.email_templates]
-# first_failure = "dunning/first_failure"
-# retry_failure = "dunning/retry_failure"
-# final_notice = "dunning/final_notice"
-# cancellation = "dunning/cancellation"
-# recovered = "dunning/recovered"
+# Email template configuration
+[dunning.email_templates]
+first_failure = "dunning/first_failure"
+retry_failure = "dunning/retry_failure"
+final_notice = "dunning/final_notice"
+cancellation = "dunning/cancellation"
+recovered = "dunning/recovered"
 # from_name = "Billing Department"
 # from_email = "billing@yourstore.com"
 # reply_to = "support@yourstore.com"
