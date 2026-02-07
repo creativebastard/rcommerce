@@ -13,6 +13,7 @@ use crate::shipping::{
 };
 
 /// UPS API provider
+#[allow(dead_code)]
 pub struct UpsProvider {
     client: reqwest::Client,
     api_key: String,

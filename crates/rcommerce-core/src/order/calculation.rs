@@ -179,8 +179,8 @@ pub struct OrderTotals {
     pub total: Decimal,
 }
 
-impl OrderTotals {
-    pub fn new() -> Self {
+impl Default for OrderTotals {
+    fn default() -> Self {
         Self {
             subtotal: Decimal::ZERO,
             tax_total: Decimal::ZERO,
@@ -188,6 +188,12 @@ impl OrderTotals {
             discount_total: Decimal::ZERO,
             total: Decimal::ZERO,
         }
+    }
+}
+
+impl OrderTotals {
+    pub fn new() -> Self {
+        Self::default()
     }
     
     pub fn from_items(calculator: &OrderCalculator, items: &[OrderItem]) -> Self {

@@ -253,6 +253,17 @@ pub struct MessageRateLimiter {
     max_message_size: usize,
 }
 
+impl Default for MessageRateLimiter {
+    fn default() -> Self {
+        Self {
+            count: 0,
+            limit: 100, // Default limit
+            window_start: Instant::now(),
+            max_message_size: 1024 * 1024, // 1MB default
+        }
+    }
+}
+
 impl MessageRateLimiter {
     /// Create a new message rate limiter
     pub fn new(limit: u32, max_message_size: usize) -> Self {

@@ -157,7 +157,7 @@ pub async fn get_sales(
     };
 
     // Default date range: last 30 days
-    let date_to = query.to.unwrap_or_else(|| Utc::now());
+    let date_to = query.to.unwrap_or_else(Utc::now);
     let date_from = query.from.unwrap_or_else(|| date_to - Duration::days(30));
 
     // Validate date range
@@ -184,7 +184,7 @@ pub async fn get_orders(
     let service = create_statistics_service(&state);
 
     // Default date range: last 30 days
-    let date_to = query.to.unwrap_or_else(|| Utc::now());
+    let date_to = query.to.unwrap_or_else(Utc::now);
     let date_from = query.from.unwrap_or_else(|| date_to - Duration::days(30));
 
     match service.get_order_statistics(date_from, date_to).await {

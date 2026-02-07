@@ -1,7 +1,7 @@
 //! Token blacklist for invalidated tokens
 //!
 //! This module provides Redis-based token blacklisting for logout,
-/// token refresh, and security revocation.
+//! token refresh, and security revocation.
 
 use crate::cache::{CacheResult, RedisPool};
 use std::time::Duration;

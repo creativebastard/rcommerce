@@ -6,21 +6,16 @@ use uuid::Uuid;
 use validator::Validate;
 
 /// Order type
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq, Default)]
 #[sqlx(type_name = "order_type", rename_all = "snake_case")]
 pub enum OrderType {
     /// One-time purchase
+    #[default]
     OneTime,
     /// Subscription initial order
     SubscriptionInitial,
     /// Subscription renewal order
     SubscriptionRenewal,
-}
-
-impl Default for OrderType {
-    fn default() -> Self {
-        OrderType::OneTime
-    }
 }
 
 /// Order entity

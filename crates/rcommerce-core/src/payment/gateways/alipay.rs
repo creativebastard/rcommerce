@@ -270,7 +270,7 @@ impl PaymentGateway for AliPayGateway {
             status: trade_response.trade_status
                 .map(|s| Self::map_alipay_status(&s))
                 .unwrap_or(PaymentStatus::Pending),
-            order_id: uuid::Uuid::parse_str(&payment_id.split('_').next().unwrap_or(""))
+            order_id: uuid::Uuid::parse_str(payment_id.split('_').next().unwrap_or(""))
                 .unwrap_or_else(|_| uuid::Uuid::nil()),
             customer_id: trade_response.buyer_user_id.and_then(|id| uuid::Uuid::parse_str(&id).ok()),
             payment_method: "alipay".to_string(),
@@ -347,9 +347,7 @@ impl PaymentGateway for AliPayGateway {
         let params: HashMap<String, String> = notification_str
             .split('&')
             .filter_map(|p| {
-                let mut parts = p.splitn(2, '=');
-                let key = parts.next()?;
-                let value = parts.next()?;
+                let (key, value) = p.split_once('=')?;
                 let decoded_value = url::form_urlencoded::parse(value.as_bytes())
                     .map(|(k, _)| k.to_string())
                     .next()?;

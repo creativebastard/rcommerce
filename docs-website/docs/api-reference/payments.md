@@ -1,6 +1,6 @@
 # Payments API
 
-The Payments API handles payment processing through a provider-agnostic interface. All payment processing happens server-side for improved security and unified integration across all payment gateways.
+The Payments API handles payment processing through a provider-agnostic interface. All payment processing happens server-side for improved security and unified integration across all payment gateways. All endpoints are fully implemented and operational.
 
 ## Overview
 

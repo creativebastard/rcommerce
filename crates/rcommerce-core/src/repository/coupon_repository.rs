@@ -78,7 +78,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(coupon)
     }
@@ -92,7 +92,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(code)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(coupon)
     }
@@ -108,7 +108,7 @@ impl CouponRepository for PgCouponRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(coupons)
     }
@@ -121,7 +121,7 @@ impl CouponRepository for PgCouponRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(coupons)
     }
@@ -158,7 +158,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon.updated_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -201,7 +201,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon.updated_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -211,7 +211,7 @@ impl CouponRepository for PgCouponRepository {
             .bind(id)
             .execute(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -225,7 +225,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon_id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(count)
     }
@@ -240,7 +240,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(customer_id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(count as i32)
     }
@@ -259,7 +259,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(discount_amount)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -273,7 +273,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -287,7 +287,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon_id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(total.unwrap_or(Decimal::ZERO))
     }
@@ -301,7 +301,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(coupon_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(applications)
     }
@@ -320,7 +320,7 @@ impl CouponRepository for PgCouponRepository {
         .bind(is_exclusion)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -330,7 +330,7 @@ impl CouponRepository for PgCouponRepository {
             .bind(application_id)
             .execute(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(())
     }

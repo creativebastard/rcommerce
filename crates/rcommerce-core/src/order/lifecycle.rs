@@ -173,6 +173,7 @@ impl OrderTransition {
 }
 
 /// Order event dispatcher for pub/sub pattern
+#[derive(Default)]
 pub struct OrderEventDispatcher {
     // In a real implementation, this would have:
     // - Event bus connection
@@ -182,7 +183,7 @@ pub struct OrderEventDispatcher {
 
 impl OrderEventDispatcher {
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
     
     /// Dispatch order created event

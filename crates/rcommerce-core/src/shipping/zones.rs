@@ -64,10 +64,9 @@ impl ShippingZone {
     /// Check if address is in this zone
     pub fn contains(&self, address: &Address) -> bool {
         // Check country
-        if !self.countries.is_empty() {
-            if !self.countries.iter().any(|c| c.eq_ignore_ascii_case(&address.country)) {
-                return false;
-            }
+        if !self.countries.is_empty()
+            && !self.countries.iter().any(|c| c.eq_ignore_ascii_case(&address.country)) {
+            return false;
         }
         
         // Check state
@@ -79,15 +78,14 @@ impl ShippingZone {
         }
         
         // Check postal code
-        if !self.postal_codes.is_empty() {
-            if !self.postal_codes.iter().any(|p| p == &address.zip) {
-                // Check ranges
-                let in_range = self.postal_code_ranges.iter().any(|(start, end)| {
-                    address.zip >= start.clone() && address.zip <= end.clone()
-                });
-                if !in_range {
-                    return false;
-                }
+        if !self.postal_codes.is_empty()
+            && !self.postal_codes.iter().any(|p| p == &address.zip) {
+            // Check ranges
+            let in_range = self.postal_code_ranges.iter().any(|(start, end)| {
+                address.zip >= start.clone() && address.zip <= end.clone()
+            });
+            if !in_range {
+                return false;
             }
         }
         

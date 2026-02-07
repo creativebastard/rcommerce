@@ -14,7 +14,15 @@ use crate::payment::{
     PaymentGateway, CreatePaymentRequest, PaymentSession, Payment, PaymentStatus, 
     PaymentSessionStatus, Refund, RefundStatus, WebhookEvent, WebhookEventType
 };
+use crate::payment::agnostic::{
+    AgnosticPaymentGateway, GatewayConfig, PaymentMethodConfig, PaymentMethodType,
+    InitiatePaymentRequest, InitiatePaymentResponse, CompletePaymentActionRequest,
+    CompletePaymentActionResponse, PaymentMethodData, PaymentMethodInfo, PaymentMethodToken,
+    RefundResponse, RefundStatus as AgnosticRefundStatus, WebhookEvent as AgnosticWebhookEvent,
+    WebhookEventType as AgnosticWebhookEventType, FieldDefinition, FieldType,
+};
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 
 /// Legacy payment response structure (kept for backward compatibility)
@@ -29,17 +37,12 @@ pub struct PaymentResponse {
 }
 
 /// Mock payment gateway for local development and testing
+#[derive(Debug, Clone, Default)]
 pub struct MockPaymentGateway;
 
 impl MockPaymentGateway {
     pub fn new() -> Self {
         Self
-    }
-}
-
-impl Default for MockPaymentGateway {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -133,6 +136,214 @@ impl PaymentGateway for MockPaymentGateway {
     }
 }
 
+#[async_trait]
+impl AgnosticPaymentGateway for MockPaymentGateway {
+    async fn get_config(&self) -> Result<GatewayConfig> {
+        Ok(GatewayConfig {
+            gateway_id: "mock".to_string(),
+            gateway_name: "Mock Payment Gateway".to_string(),
+            payment_methods: vec![
+                PaymentMethodConfig {
+                    method_type: PaymentMethodType::Card,
+                    enabled: true,
+                    display_name: "Credit/Debit Card (Mock)".to_string(),
+                    requires_redirect: false,
+                    supports_3ds: true,
+                    supports_tokenization: true,
+                    supports_recurring: true,
+                    required_fields: vec![
+                        FieldDefinition {
+                            name: "number".to_string(),
+                            label: "Card Number".to_string(),
+                            field_type: FieldType::CardNumber,
+                            required: true,
+                            pattern: Some(r"^[\d\s]{13,19}$".to_string()),
+                            placeholder: Some("1234 5678 9012 3456".to_string()),
+                            help_text: None,
+                        },
+                        FieldDefinition {
+                            name: "exp_month".to_string(),
+                            label: "Expiry Month".to_string(),
+                            field_type: FieldType::ExpiryDate,
+                            required: true,
+                            pattern: Some(r"^(0[1-9]|1[0-2])$".to_string()),
+                            placeholder: Some("MM".to_string()),
+                            help_text: None,
+                        },
+                        FieldDefinition {
+                            name: "exp_year".to_string(),
+                            label: "Expiry Year".to_string(),
+                            field_type: FieldType::ExpiryDate,
+                            required: true,
+                            pattern: Some(r"^20[2-9][0-9]$".to_string()),
+                            placeholder: Some("YYYY".to_string()),
+                            help_text: None,
+                        },
+                        FieldDefinition {
+                            name: "cvc".to_string(),
+                            label: "CVC".to_string(),
+                            field_type: FieldType::Cvc,
+                            required: true,
+                            pattern: Some(r"^\d{3,4}$".to_string()),
+                            placeholder: Some("123".to_string()),
+                            help_text: Some("3 or 4 digit code on back of card".to_string()),
+                        },
+                        FieldDefinition {
+                            name: "name".to_string(),
+                            label: "Cardholder Name".to_string(),
+                            field_type: FieldType::CardholderName,
+                            required: true,
+                            pattern: None,
+                            placeholder: Some("John Doe".to_string()),
+                            help_text: None,
+                        },
+                    ],
+                    optional_fields: vec![],
+                    supported_currencies: vec!["USD".to_string(), "EUR".to_string(), "GBP".to_string()],
+                    min_amount: Some(dec!(0.50)),
+                    max_amount: None,
+                },
+            ],
+            supports_3ds: true,
+            supports_webhooks: true,
+            supports_refunds: true,
+            supports_partial_refunds: true,
+            supported_currencies: vec!["USD".to_string(), "EUR".to_string(), "GBP".to_string()],
+            default_currency: "USD".to_string(),
+        })
+    }
+
+    async fn initiate_payment(
+        &self,
+        request: InitiatePaymentRequest,
+    ) -> Result<InitiatePaymentResponse> {
+        let payment_id = format!("mock_pay_{}", uuid::Uuid::new_v4());
+        
+        // Extract card info if available
+        let (last_four, card_brand) = match &request.payment_method_data {
+            PaymentMethodData::Card { number, .. } => {
+                let last_four = number.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
+                let last_four = if last_four.len() >= 4 {
+                    Some(last_four[last_four.len()-4..].to_string())
+                } else {
+                    Some("0000".to_string())
+                };
+                (last_four, Some("visa".to_string()))
+            }
+            _ => (Some("4242".to_string()), Some("visa".to_string())),
+        };
+
+        Ok(InitiatePaymentResponse::Success {
+            payment_id: payment_id.clone(),
+            transaction_id: format!("mock_txn_{}", uuid::Uuid::new_v4()),
+            payment_status: crate::payment::agnostic::PaymentStatus::Succeeded,
+            payment_method: PaymentMethodInfo {
+                method_type: PaymentMethodType::Card,
+                last_four,
+                card_brand,
+                exp_month: Some("12".to_string()),
+                exp_year: Some("2025".to_string()),
+                cardholder_name: Some("Mock User".to_string()),
+                token: None,
+            },
+            receipt_url: Some(format!("https://mock.gateway/receipts/{}", payment_id)),
+        })
+    }
+
+    async fn complete_payment_action(
+        &self,
+        request: CompletePaymentActionRequest,
+    ) -> Result<CompletePaymentActionResponse> {
+        Ok(CompletePaymentActionResponse::Success {
+            payment_id: request.payment_id,
+            transaction_id: format!("mock_txn_{}", uuid::Uuid::new_v4()),
+            payment_status: crate::payment::agnostic::PaymentStatus::Succeeded,
+            payment_method: PaymentMethodInfo {
+                method_type: PaymentMethodType::Card,
+                last_four: Some("4242".to_string()),
+                card_brand: Some("visa".to_string()),
+                exp_month: Some("12".to_string()),
+                exp_year: Some("2025".to_string()),
+                cardholder_name: Some("Mock User".to_string()),
+                token: None,
+            },
+            receipt_url: Some("https://mock.gateway/receipts/123".to_string()),
+        })
+    }
+
+    async fn get_payment_status(&self, _payment_id: &str) -> Result<crate::payment::agnostic::PaymentStatus> {
+        Ok(crate::payment::agnostic::PaymentStatus::Succeeded)
+    }
+
+    async fn refund_payment(
+        &self,
+        payment_id: &str,
+        amount: Option<Decimal>,
+        reason: &str,
+    ) -> Result<RefundResponse> {
+        Ok(RefundResponse {
+            refund_id: format!("mock_ref_{}", uuid::Uuid::new_v4()),
+            payment_id: payment_id.to_string(),
+            amount: amount.unwrap_or(dec!(10.00)),
+            currency: "USD".to_string(),
+            status: AgnosticRefundStatus::Succeeded,
+            reason: reason.to_string(),
+            created_at: chrono::Utc::now(),
+        })
+    }
+
+    async fn handle_webhook(
+        &self,
+        _payload: &[u8],
+        _headers: &[(String, String)],
+    ) -> Result<AgnosticWebhookEvent> {
+        Ok(AgnosticWebhookEvent {
+            event_type: AgnosticWebhookEventType::PaymentSucceeded,
+            payment_id: format!("mock_pay_{}", uuid::Uuid::new_v4()),
+            transaction_id: None,
+            data: serde_json::json!({}),
+            timestamp: chrono::Utc::now(),
+        })
+    }
+
+    async fn tokenize_payment_method(
+        &self,
+        _payment_method_data: PaymentMethodData,
+    ) -> Result<PaymentMethodToken> {
+        Ok(PaymentMethodToken {
+            token: format!("mock_tok_{}", uuid::Uuid::new_v4()),
+            payment_method: PaymentMethodInfo {
+                method_type: PaymentMethodType::Card,
+                last_four: Some("4242".to_string()),
+                card_brand: Some("visa".to_string()),
+                exp_month: Some("12".to_string()),
+                exp_year: Some("2025".to_string()),
+                cardholder_name: Some("Mock User".to_string()),
+                token: None,
+            },
+            expires_at: None,
+        })
+    }
+
+    async fn get_saved_payment_methods(&self, _customer_id: &str) -> Result<Vec<PaymentMethodInfo>> {
+        Ok(vec![
+            PaymentMethodInfo {
+                method_type: PaymentMethodType::Card,
+                last_four: Some("4242".to_string()),
+                card_brand: Some("visa".to_string()),
+                exp_month: Some("12".to_string()),
+                exp_year: Some("2025".to_string()),
+                cardholder_name: Some("Mock User".to_string()),
+                token: Some(format!("mock_tok_{}", uuid::Uuid::new_v4())),
+            },
+        ])
+    }
+
+    async fn delete_payment_method(&self, _token: &str) -> Result<()> {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod integration_tests;
 
@@ -179,8 +390,9 @@ mod tests {
     
     #[tokio::test]
     async fn test_mock_gateway_refund() {
+        use crate::payment::PaymentGateway;
         let gateway = MockPaymentGateway::new();
-        let result = gateway.refund_payment("mock_pay_123", Some(Decimal::new(2500, 2)), "customer_request").await.unwrap();
+        let result = PaymentGateway::refund_payment(&gateway, "mock_pay_123", Some(Decimal::new(2500, 2)), "customer_request").await.unwrap();
         
         assert_eq!(result.status, RefundStatus::Succeeded);
         assert_eq!(result.amount, Decimal::new(2500, 2));

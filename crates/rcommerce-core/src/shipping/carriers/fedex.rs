@@ -13,6 +13,7 @@ use crate::shipping::{
 };
 
 /// FedEx API provider
+#[allow(dead_code)]
 pub struct FedExProvider {
     client: reqwest::Client,
     api_key: String,

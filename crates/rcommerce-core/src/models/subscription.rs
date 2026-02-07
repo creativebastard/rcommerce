@@ -11,7 +11,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 /// Subscription status
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq, Default)]
 #[sqlx(type_name = "subscription_status", rename_all = "snake_case")]
 pub enum SubscriptionStatus {
     /// Subscription is active and billing
@@ -27,13 +27,8 @@ pub enum SubscriptionStatus {
     /// Trial period before billing starts
     Trialing,
     /// Pending activation (e.g., awaiting first payment)
+    #[default]
     Pending,
-}
-
-impl Default for SubscriptionStatus {
-    fn default() -> Self {
-        SubscriptionStatus::Pending
-    }
 }
 
 /// Cancellation reason

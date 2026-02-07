@@ -9,6 +9,12 @@ mod tests;
 #[derive(Debug, Clone)]
 pub struct MockPaymentGateway;
 
+impl Default for MockPaymentGateway {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl MockPaymentGateway {
     pub fn new() -> Self {
         Self

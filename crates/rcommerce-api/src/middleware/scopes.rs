@@ -108,22 +108,25 @@ pub async fn require_scope_middleware(
     Ok(next.run(request).await)
 }
 
+/// Type alias for middleware function return type
+type MiddlewareFn = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, StatusCode>> + Send>>;
+
 /// Middleware factory for requiring read access to a resource
-pub fn require_read(resource: Resource) -> impl Fn(Request<Body>, Next) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, StatusCode>> + Send>> {
+pub fn require_read(resource: Resource) -> impl Fn(Request<Body>, Next) -> MiddlewareFn {
     move |request: Request<Body>, next: Next| {
         Box::pin(require_scope_middleware(request, next, resource, Action::Read))
     }
 }
 
 /// Middleware factory for requiring write access to a resource
-pub fn require_write(resource: Resource) -> impl Fn(Request<Body>, Next) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, StatusCode>> + Send>> {
+pub fn require_write(resource: Resource) -> impl Fn(Request<Body>, Next) -> MiddlewareFn {
     move |request: Request<Body>, next: Next| {
         Box::pin(require_scope_middleware(request, next, resource, Action::Write))
     }
 }
 
 /// Middleware factory for requiring admin access
-pub fn require_admin() -> impl Fn(Request<Body>, Next) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Response, StatusCode>> + Send>> {
+pub fn require_admin() -> impl Fn(Request<Body>, Next) -> MiddlewareFn {
     move |request: Request<Body>, next: Next| {
         Box::pin(require_scope_middleware(request, next, Resource::Settings, Action::Admin))
     }

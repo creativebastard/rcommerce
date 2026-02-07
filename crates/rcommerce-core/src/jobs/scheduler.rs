@@ -40,8 +40,8 @@ pub struct SchedulerConfig {
 }
 
 impl SchedulerConfig {
-    /// Create default config
-    pub fn default() -> Self {
+    /// Create new config with default values
+    pub fn new() -> Self {
         Self {
             enabled: true,
             check_interval: std::time::Duration::from_secs(60),
@@ -50,6 +50,12 @@ impl SchedulerConfig {
             enable_cron: true,
             max_cron_jobs: 1000,
         }
+    }
+}
+
+impl Default for SchedulerConfig {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -81,7 +87,12 @@ impl JobScheduler {
     async fn run(&self) {
         info!("Job scheduler running");
         
-        while self.config.enabled {
+        if !self.config.enabled {
+            info!("Job scheduler stopped (disabled)");
+            return;
+        }
+        
+        loop {
             // Process scheduled jobs
             match self.process_due_jobs().await {
                 Ok(count) => {
@@ -107,8 +118,6 @@ impl JobScheduler {
             // Sleep before next check
             tokio::time::sleep(self.config.check_interval).await;
         }
-        
-        info!("Job scheduler stopped");
     }
     
     /// Schedule a job for future execution

@@ -13,6 +13,7 @@ use crate::shipping::{
 };
 
 /// EasyPost API provider
+#[allow(dead_code)]
 pub struct EasyPostProvider {
     client: reqwest::Client,
     api_key: String,
@@ -35,6 +36,7 @@ impl EasyPostProvider {
         self
     }
     
+    #[allow(dead_code)]
     fn auth(&self) -> String {
         format!("{}:", self.api_key)
     }

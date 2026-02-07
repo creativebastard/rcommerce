@@ -149,7 +149,7 @@ impl CustomerService {
         // Check if customer has orders
         // For MVP, we'll do hard delete
         
-        Ok(self.repository.delete(id).await?)
+        self.repository.delete(id).await
     }
     
     /// Add address to customer

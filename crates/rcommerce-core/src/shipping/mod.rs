@@ -359,7 +359,7 @@ impl NonDeliveryOption {
 }
 
 /// Rate calculation options
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RateOptions {
     pub carriers: Option<Vec<String>>,
     pub services: Option<Vec<String>>,
@@ -370,22 +370,6 @@ pub struct RateOptions {
     pub saturday_delivery: bool,
     pub hold_for_pickup: bool,
     pub currency: Option<String>,
-}
-
-impl Default for RateOptions {
-    fn default() -> Self {
-        Self {
-            carriers: None,
-            services: None,
-            include_insurance: false,
-            insurance_value: None,
-            signature_confirmation: false,
-            adult_signature: false,
-            saturday_delivery: false,
-            hold_for_pickup: false,
-            currency: None,
-        }
-    }
 }
 
 /// Address validation result

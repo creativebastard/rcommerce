@@ -47,40 +47,52 @@ impl EmailTemplateType {
     }
 }
 
+/// Order confirmation email parameters
+#[derive(Debug, Clone)]
+pub struct OrderConfirmationParams<'a> {
+    /// Recipient email address
+    pub recipient_email: &'a str,
+    /// Customer name
+    pub customer_name: &'a str,
+    /// Order number
+    pub order_number: &'a str,
+    /// Order date
+    pub order_date: &'a str,
+    /// Order total
+    pub order_total: &'a str,
+    /// Order items
+    pub items: &'a [OrderItem],
+    /// Shipping address
+    pub shipping_address: &'a Address,
+    /// Billing address
+    pub billing_address: &'a Address,
+}
+
 /// Factory for creating email notifications from templates
 pub struct EmailNotificationFactory;
 
 impl EmailNotificationFactory {
     /// Create an order confirmation email
-    pub fn order_confirmation(
-        recipient_email: &str,
-        customer_name: &str,
-        order_number: &str,
-        order_date: &str,
-        order_total: &str,
-        items: &[OrderItem],
-        shipping_address: &Address,
-        billing_address: &Address,
-    ) -> Result<Notification> {
+    pub fn order_confirmation(params: OrderConfirmationParams<'_>) -> Result<Notification> {
         let template = NotificationTemplate::load("order_confirmation_html")?;
         
         let mut vars = TemplateVariables::new();
-        vars.insert("customer_name", customer_name);
-        vars.insert("order_number", order_number);
-        vars.insert("order_date", order_date);
-        vars.insert("order_total", order_total);
+        vars.insert("customer_name", params.customer_name);
+        vars.insert("order_number", params.order_number);
+        vars.insert("order_date", params.order_date);
+        vars.insert("order_total", params.order_total);
         vars.insert("company_name", "R Commerce");
         vars.insert("support_email", "support@rcommerce.local");
         
         // Format items as HTML
-        let items_html = Self::format_order_items(items);
+        let items_html = Self::format_order_items(params.items);
         vars.insert("items", &items_html);
         
         // Format addresses
-        vars.insert("shipping_address", &Self::format_address(shipping_address));
-        vars.insert("billing_address", &Self::format_address(billing_address));
+        vars.insert("shipping_address", Self::format_address(params.shipping_address));
+        vars.insert("billing_address", Self::format_address(params.billing_address));
         
-        Self::create_notification(recipient_email, &template, vars)
+        Self::create_notification(params.recipient_email, &template, vars)
     }
     
     /// Create a payment failed email (dunning)
@@ -107,8 +119,8 @@ impl EmailNotificationFactory {
         vars.insert("customer_name", customer_name);
         vars.insert("order_number", order_number);
         vars.insert("amount", amount);
-        vars.insert("attempt_number", &attempt_number.to_string());
-        vars.insert("max_attempts", &max_attempts.to_string());
+        vars.insert("attempt_number", attempt_number.to_string());
+        vars.insert("max_attempts", max_attempts.to_string());
         vars.insert("company_name", "R Commerce");
         vars.insert("support_email", "support@rcommerce.local");
         
@@ -237,10 +249,10 @@ impl EmailNotificationFactory {
     /// Format address as HTML
     fn format_address(address: &Address) -> String {
         format!(
-            "<p style='margin:0;'><strong>{}</strong><br>{}<br>{}<br>{}</p>",
+            "<p style='margin:0;'><strong>{}</strong><br>{}<br>{}, {} {}<br>{}</p>",
             address.name,
             address.street,
-            format!("{}, {} {}", address.city, address.state, address.zip),
+            address.city, address.state, address.zip,
             address.country
         )
     }
@@ -267,6 +279,7 @@ pub struct Address {
 }
 
 /// Extension trait for NotificationTemplate
+#[allow(dead_code)]
 trait NotificationTemplateExt {
     fn render_subject(&self, variables: &TemplateVariables) -> Result<String>;
 }

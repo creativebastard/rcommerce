@@ -100,7 +100,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(prefix)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(record)
     }
@@ -118,7 +118,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(prefix)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(record)
     }
@@ -135,7 +135,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -151,7 +151,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(customer_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(records)
     }
@@ -165,7 +165,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(records)
     }
@@ -189,7 +189,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(request.rate_limit_per_minute)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(record)
     }
@@ -206,7 +206,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(prefix)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(result.rows_affected() > 0)
     }
@@ -221,7 +221,7 @@ impl ApiKeyRepository for PostgresApiKeyRepository {
         .bind(prefix)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(result.rows_affected() > 0)
     }

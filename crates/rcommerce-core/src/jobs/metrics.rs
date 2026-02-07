@@ -50,9 +50,7 @@ impl JobMetrics {
         
         // Get latency stats
         let lat_key = "metrics:latency:completed";
-        let lat_data: Vec<u8> = if let Some(data) = conn.get(lat_key).await? {
-            data
-        } else { vec![] };
+        let lat_data: Vec<u8> = conn.get(lat_key).await?.unwrap_or_default();
         
         let latencies: Vec<u64> = String::from_utf8_lossy(&lat_data)
             .split(',')

@@ -115,7 +115,7 @@ impl ProductService {
         // Check if product has orders (soft delete in production)
         // For MVP, we'll do hard delete
         
-        Ok(self.repository.delete(id).await?)
+        self.repository.delete(id).await
     }
     
     /// Get product by slug

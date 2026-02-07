@@ -25,26 +25,23 @@ pub fn detect_carrier_from_tracking(tracking: &str) -> Option<&'static str> {
     
     // FedEx
     // FedEx tracking numbers are typically 12, 15, 20, or 34 digits
-    if tracking.len() == 12 || tracking.len() == 15 || tracking.len() == 20 || tracking.len() == 34 {
-        if tracking.chars().all(|c| c.is_ascii_digit()) {
-            return Some("fedex");
-        }
+    if (tracking.len() == 12 || tracking.len() == 15 || tracking.len() == 20 || tracking.len() == 34)
+        && tracking.chars().all(|c| c.is_ascii_digit()) {
+        return Some("fedex");
     }
     
     // USPS
     // USPS tracking numbers are typically 20-22 digits, often starting with 9
-    if (tracking.len() == 20 || tracking.len() == 22) && tracking.starts_with('9') {
-        if tracking.chars().all(|c| c.is_ascii_digit()) {
-            return Some("usps");
-        }
+    if (tracking.len() == 20 || tracking.len() == 22) && tracking.starts_with('9')
+        && tracking.chars().all(|c| c.is_ascii_digit()) {
+        return Some("usps");
     }
     
     // DHL
     // DHL tracking numbers are typically 10 or 11 digits
-    if tracking.len() == 10 || tracking.len() == 11 {
-        if tracking.chars().all(|c| c.is_ascii_digit()) {
-            return Some("dhl");
-        }
+    if (tracking.len() == 10 || tracking.len() == 11)
+        && tracking.chars().all(|c| c.is_ascii_digit()) {
+        return Some("dhl");
     }
     
     // DHL Express (starts with specific prefixes)
@@ -87,9 +84,7 @@ pub fn get_tracking_url(carrier: &str, tracking_number: &str) -> Option<String> 
 pub fn normalize_tracking_number(tracking: &str) -> String {
     tracking
         .to_uppercase()
-        .replace(' ', "")
-        .replace('-', "")
-        .replace('_', "")
+        .replace([' ', '-', '_'], "")
 }
 
 /// Validate tracking number format
@@ -141,7 +136,7 @@ pub fn normalize_address_for_carrier(address: &Address, carrier: &str) -> Result
             
             // Normalize postal code (remove spaces for US)
             if normalized.country == "US" {
-                normalized.zip = normalized.zip.replace(' ', "").replace('-', "");
+                normalized.zip = normalized.zip.replace([' ', '-'], "");
             }
             
             // Ensure phone is in E.164 format if present

@@ -56,7 +56,7 @@ impl AirwallexGateway {
     }
     
     /// Create with default (for factory registration)
-    pub fn default() -> Self {
+    pub fn create_default() -> Self {
         Self::new(
             String::new(),
             String::new(),

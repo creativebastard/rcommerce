@@ -167,7 +167,7 @@ impl PaymentGateway for WeChatPayGateway {
             "out_trade_no": trade_no,
             "notify_url": "https://yourstore.com/webhooks/wechatpay",
             "amount": {
-                "total": amount_cents as i64,
+                "total": amount_cents,
                 "currency": request.currency.to_uppercase()
             },
             "payer": {
@@ -230,10 +230,10 @@ impl PaymentGateway for WeChatPayGateway {
         Ok(Payment {
             id: format!("pay_{}", uuid::Uuid::new_v4()),
             gateway: self.id().to_string(),
-            amount: Decimal::new(transaction.amount.total as i64, 2),
+            amount: Decimal::new(transaction.amount.total, 2),
             currency: transaction.amount.currency,
             status: Self::map_wechat_status(&transaction.trade_state),
-            order_id: uuid::Uuid::parse_str(&transaction.out_trade_no.split('_').next().unwrap_or(""))
+            order_id: uuid::Uuid::parse_str(transaction.out_trade_no.split('_').next().unwrap_or(""))
                 .unwrap_or_else(|_| uuid::Uuid::nil()),
             customer_id: transaction.payer.as_ref().and_then(|p| {
                 uuid::Uuid::parse_str(&p.openid).ok()

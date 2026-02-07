@@ -87,6 +87,7 @@ pub enum TrackingStatus {
 }
 
 /// Fulfillment service
+#[derive(Default)]
 pub struct FulfillmentService {
     // In production, this would have:
     // - Shipping provider integrations
@@ -97,7 +98,7 @@ pub struct FulfillmentService {
 
 impl FulfillmentService {
     pub fn new() -> Self {
-        Self {}
+        Self::default()
     }
     
     /// Create a fulfillment from order

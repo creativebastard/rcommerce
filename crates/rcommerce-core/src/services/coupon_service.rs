@@ -18,6 +18,7 @@ use crate::{
 };
 
 /// Coupon service for managing discounts
+#[derive(Clone)]
 pub struct CouponService {
     coupon_repo: Arc<dyn CouponRepository>,
     cart_repo: Arc<dyn CartRepository>,

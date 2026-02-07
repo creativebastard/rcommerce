@@ -70,7 +70,7 @@ impl OrderService {
             
             // Calculate item totals
             let item_subtotal = item.price * Decimal::from(item.quantity);
-            let item_tax = self.calculate_tax(&item).await?;
+            let item_tax = self.calculate_tax(item).await?;
             let item_total = item_subtotal + item_tax;
             
             subtotal += item_subtotal;
@@ -466,10 +466,7 @@ impl OrderService {
     fn can_cancel_order(&self, order: &Order) -> bool {
         use OrderStatus::*;
         
-        match order.status {
-            Pending | Confirmed | Processing => true,
-            _ => false,
-        }
+        matches!(order.status, Pending | Confirmed | Processing)
     }
     
     async fn generate_order_number(&self) -> Result<String> {

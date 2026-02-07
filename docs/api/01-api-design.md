@@ -271,36 +271,51 @@ GET    /v1/customers/:id/addresses  # Customer addresses
 POST   /v1/customers/:id/addresses  # Add address
 ```
 
-### Cart & Checkout
+### Cart & Checkout ✅ Fully Implemented
 
 ```
-POST   /v1/cart                     # Create cart session
-GET    /v1/cart/:token              # Get cart
-PUT    /v1/cart/:token              # Update cart
-DELETE /v1/cart/:token              # Clear cart
+POST   /v1/carts/guest              # Create guest cart
+GET    /v1/carts/me                 # Get or create customer cart
+GET    /v1/carts/:id                # Get cart by ID
+PUT    /v1/carts/:id                # Update cart
+DELETE /v1/carts/:id                # Delete cart
 
-POST   /v1/cart/:token/items        # Add item to cart
-PUT    /v1/cart/:token/items/:id    # Update item quantity
-DELETE /v1/cart/:token/items/:id    # Remove item
+POST   /v1/carts/:id/items         # Add item to cart
+PUT    /v1/carts/:id/items/:item_id # Update cart item
+DELETE /v1/carts/:id/items/:item_id # Remove item from cart
+DELETE /v1/carts/:id/items          # Clear all items
 
-POST   /v1/checkout                 # Create checkout session
-GET    /v1/checkout/:session_id     # Get checkout
-POST   /v1/checkout/:session_id/payments # Process payment
+POST   /v1/carts/:id/coupon        # Apply coupon to cart
+DELETE /v1/carts/:id/coupon         # Remove coupon from cart
+
+POST   /v1/carts/merge              # Merge guest cart to customer cart
 ```
 
-### Payments (v1 - Legacy)
+### Payments (v1) ✅ Fully Implemented
+
+The Payments API provides a provider-agnostic interface where all payment processing happens server-side. The frontend sends card data to R Commerce, which then communicates with payment providers.
 
 ```
-GET    /v1/payments                 # List payments
-GET    /v1/payments/:id             # Get payment
-POST   /v1/payments                 # Create payment (manual refund, etc)
-PATCH  /v1/payments/:id             # Update payment (e.g., status)
+POST   /v1/payments/methods         # Get available payment methods for checkout
+POST   /v1/payments                 # Initiate payment (server-side processing)
+GET    /v1/payments/:id             # Get payment status
+POST   /v1/payments/:id/complete    # Complete 3DS/redirect action
+POST   /v1/payments/:id/refund      # Process refund
 
-GET    /v1/payment-methods          # List available payment methods
-GET    /v1/payment-gateways         # List configured gateways
+POST   /v1/payment-methods          # Save payment method for customer
+GET    /v1/customers/:id/payment-methods  # List saved payment methods
+DELETE /v1/payment-methods/:token   # Delete saved payment method
+
+POST   /v1/webhooks/:gateway       # Receive webhooks from payment providers
 ```
 
-### Payments (v2 - Agnostic)
+**Supported Payment Gateways:**
+- Stripe (Full support)
+- Airwallex (Basic support)
+- WeChat Pay (Basic support)
+- Alipay (Basic support)
+
+### Payments (v2 - Future Enhancement)
 
 The v2 Payments API provides a provider-agnostic interface where all payment processing happens server-side. The frontend sends card data to R Commerce, which then communicates with payment providers.
 

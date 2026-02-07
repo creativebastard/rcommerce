@@ -46,7 +46,7 @@ pub async fn create_pool(
         .max_connections(pool_size)
         .connect(&database_url)
         .await
-        .map_err(|e| crate::Error::Database(e))?;
+        .map_err(crate::Error::Database)?;
     
     tracing::info!("PostgreSQL connected successfully");
     Ok(pool)

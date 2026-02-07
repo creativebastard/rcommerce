@@ -107,17 +107,13 @@ impl DeliveryAttempt {
 /// Priority levels for notifications
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "notification_priority", rename_all = "snake_case")]
+#[derive(Default)]
 pub enum NotificationPriority {
     Low,
+    #[default]
     Normal,
     High,
     Urgent,
-}
-
-impl Default for NotificationPriority {
-    fn default() -> Self {
-        NotificationPriority::Normal
-    }
 }
 
 /// A notification entity

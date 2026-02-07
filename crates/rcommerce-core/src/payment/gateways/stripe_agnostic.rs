@@ -489,7 +489,7 @@ impl AgnosticPaymentGateway for StripeAgnosticGateway {
             },
             reason: reason.to_string(),
             created_at: chrono::DateTime::from_timestamp(refund.created, 0)
-                .unwrap_or_else(|| chrono::Utc::now()),
+                .unwrap_or_else(chrono::Utc::now),
         })
     }
     

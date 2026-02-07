@@ -70,12 +70,12 @@ impl JobQueue {
         
         // Update status counts
         let mut cmd = redis::Cmd::new();
-        cmd.arg("HINCRBY").arg(&self.status_counts_key()).arg(job.status.to_string()).arg("1");
+        cmd.arg("HINCRBY").arg(self.status_counts_key()).arg(job.status.to_string()).arg("1");
         conn.execute(cmd).await?;
         
         // Update queue length
         let mut cmd = redis::Cmd::new();
-        cmd.arg("HINCRBY").arg(&self.stats_key()).arg("enqueued").arg("1");
+        cmd.arg("HINCRBY").arg(self.stats_key()).arg("enqueued").arg("1");
         conn.execute(cmd).await?;
         
         Ok(())
@@ -95,15 +95,13 @@ impl JobQueue {
             
             match conn.execute(cmd).await {
                 Ok(result) => {
-                    if let Ok(job_id_str) = redis::from_redis_value::<Option<String>>(result) {
-                        if let Some(job_id_str) = job_id_str {
-                            if let Ok(job_id) = Uuid::parse_str(&job_id_str) {
-                                // Load job data
-                                if let Some(job) = self.get_job(&job_id).await? {
-                                    // Update status to running
-                                    self.update_job_status(&job_id, JobStatus::Running).await?;
-                                    return Ok(Some(job));
-                                }
+                    if let Ok(Some(job_id_str)) = redis::from_redis_value::<Option<String>>(result) {
+                        if let Ok(job_id) = Uuid::parse_str(&job_id_str) {
+                            // Load job data
+                            if let Some(job) = self.get_job(&job_id).await? {
+                                // Update status to running
+                                self.update_job_status(&job_id, JobStatus::Running).await?;
+                                return Ok(Some(job));
                             }
                         }
                     }
@@ -159,13 +157,13 @@ impl JobQueue {
             
             // Decrement old status count
             pipeline.cmd("HINCRBY")
-                .arg(&self.status_counts_key())
+                .arg(self.status_counts_key())
                 .arg(old_status.to_string())
                 .arg("-1");
             
             // Increment new status count
             pipeline.cmd("HINCRBY")
-                .arg(&self.status_counts_key())
+                .arg(self.status_counts_key())
                 .arg(new_status.to_string())
                 .arg("1");
             
@@ -264,7 +262,7 @@ impl JobQueue {
         
         // Get status counts
         let mut cmd = redis::Cmd::new();
-        cmd.arg("HGETALL").arg(&self.status_counts_key());
+        cmd.arg("HGETALL").arg(self.status_counts_key());
         
         let status_counts: HashMap<String, i64> = redis::from_redis_value(conn.execute(cmd).await?)
             .map_err(|e| crate::cache::CacheError::DeserializationError(e.to_string()))?;
@@ -457,7 +455,7 @@ impl QueueStats {
             lines.push(format!("    {:?}: {}", priority, count));
         }
         
-        lines.push(format!("  Status counts:"));
+        lines.push("  Status counts:".to_string());
         for (status, count) in &self.status_counts {
             lines.push(format!("    {}: {}", status, count));
         }

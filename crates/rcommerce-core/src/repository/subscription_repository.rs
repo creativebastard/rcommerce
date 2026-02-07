@@ -178,7 +178,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(now)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -190,7 +190,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -224,7 +224,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         let subscriptions = sqlx::query_as::<_, Subscription>(&query)
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(subscriptions)
     }
@@ -242,7 +242,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         let count: i64 = sqlx::query_scalar(&query)
             .fetch_one(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(count)
     }
@@ -276,7 +276,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -303,7 +303,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -320,7 +320,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -337,7 +337,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -355,7 +355,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
             .bind(customer_id)
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(subscriptions)
     }
@@ -367,7 +367,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(product_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscriptions)
     }
@@ -384,7 +384,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(before)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscriptions)
     }
@@ -397,7 +397,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -415,7 +415,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -427,7 +427,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -439,7 +439,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -467,7 +467,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(invoice.status)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invoice)
     }
@@ -479,7 +479,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(invoice_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invoice)
     }
@@ -491,7 +491,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(subscription_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invoices)
     }
@@ -508,7 +508,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(invoice_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -526,7 +526,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(invoice_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -537,7 +537,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invoices)
     }
@@ -568,7 +568,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(attempt.created_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -580,7 +580,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(invoice_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(attempts)
     }
@@ -607,7 +607,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(email.created_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -619,7 +619,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         .bind(subscription_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(emails)
     }
@@ -632,7 +632,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(results)
     }
@@ -658,7 +658,7 @@ impl SubscriptionRepository for PostgresSubscriptionRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(mrr.unwrap_or_default())
     }

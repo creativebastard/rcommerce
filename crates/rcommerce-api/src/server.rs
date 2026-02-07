@@ -10,12 +10,16 @@ use tracing::{error, info, warn};
 
 use crate::middleware::{admin_middleware, auth_middleware};
 
-use crate::state::AppState;
+use crate::state::{AppState, AppStateParams};
 use crate::tls::security_headers_middleware;
 use rcommerce_core::cache::RedisPool;
 use rcommerce_core::config::TlsConfig;
-use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository, PostgresSubscriptionRepository};
-use rcommerce_core::services::{AuthService, CustomerService, ProductService};
+use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository, PostgresSubscriptionRepository, PgCouponRepository, PgCartRepository};
+use std::sync::Arc;
+use rcommerce_core::services::{AuthService, CustomerService, ProductService, CouponService};
+use rcommerce_core::payment::agnostic::PaymentService;
+use rcommerce_core::payment::gateways::stripe_agnostic::StripeAgnosticGateway;
+use rcommerce_core::payment::gateways::MockPaymentGateway;
 use rcommerce_core::{Config, Result};
 
 pub async fn run(config: Config) -> Result<()> {
@@ -326,17 +330,37 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     let customer_repo = CustomerRepository::new(db.clone());
     let api_key_repo = PostgresApiKeyRepository::new(db.pool().clone());
     let subscription_repo = PostgresSubscriptionRepository::new(db.pool().clone());
+    let coupon_repo = PgCouponRepository::new(db.pool().clone());
+    let cart_repo = PgCartRepository::new(db.pool().clone());
 
     // Initialize services
     let product_service = ProductService::new(product_repo);
     let customer_service = CustomerService::new(customer_repo);
     let auth_service = AuthService::new(config.clone());
+    let coupon_service = CouponService::new(Arc::new(coupon_repo), Arc::new(cart_repo));
+
+    // Initialize payment service with gateways
+    let mut payment_service = PaymentService::new("mock".to_string());
+    
+    // Register mock gateway for testing/development
+    let mock_gateway = Box::new(MockPaymentGateway::new());
+    payment_service.register_gateway("mock".to_string(), mock_gateway);
+    
+    // Register Stripe gateway if API key is available
+    if let Ok(stripe_key) = std::env::var("STRIPE_API_KEY") {
+        let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default();
+        let stripe_gateway = Box::new(StripeAgnosticGateway::new(stripe_key, webhook_secret));
+        payment_service.register_gateway("stripe".to_string(), stripe_gateway);
+        info!("Stripe gateway registered");
+    } else {
+        info!("Stripe API key not found, using mock gateway only");
+    }
 
     // Initialize Redis (optional)
     let redis = init_redis(config).await;
 
     // Create app state
-    Ok(AppState::new(
+    Ok(AppState::new(AppStateParams::new(
         product_service,
         customer_service,
         auth_service,
@@ -344,7 +368,9 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         redis,
         api_key_repo,
         subscription_repo,
-    ))
+        coupon_service,
+        payment_service,
+    )))
 }
 
 /// Build the main API router

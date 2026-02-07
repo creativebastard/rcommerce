@@ -194,14 +194,14 @@ impl CartService {
             // Remove item
             self.cart_repo.remove_item(item_id).await?;
             self.recalculate_cart(cart_id).await?;
-            return Ok(item);
+            Ok(item)
         } else {
             item.quantity = input.quantity;
             item.custom_attributes = input.custom_attributes;
             item.calculate_totals();
             self.cart_repo.update_item(&item).await?;
             self.recalculate_cart(cart_id).await?;
-            return Ok(item);
+            Ok(item)
         }
     }
 
@@ -289,12 +289,8 @@ impl CartService {
         
         // Calculate discount if coupon applied
         cart.discount_total = if let Some(ref coupon_code) = cart.coupon_code {
-            if let Ok(coupon) = self.coupon_repo.find_by_code(coupon_code).await {
-                if let Some(coupon) = coupon {
-                    self.coupon_service.calculate_discount(&coupon, cart.subtotal, &items).await?
-                } else {
-                    Decimal::ZERO
-                }
+            if let Ok(Some(coupon)) = self.coupon_repo.find_by_code(coupon_code).await {
+                self.coupon_service.calculate_discount(&coupon, cart.subtotal, &items).await?
             } else {
                 Decimal::ZERO
             }

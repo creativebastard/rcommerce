@@ -1,6 +1,6 @@
-# Statistics API
+# Statistics API (Admin)
 
-The Statistics API provides comprehensive analytics and reporting for your R Commerce store. Use these endpoints to build dashboards, generate reports, and gain insights into your business performance.
+The Statistics API provides comprehensive analytics and reporting for your R Commerce store. Use these endpoints to build dashboards, generate reports, and gain insights into your business performance. All endpoints including dashboard stats and API key management are fully implemented and operational.
 
 ## Overview
 

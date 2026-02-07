@@ -243,16 +243,16 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(date_to)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let mut summaries = Vec::new();
         for row in rows {
             let period_start: DateTime<Utc> = row.try_get("period_start")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
             let total_revenue: Decimal = row.try_get("total_revenue")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
             let total_orders: i64 = row.try_get("total_orders")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
             let total_items_sold: i64 = row.try_get("total_items_sold")
                 .unwrap_or(0);
 
@@ -317,12 +317,12 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(date_to)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let total_orders: i64 = totals.try_get("total_orders")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let total_revenue: Decimal = totals.try_get("total_revenue")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         let average_order_value = if total_orders > 0 {
             total_revenue / Decimal::from(total_orders)
@@ -347,7 +347,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(date_to)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let status_breakdown: Vec<StatusCount> = status_rows
             .into_iter()
@@ -375,7 +375,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(date_to)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let payment_status_breakdown: Vec<StatusCount> = payment_rows
             .into_iter()
@@ -403,7 +403,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(date_to)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let fulfillment_status_breakdown: Vec<StatusCount> = fulfillment_rows
             .into_iter()
@@ -484,7 +484,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         let rows: Vec<ProductPerformanceRow> = query_builder
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -496,7 +496,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // New customers in last 30 days
         let thirty_days_ago = Utc::now() - Duration::days(30);
@@ -506,7 +506,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(thirty_days_ago)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Customers with orders (returning)
         let customers_with_orders: i64 = sqlx::query_scalar(
@@ -514,7 +514,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let returning_customers = customers_with_orders.saturating_sub(new_customers_period);
 
@@ -532,7 +532,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Average customer lifetime value
         let avg_clv: Decimal = sqlx::query_scalar(
@@ -549,7 +549,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(CustomerStatistics {
             total_customers,
@@ -574,12 +574,12 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let total_revenue: Decimal = totals.try_get("total_revenue")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let total_orders: i64 = totals.try_get("total_orders")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         // Total customers
         let total_customers: i64 = sqlx::query_scalar(
@@ -587,7 +587,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Total products
         let total_products: i64 = sqlx::query_scalar(
@@ -595,7 +595,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Pending orders
         let pending_orders: i64 = sqlx::query_scalar(
@@ -603,7 +603,7 @@ impl StatisticsRepository for PgStatisticsRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Today's metrics
         let today_start: DateTime<Utc> = Utc::now().date_naive().and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Utc).unwrap();
@@ -621,12 +621,12 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(today_start)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let revenue_today: Decimal = today_metrics.try_get("revenue_today")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let orders_today: i64 = today_metrics.try_get("orders_today")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         // This month's metrics
         let month_start: DateTime<Utc> = Utc::now().date_naive().with_day(1).unwrap()
@@ -645,12 +645,12 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(month_start)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let revenue_this_month: Decimal = month_metrics.try_get("revenue_this_month")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let orders_this_month: i64 = month_metrics.try_get("orders_this_month")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         Ok(DashboardMetrics {
             total_revenue,
@@ -688,16 +688,16 @@ impl StatisticsRepository for PgStatisticsRepository {
         ))
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let mut data_points = Vec::new();
         for row in rows {
             let date: DateTime<Utc> = row.try_get("period")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
             let revenue: Decimal = row.try_get("revenue")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
             let orders: i64 = row.try_get("orders")
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
 
             let period_label = match period {
                 Period::Day => date.format("%Y-%m-%d").to_string(),
@@ -743,16 +743,16 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(current_to)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let current_revenue: Decimal = current.try_get("revenue")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let current_orders: i64 = current.try_get("orders")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let current_customers: i64 = current.try_get("customers")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let current_aov: Decimal = current.try_get("aov")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         // Previous period metrics
         let previous = sqlx::query(
@@ -771,16 +771,16 @@ impl StatisticsRepository for PgStatisticsRepository {
         .bind(previous_to)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let previous_revenue: Decimal = previous.try_get("revenue")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let previous_orders: i64 = previous.try_get("orders")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let previous_customers: i64 = previous.try_get("customers")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         let previous_aov: Decimal = previous.try_get("aov")
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         Ok(PeriodComparison {
             revenue: calculate_trend(current_revenue, previous_revenue),
@@ -829,12 +829,10 @@ fn calculate_trend(current: Decimal, previous: Decimal) -> TrendComparison {
             .to_string()
             .parse::<f64>()
             .unwrap_or(0.0)
+    } else if current > Decimal::ZERO {
+        100.0
     } else {
-        if current > Decimal::ZERO {
-            100.0
-        } else {
-            0.0
-        }
+        0.0
     };
 
     let trend_direction = if change_amount > Decimal::ZERO {

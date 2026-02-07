@@ -81,7 +81,7 @@ impl CartRepository for PgCartRepository {
         .bind(id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(cart)
     }
@@ -100,7 +100,7 @@ impl CartRepository for PgCartRepository {
         .bind(customer_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(cart)
     }
@@ -119,7 +119,7 @@ impl CartRepository for PgCartRepository {
         .bind(session_token)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(cart)
     }
@@ -157,7 +157,7 @@ impl CartRepository for PgCartRepository {
         .bind(cart.order_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -208,7 +208,7 @@ impl CartRepository for PgCartRepository {
         .bind(cart.order_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -218,7 +218,7 @@ impl CartRepository for PgCartRepository {
             .bind(id)
             .execute(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -237,7 +237,7 @@ impl CartRepository for PgCartRepository {
         .bind(customer_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -256,7 +256,7 @@ impl CartRepository for PgCartRepository {
         .bind(order_id)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -274,7 +274,7 @@ impl CartRepository for PgCartRepository {
         .bind(expires_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -288,7 +288,7 @@ impl CartRepository for PgCartRepository {
         .bind(cart_id)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(items)
     }
@@ -305,7 +305,7 @@ impl CartRepository for PgCartRepository {
         .bind(variant_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(item)
     }
@@ -319,7 +319,7 @@ impl CartRepository for PgCartRepository {
         .bind(item_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(item)
     }
@@ -355,7 +355,7 @@ impl CartRepository for PgCartRepository {
         .bind(item.updated_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -384,7 +384,7 @@ impl CartRepository for PgCartRepository {
         .bind(item.updated_at)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -394,7 +394,7 @@ impl CartRepository for PgCartRepository {
             .bind(item_id)
             .execute(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -404,7 +404,7 @@ impl CartRepository for PgCartRepository {
             .bind(cart_id)
             .execute(&self.pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         Ok(())
     }

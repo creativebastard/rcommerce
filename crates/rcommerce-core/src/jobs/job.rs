@@ -9,22 +9,17 @@ use uuid::Uuid;
 pub type JobId = Uuid;
 
 /// Job priority levels
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub enum JobPriority {
     /// High priority jobs (processed first)
     High = 100,
     
     /// Normal priority jobs (default)
+    #[default]
     Normal = 50,
     
     /// Low priority jobs (processed last)
     Low = 10,
-}
-
-impl Default for JobPriority {
-    fn default() -> Self {
-        JobPriority::Normal
-    }
 }
 
 impl fmt::Display for JobPriority {
@@ -48,7 +43,7 @@ impl JobPriority {
     }
     
     /// Create from string
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "high" => Some(JobPriority::High),
             "normal" => Some(JobPriority::Normal),
@@ -59,9 +54,10 @@ impl JobPriority {
 }
 
 /// Job execution status
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum JobStatus {
     /// Job is pending execution
+    #[default]
     Pending,
     
     /// Job is being processed
@@ -81,12 +77,6 @@ pub enum JobStatus {
     
     /// Job timed out
     TimedOut,
-}
-
-impl Default for JobStatus {
-    fn default() -> Self {
-        JobStatus::Pending
-    }
 }
 
 impl fmt::Display for JobStatus {

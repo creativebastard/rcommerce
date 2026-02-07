@@ -1,20 +1,15 @@
 use serde::{Serialize, Deserialize};
-/// Address models - re-exported from common module
 
+/// Address models - re-exported from common module
 pub use crate::common::Address;
 
 /// Address type enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, Deserialize, Default)]
 #[sqlx(type_name = "address_type", rename_all = "snake_case")]
 pub enum AddressType {
+    #[default]
     Shipping,
     Billing,
-}
-
-impl Default for AddressType {
-    fn default() -> Self {
-        AddressType::Shipping
-    }
 }
 
 #[cfg(test)]

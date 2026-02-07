@@ -67,9 +67,10 @@ pub struct SortParams {
 }
 
 /// Currency representation
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Default)]
 #[sqlx(type_name = "currency", rename_all = "UPPERCASE")]
 pub enum Currency {
+    #[default]
     USD,
     EUR,
     GBP,
@@ -79,12 +80,6 @@ pub enum Currency {
     CNY,
     HKD,
     SGD,
-}
-
-impl Default for Currency {
-    fn default() -> Self {
-        Currency::USD
-    }
 }
 
 impl std::fmt::Display for Currency {
@@ -143,17 +138,12 @@ pub enum LengthUnit {
 }
 
 /// Inventory policy
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, Default)]
 #[sqlx(type_name = "inventory_policy", rename_all = "snake_case")]
 pub enum InventoryPolicy {
+    #[default]
     Deny,
     Continue,
-}
-
-impl Default for InventoryPolicy {
-    fn default() -> Self {
-        InventoryPolicy::Deny
-    }
 }
 
 /// Product image representation

@@ -1,6 +1,6 @@
 # Customers API
 
-The Customers API manages customer accounts, profiles, addresses, and order history.
+The Customers API manages customer accounts, profiles, addresses, and order history. All endpoints including list, get, and me are fully implemented and operational.
 
 ## Base URL
 

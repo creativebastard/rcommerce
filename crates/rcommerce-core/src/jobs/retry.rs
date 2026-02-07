@@ -8,6 +8,9 @@ use std::time::Duration;
 #[allow(dead_code)]
 type SerializedDuration = std::time::Duration;
 
+/// Type alias for custom retry function to reduce complexity
+type CustomRetryFn = Box<dyn Fn(u32, &JobError) -> JobProcessingResult<Option<Duration>> + Send + Sync>;
+
 /// Retry policy for failed jobs
 pub enum RetryPolicy {
     /// No retries
@@ -26,7 +29,7 @@ pub enum RetryPolicy {
     Exponential(ExponentialBackoff),
     
     /// Custom retry logic
-    Custom(Box<dyn Fn(u32, &JobError) -> JobProcessingResult<Option<Duration>> + Send + Sync>),
+    Custom(CustomRetryFn),
 }
 
 impl std::fmt::Debug for RetryPolicy {
@@ -126,7 +129,7 @@ impl ExponentialBackoff {
     
     /// With jitter factor
     pub fn with_jitter(mut self, jitter: f64) -> Self {
-        self.jitter = jitter.min(1.0).max(0.0);
+        self.jitter = jitter.clamp(0.0, 1.0);
         self
     }
     

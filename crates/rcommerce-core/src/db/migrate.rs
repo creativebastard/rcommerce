@@ -42,7 +42,7 @@ impl Migrator {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(())
     }
@@ -54,7 +54,7 @@ impl Migrator {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let migrations = rows
             .into_iter()
@@ -77,7 +77,7 @@ impl Migrator {
         .bind(name)
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(())
     }
@@ -150,7 +150,7 @@ impl Migrator {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         // Drop all types
         sqlx::query(
@@ -166,7 +166,7 @@ impl Migrator {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         info!("Database reset complete. Re-running migrations...");
         self.migrate().await?;

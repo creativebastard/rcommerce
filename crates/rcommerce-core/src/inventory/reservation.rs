@@ -39,19 +39,14 @@ impl StockReservation {
 }
 
 /// Reservation status
-#[derive(Debug, Clone, Copy, PartialEq, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, sqlx::Type, Default)]
 #[sqlx(type_name = "reservation_status", rename_all = "snake_case")]
 pub enum ReservationStatus {
+    #[default]
     Active,
     Committed,
     Released,
     Expired,
-}
-
-impl Default for ReservationStatus {
-    fn default() -> Self {
-        ReservationStatus::Active
-    }
 }
 
 /// Reservation query parameters

@@ -83,10 +83,7 @@ impl MessageType {
     
     /// Check if message is rate limited
     pub fn is_rate_limited(&self) -> bool {
-        match self.category() {
-            MessageCategory::Control | MessageCategory::KeepAlive | MessageCategory::System => false,
-            _ => true,
-        }
+        !matches!(self.category(), MessageCategory::Control | MessageCategory::KeepAlive | MessageCategory::System)
     }
 }
 

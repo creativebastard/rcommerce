@@ -24,7 +24,7 @@ use crate::repository::SubscriptionRepository;
 // use crate::notification::email::{EmailService, EmailTemplate};
 
 /// Placeholder email service
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct EmailService;
 
 impl EmailService {
@@ -426,7 +426,7 @@ impl<R: SubscriptionRepository + Clone> DunningService<R> {
             .filter(|i| {
                 i.failed_attempts > 0 && 
                 i.failed_attempts < self.config.max_retries &&
-                i.next_retry_at.map_or(false, |t| t <= now)
+                i.next_retry_at.is_some_and(|t| t <= now)
             })
             .collect();
 
@@ -571,7 +571,7 @@ impl<R: SubscriptionRepository + Clone> DunningService<R> {
                     We will retry your payment in {} days.\n\n\
                     Please update your payment method to avoid interruption.",
                     currency, amount, subscription.id,
-                    self.config.retry_intervals_days.get(0).copied().unwrap_or(1)
+                    self.config.retry_intervals_days.first().copied().unwrap_or(1)
                 ),
                 format!(
                     "<html><body>\
@@ -583,7 +583,7 @@ impl<R: SubscriptionRepository + Clone> DunningService<R> {
                     <p>Please <a href=\"#\">update your payment method</a> to avoid interruption.</p>\
                     </body></html>",
                     currency, amount, subscription.id,
-                    self.config.retry_intervals_days.get(0).copied().unwrap_or(1)
+                    self.config.retry_intervals_days.first().copied().unwrap_or(1)
                 ),
             ),
             DunningEmailType::RetryFailure => (

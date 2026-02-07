@@ -43,19 +43,19 @@ mod security {
         let world_writable = (mode & 0o002) != 0;
         
         if world_writable {
-            return Err(format!("\n{}\n{}\n{}",
+            return Err(format!("\n{}\n   Path: {}\n   Run: chmod 600 {}",
                 "❌ ERROR: Config file is world-writable!".red().bold(),
-                format!("   Path: {}", path.display()),
-                "   Run: chmod 600 {}".replace("{}", &path.display().to_string())
+                path.display(),
+                path.display()
             ));
         }
         
         if world_readable {
-            eprintln!("{}", format!("\n{}\n{}\n{}",
+            eprintln!("\n{}\n   Path: {}\n   Consider running: chmod 600 {}",
                 "⚠️  WARNING: Config file is world-readable".yellow().bold(),
-                format!("   Path: {}", path.display()),
-                "   Consider running: chmod 600 {}".replace("{}", &path.display().to_string())
-            ));
+                path.display(),
+                path.display()
+            );
         }
         
         Ok(())
@@ -1359,7 +1359,7 @@ async fn main() -> Result<()> {
                         ("abandoned_cart", "Abandoned Cart", "Sent for abandoned cart reminders"),
                     ];
                     
-                    println!("{:<25} {:<30} {}", "Template ID", "Name", "Description");
+                    println!("{:<25} {:<30} Description", "Template ID", "Name");
                     println!("{}", "-".repeat(100));
                     for (id, name, desc) in &templates {
                         println!("{:<25} {:<30} {}", id.cyan(), name, desc.dimmed());
@@ -1453,7 +1453,7 @@ async fn create_pool(config: &Config) -> Result<sqlx::PgPool> {
         .max_connections(config.database.pool_size)
         .connect(&database_url)
         .await
-        .map_err(|e| rcommerce_core::Error::Database(e))?;
+        .map_err(rcommerce_core::Error::Database)?;
     
     Ok(pool)
 }
@@ -2131,8 +2131,8 @@ fn parse_certificate_file(domain: &str, cert_path: &std::path::Path, key_path: &
     let issued_at = metadata.modified()
         .ok()
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| chrono::DateTime::from_timestamp(d.as_secs() as i64, 0).unwrap_or_else(|| chrono::Utc::now()))
-        .unwrap_or_else(|| chrono::Utc::now());
+        .map(|d| chrono::DateTime::from_timestamp(d.as_secs() as i64, 0).unwrap_or_else(chrono::Utc::now))
+        .unwrap_or_else(chrono::Utc::now);
     
     // Assume 90-day validity for Let's Encrypt certificates
     let expires_at = issued_at + chrono::Duration::days(90);
@@ -2214,7 +2214,7 @@ async fn obtain_certificate_stub(le_config: &LetsEncryptConfig, domain: &str) ->
 // Email testing functions
 
 use rcommerce_core::notification::{EmailNotificationFactory, Notification, NotificationTemplate, TemplateVariables};
-use rcommerce_core::notification::email_templates::{OrderItem, Address};
+use rcommerce_core::notification::email_templates::{OrderItem, Address, OrderConfirmationParams};
 use std::fs::File;
 use std::io::Write;
 
@@ -2253,16 +2253,16 @@ fn generate_order_confirmation_email(recipient: &str) -> rcommerce_core::Result<
         country: "United States".to_string(),
     };
     
-    EmailNotificationFactory::order_confirmation(
-        recipient,
-        "John Doe",
-        "ORD-2026-001234",
-        "Feb 5, 2026",
-        "7,250.00",
-        &items,
-        &shipping,
-        &billing,
-    )
+    EmailNotificationFactory::order_confirmation(OrderConfirmationParams {
+        recipient_email: recipient,
+        customer_name: "John Doe",
+        order_number: "ORD-2026-001234",
+        order_date: "Feb 5, 2026",
+        order_total: "7,250.00",
+        items: &items,
+        shipping_address: &shipping,
+        billing_address: &billing,
+    })
 }
 
 /// Generate a test order shipped email
@@ -2537,7 +2537,10 @@ async fn test_all_email_templates(output_dir: &str, recipient: &str) -> rcommerc
     fs::create_dir_all(output_dir)
         .map_err(|e| rcommerce_core::Error::config(format!("Failed to create output directory: {}", e)))?;
     
-    let generators: Vec<(&str, Box<dyn Fn(&str) -> rcommerce_core::Result<Notification>>)> = vec![
+    /// Type alias for email generator function
+    type EmailGenerator = Box<dyn Fn(&str) -> rcommerce_core::Result<Notification>>;
+    
+    let generators: Vec<(&str, EmailGenerator)> = vec![
         ("order_confirmation", Box::new(generate_order_confirmation_email)),
         ("order_shipped", Box::new(generate_order_shipped_email)),
         ("order_cancelled", Box::new(generate_order_cancelled_email)),

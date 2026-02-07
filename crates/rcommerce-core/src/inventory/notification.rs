@@ -117,6 +117,12 @@ pub struct StockAlertService {
     // - Database logger
 }
 
+impl Default for StockAlertService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StockAlertService {
     pub fn new() -> Self {
         Self {}
@@ -179,7 +185,7 @@ impl StockAlertService {
         let mut body = String::new();
         
         body.push_str(&format!("Low Stock Alert for {}\n", alert.product_name));
-        body.push_str(&format!("Alert Level: {}\n", format!("{:?}", alert.alert_level)));
+        body.push_str(&format!("Alert Level: {:?}\n", alert.alert_level));
         body.push_str(&format!("Current Stock: {}\n", alert.current_stock));
         body.push_str(&format!("Threshold: {}\n", alert.threshold));
         body.push_str(&format!("Recommended Reorder: {}\n", alert.recommended_reorder_quantity));

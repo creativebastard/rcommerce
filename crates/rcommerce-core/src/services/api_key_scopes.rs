@@ -164,8 +164,8 @@ impl Scope {
         }
     }
 
-    /// Convert scope to string
-    pub fn to_string(&self) -> String {
+    /// Convert scope to string representation
+    pub fn as_scope_string(&self) -> String {
         match &self.resource {
             Some(r) => format!("{}:{}", r.as_str(), self.action.as_str()),
             None => self.action.as_str().to_string(),
@@ -187,13 +187,11 @@ impl Scope {
         // Check if action is permitted
         // Admin action includes write and read
         // Write action includes read
-        match (self.action, action) {
-            (Action::Admin, _) => true,
-            (Action::Write, Action::Read) => true,
-            (Action::Write, Action::Write) => true,
-            (Action::Read, Action::Read) => true,
-            _ => false,
-        }
+        matches!((self.action, action), 
+            (Action::Admin, _) | 
+            (Action::Write, Action::Read) | 
+            (Action::Write, Action::Write) | 
+            (Action::Read, Action::Read))
     }
 }
 
@@ -252,7 +250,7 @@ impl ScopeChecker {
 
     /// Get all scopes as strings
     pub fn to_scope_strings(&self) -> Vec<String> {
-        self.scopes.iter().map(|s| s.to_string()).collect()
+        self.scopes.iter().map(|s| s.as_scope_string()).collect()
     }
 }
 

@@ -90,15 +90,25 @@ pub enum SubscribeError {
 }
 
 /// Stub message rate limiter
+#[derive(Default)]
 pub struct MessageRateLimiter;
+
+/// Rate limit check result
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RateLimitResult {
+    /// Rate limit check passed
+    Allowed,
+    /// Rate limit exceeded
+    Limited,
+}
 
 impl MessageRateLimiter {
     pub fn new() -> Self {
         Self
     }
     
-    pub fn check_rate_limit(&self, _msg_type: MessageType) -> Result<(), ()> {
-        Ok(())
+    pub fn check_rate_limit(&self, _msg_type: MessageType) -> RateLimitResult {
+        RateLimitResult::Allowed
     }
 }
 

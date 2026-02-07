@@ -14,6 +14,7 @@ use crate::shipping::{
 };
 
 /// DHL Express API provider
+#[allow(dead_code)]
 pub struct DhlProvider {
     client: reqwest::Client,
     api_key: String,
@@ -50,6 +51,7 @@ impl DhlProvider {
     }
     
     /// Get authentication headers
+    #[allow(dead_code)]
     fn auth_headers(&self) -> Vec<(String, String)> {
         vec![
             ("DHL-API-Key".to_string(), self.api_key.clone()),
@@ -70,6 +72,7 @@ impl DhlProvider {
     }
     
     /// Parse DHL tracking status
+    #[allow(dead_code)]
     fn parse_tracking_status(&self, status: &str) -> TrackingStatus {
         match status.to_uppercase().as_str() {
             "TRANSIT" | "IN TRANSIT" => TrackingStatus::InTransit,

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tracing::{error, info, warn};
 
 use crate::middleware::{admin_middleware, auth_middleware};
-use crate::state::AppState;
+use crate::state::{AppState, AppStateParams};
 use crate::tls::security_headers_middleware;
 use rcommerce_core::config::{TlsConfig, TlsVersion};
 use rcommerce_core::{Config, Result};
@@ -272,8 +272,9 @@ fn build_tls_router(app_state: AppState, tls_config: TlsConfig) -> Router {
 /// Create application state
 async fn create_app_state(config: &Config) -> Result<AppState> {
     use rcommerce_core::cache::RedisPool;
-    use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository};
-    use rcommerce_core::services::{AuthService, CustomerService, ProductService};
+    use rcommerce_core::payment::agnostic::PaymentService;
+    use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository, PostgresSubscriptionRepository};
+    use rcommerce_core::services::{AuthService, CustomerService, ProductService, CouponService, SubscriptionService};
 
     // Initialize database
     let pool = create_pool(
@@ -291,12 +292,15 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     // Initialize repositories
     let product_repo = ProductRepository::new(db.clone());
     let customer_repo = CustomerRepository::new(db.clone());
-    let api_key_repo = PostgresApiKeyRepository::new(pool);
+    let api_key_repo = PostgresApiKeyRepository::new(pool.clone());
+    let subscription_repo = PostgresSubscriptionRepository::new(pool.clone());
 
     // Initialize services
     let product_service = ProductService::new(product_repo);
     let customer_service = CustomerService::new(customer_repo);
     let auth_service = AuthService::new(config.clone());
+    let coupon_service = CouponService::new(db.clone());
+    let payment_service = PaymentService::new(config.payment.clone());
 
     // Initialize Redis (optional)
     let redis = if let Some(redis_url) = &config.cache.redis_url {
@@ -320,14 +324,17 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         None
     };
 
-    Ok(AppState::new(
+    Ok(AppState::new(AppStateParams::new(
         product_service,
         customer_service,
         auth_service,
         db,
         redis,
         api_key_repo,
-    ))
+        subscription_repo,
+        coupon_service,
+        payment_service,
+    )))
 }
 
 async fn health_check() -> &'static str {

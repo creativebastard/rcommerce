@@ -220,7 +220,7 @@ impl RateLimitTracker {
         headers.push(("X-RateLimit-Limit", self.minute_count.to_string()));
         
         // X-RateLimit-Remaining: Requests remaining in current window
-        let remaining = if self.minute_count < 60 { 60 - self.minute_count } else { 0 };
+        let remaining = 60u32.saturating_sub(self.minute_count);
         headers.push(("X-RateLimit-Remaining", remaining.to_string()));
         
         // X-RateLimit-Reset: Unix timestamp when window resets

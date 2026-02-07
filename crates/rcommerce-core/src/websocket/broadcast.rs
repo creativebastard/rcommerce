@@ -7,6 +7,12 @@ use std::collections::HashMap;
 /// Stub broadcast manager  
 pub struct BroadcastManager;
 
+impl Default for BroadcastManager {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl BroadcastManager {
     pub fn new() -> Self {
         Self
@@ -37,7 +43,7 @@ impl BroadcastManager {
 }
 
 /// Stub local broadcaster
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct BroadcastLocal {
     #[allow(dead_code)]
     subscriptions: HashMap<String, Vec<ConnectionId>>,
@@ -45,9 +51,7 @@ pub struct BroadcastLocal {
 
 impl BroadcastLocal {
     pub fn new() -> Self {
-        Self {
-            subscriptions: HashMap::new(),
-        }
+        Self::default()
     }
     
     pub fn subscriber_count(&self, _topic: &str) -> usize {

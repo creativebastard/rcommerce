@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// Main configuration structure for R commerce
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub server: ServerConfig,
@@ -39,25 +39,6 @@ pub struct Config {
     
     #[serde(default)]
     pub dunning: DunningConfig,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-            logging: LoggingConfig::default(),
-            cache: CacheConfig::default(),
-            security: SecurityConfig::default(),
-            media: MediaConfig::default(),
-            notifications: NotificationConfig::default(),
-            rate_limiting: RateLimitConfig::default(),
-            features: FeatureFlags::default(),
-            import: ImportConfig::default(),
-            tls: TlsConfig::default(),
-            dunning: DunningConfig::default(),
-        }
-    }
 }
 
 impl Config {
@@ -345,17 +326,12 @@ fn default_sqlite_path() -> String {
     "./rcommerce.db".to_string()
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum SslMode {
     Disable,
+    #[default]
     Prefer,
     Require,
-}
-
-impl Default for SslMode {
-    fn default() -> Self {
-        SslMode::Prefer
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -649,24 +625,13 @@ impl Default for EmailConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SmsConfig {
     #[serde(default)]
     pub provider: Option<String>,
     pub twilio_account_sid: Option<String>,
     pub twilio_auth_token: Option<String>,
     pub twilio_from_number: Option<String>,
-}
-
-impl Default for SmsConfig {
-    fn default() -> Self {
-        Self {
-            provider: None,
-            twilio_account_sid: None,
-            twilio_auth_token: None,
-            twilio_from_number: None,
-        }
-    }
 }
 
 /// Rate limiting configuration
@@ -782,7 +747,7 @@ impl Default for FeatureFlags {
 }
 
 /// Import configuration for platform API keys and settings
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ImportConfig {
     /// Shopify API configuration
     #[serde(default)]
@@ -803,18 +768,6 @@ pub struct ImportConfig {
     /// Default import options
     #[serde(default)]
     pub default_options: DefaultImportOptions,
-}
-
-impl Default for ImportConfig {
-    fn default() -> Self {
-        Self {
-            shopify: None,
-            woocommerce: None,
-            magento: None,
-            medusa: None,
-            default_options: DefaultImportOptions::default(),
-        }
-    }
 }
 
 /// Platform-specific import configuration
@@ -972,18 +925,13 @@ impl TlsConfig {
 }
 
 /// TLS version enum
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub enum TlsVersion {
     #[serde(rename = "1.2")]
     Tls1_2,
     #[serde(rename = "1.3")]
+    #[default]
     Tls1_3,
-}
-
-impl Default for TlsVersion {
-    fn default() -> Self {
-        TlsVersion::Tls1_3
-    }
 }
 
 fn default_min_tls_version() -> TlsVersion {

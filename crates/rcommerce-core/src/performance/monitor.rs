@@ -12,9 +12,8 @@ pub struct ResourceMonitor {
     pid: usize,
 }
 
-impl ResourceMonitor {
-    /// Create new resource monitor
-    pub fn new() -> Self {
+impl Default for ResourceMonitor {
+    fn default() -> Self {
         let pid = sysinfo::get_current_pid()
             .map(|p| p.as_u32() as usize)
             .unwrap_or(0);
@@ -22,6 +21,13 @@ impl ResourceMonitor {
         system.refresh_all();
         
         Self { system, pid }
+    }
+}
+
+impl ResourceMonitor {
+    /// Create new resource monitor
+    pub fn new() -> Self {
+        Self::default()
     }
     
     /// Get current system metrics

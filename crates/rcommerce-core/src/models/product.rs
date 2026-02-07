@@ -8,10 +8,11 @@ use validator::Validate;
 use super::{Currency, InventoryPolicy, WeightUnit};
 
 /// Product type - determines how the product is sold
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq, Default)]
 #[sqlx(type_name = "product_type", rename_all = "snake_case")]
 pub enum ProductType {
     /// Simple product - single SKU, no variants
+    #[default]
     Simple,
     /// Variable product - has multiple variants (sizes, colors)
     Variable,
@@ -23,29 +24,18 @@ pub enum ProductType {
     Bundle,
 }
 
-impl Default for ProductType {
-    fn default() -> Self {
-        ProductType::Simple
-    }
-}
-
 /// Subscription interval (billing period)
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq, Default)]
 #[sqlx(type_name = "subscription_interval", rename_all = "snake_case")]
 pub enum SubscriptionInterval {
     Daily,
     Weekly,
     BiWeekly,
+    #[default]
     Monthly,
     Quarterly,
     BiAnnually,
     Annually,
-}
-
-impl Default for SubscriptionInterval {
-    fn default() -> Self {
-        SubscriptionInterval::Monthly
-    }
 }
 
 /// Product entity

@@ -222,10 +222,9 @@ impl BroadcastManager {
     
     /// Get total subscriber count (local + Redis)
     pub async fn total_subscriber_count(&self, topic: &Topic) -> usize {
-        let local_count = self.local.subscriber_count(topic);
         // Redis count would come from Redis PUBSUB command
         // For now, return local only
-        local_count
+        self.local.subscriber_count(topic)
     }
 }
 

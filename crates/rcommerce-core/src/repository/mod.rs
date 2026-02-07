@@ -13,8 +13,8 @@ pub mod subscription_repository;
 pub mod statistics_repository;
 
 // Re-export cart, coupon, api_key, subscription, and statistics traits
-pub use cart_repository::CartRepository;
-pub use coupon_repository::CouponRepository;
+pub use cart_repository::{CartRepository, PgCartRepository};
+pub use coupon_repository::{CouponRepository, PgCouponRepository};
 pub use api_key_repository::{ApiKeyRepository, ApiKeyRecord, CreateApiKeyRequest, PostgresApiKeyRepository};
 pub use subscription_repository::{SubscriptionRepository, PostgresSubscriptionRepository};
 pub use statistics_repository::{

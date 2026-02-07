@@ -13,6 +13,7 @@ use crate::shipping::{
 };
 
 /// ShipStation API provider
+#[allow(dead_code)]
 pub struct ShipStationProvider {
     client: reqwest::Client,
     api_key: String,
