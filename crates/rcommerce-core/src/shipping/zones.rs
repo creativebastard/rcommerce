@@ -2,9 +2,7 @@
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
-use crate::{Result, Error};
 use crate::common::Address;
 
 /// Shipping zone definition

@@ -6,7 +6,6 @@
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
-use crate::{Result, Error};
 use super::packaging::Package;
 
 /// Weight converter between different units

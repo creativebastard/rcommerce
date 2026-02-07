@@ -3,9 +3,8 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
 
-use crate::{Result, Error};
+use crate::Result;
 use crate::common::Address;
 use crate::shipping::{
     ShippingProvider, ShippingRate, Shipment, TrackingInfo, TrackingStatus, TrackingEvent,

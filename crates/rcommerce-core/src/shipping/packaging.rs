@@ -4,8 +4,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::Result;
-use super::calculation::{VolumetricWeightCalculator, WeightUnit, LengthUnit};
+use super::calculation::{VolumetricWeightCalculator, WeightUnit};
 
 /// Package information
 #[derive(Debug, Clone, Serialize, Deserialize)]

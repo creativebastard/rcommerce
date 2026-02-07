@@ -6,8 +6,7 @@ pub mod shipstation;
 pub use easypost::EasyPostProvider;
 pub use shipstation::ShipStationProvider;
 
-use crate::Result;
-use crate::shipping::{ShippingRate, Shipment, TrackingInfo, Package, RateOptions, CustomsInfo};
+use crate::shipping::{ShippingRate, Shipment, Package, CustomsInfo};
 use crate::common::Address;
 
 /// Aggregator response with multiple carrier rates

@@ -3,9 +3,9 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
-use crate::{Result, Error};
+use crate::Result;
 use crate::common::Address;
 use crate::shipping::{
     ShippingProvider, ShippingRate, Shipment, TrackingInfo, TrackingStatus, TrackingEvent,
@@ -105,7 +105,7 @@ impl ShippingProvider for DhlProvider {
         options: &RateOptions,
     ) -> Result<Vec<ShippingRate>> {
         // Build rate request
-        let request = DhlRateRequest {
+        let _request = DhlRateRequest {
             customer_details: CustomerDetails {
                 shipper_details: ShipperDetails {
                     postal_code: from_address.zip.clone(),

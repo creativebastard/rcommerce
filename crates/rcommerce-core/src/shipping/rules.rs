@@ -101,7 +101,7 @@ impl RuleCondition {
                 // Would need customer group information
                 false
             }
-            RuleCondition::ShippingMethod { methods } => {
+            RuleCondition::ShippingMethod { methods: _ } => {
                 // Would need selected shipping method
                 false
             }
