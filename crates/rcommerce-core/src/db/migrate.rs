@@ -102,7 +102,19 @@ impl Migrator {
             (8, "add_order_fields", include_str!("../../migrations/008_add_order_fields.sql")),
             (9, "add_address_ids", include_str!("../../migrations/009_add_address_ids.sql")),
             (10, "add_all_order_columns", include_str!("../../migrations/010_add_all_order_columns.sql")),
-            (11, "add_order_item_columns", include_str!("../../migrations/011_add_order_item_columns.sql"))
+            (11, "add_order_item_columns", include_str!("../../migrations/011_add_order_item_columns.sql")),
+            (12, "statistics_views", include_str!("../../migrations/013_statistics_views.sql")),
+            (13, "fix_address_columns", include_str!("../../migrations/014_fix_address_columns.sql")),
+            (14, "add_customer_role", include_str!("../../migrations/015_add_customer_role.sql")),
+            (15, "create_product_categories", include_str!("../../migrations/016_create_product_categories.sql")),
+            (16, "create_fulfillments", include_str!("../../migrations/017_create_fulfillments.sql")),
+            (17, "create_order_notes", include_str!("../../migrations/018_create_order_notes.sql")),
+            (18, "create_subscription_items", include_str!("../../migrations/019_create_subscription_items.sql")),
+            (19, "create_collections", include_str!("../../migrations/020_create_collections.sql")),
+            (20, "fix_coupon_applications_fk", include_str!("../../migrations/021_fix_coupon_applications_fk.sql")),
+            (21, "digital_products", include_str!("../../migrations/022_digital_products.sql")),
+            (22, "order_downloads", include_str!("../../migrations/023_order_downloads.sql")),
+            (23, "bundle_components", include_str!("../../migrations/024_bundle_components.sql"))
         ];
 
         for (version, name, sql) in migrations {

@@ -6,10 +6,10 @@ use crate::import::{
     PlatformImporter,
 };
 use crate::models::{
-    CreateProductRequest, CreateCustomerRequest, Currency, ProductType,
+    CreateProductRequest, UpdateProductRequest, Currency, ProductType,
     InventoryPolicy, WeightUnit, OrderStatus, PaymentStatus, FulfillmentStatus,
 };
-use crate::repository::{ProductRepository, CustomerRepository, Database};
+use crate::repository::{ProductRepository, Database};
 
 use async_trait::async_trait;
 use reqwest::Client;
@@ -284,7 +284,7 @@ impl PlatformImporter for WooCommerceImporter {
             if dry_run {
                 stats.created += 1;
             } else {
-                // Create product in database
+                // Create product in database using repository pattern
                 if let Some(ref pool) = pool {
                     // Generate slug for lookup
                     let slug = if product.slug.is_empty() {
@@ -293,14 +293,13 @@ impl PlatformImporter for WooCommerceImporter {
                         product.slug.clone()
                     };
 
-                    // Check for existing product by slug using raw SQL to avoid file_url column issue
-                    let existing: Option<(Uuid,)> = sqlx::query_as(
-                        "SELECT id FROM products WHERE slug = $1"
-                    )
-                    .bind(&slug)
-                    .fetch_optional(pool)
-                    .await
-                    .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+                    // Create repository
+                    let db = Database::new(pool.clone());
+                    let repo = ProductRepository::new(db);
+
+                    // Check for existing product by slug
+                    let existing = repo.find_by_slug(&slug).await
+                        .map_err(|e| ImportError::Database(e))?;
 
                     // Parse price - use sale_price if available, otherwise regular_price or price
                     let price = if !product.sale_price.is_empty() && product.sale_price != "0" {
@@ -326,36 +325,48 @@ impl PlatformImporter for WooCommerceImporter {
                         _ => ProductType::Simple,
                     };
 
-                    if let Some((existing_id,)) = existing {
+                    if let Some(existing_product) = existing {
                         // Product exists - check if we should update
                         if config.options.update_existing {
-                            // Update existing product using raw SQL
-                            match sqlx::query(
-                                r#"
-                                UPDATE products SET 
-                                    title = $1, 
-                                    description = $2, 
-                                    price = $3,
-                                    compare_at_price = $4,
-                                    inventory_quantity = $5,
-                                    sku = $6,
-                                    product_type = $7,
-                                    is_active = $8,
-                                    updated_at = NOW()
-                                WHERE id = $9
-                                "#
-                            )
-                            .bind(&product.name)
-                            .bind(&product.description)
-                            .bind(price)
-                            .bind(compare_at_price)
-                            .bind(product.stock_quantity.unwrap_or(0))
-                            .bind(&product.sku)
-                            .bind(format!("{:?}", product_type).to_lowercase())
-                            .bind(product.status == "publish")
-                            .bind(existing_id)
-                            .execute(pool)
-                            .await {
+                            // Update existing product using repository
+                            let update_request = UpdateProductRequest {
+                                title: Some(product.name.clone()),
+                                slug: None, // Keep existing slug
+                                description: Some(product.description.clone()),
+                                sku: Some(product.sku.clone()),
+                                price: Some(price),
+                                compare_at_price: Some(compare_at_price),
+                                cost_price: None,
+                                currency: None,
+                                inventory_quantity: Some(product.stock_quantity.unwrap_or(0)),
+                                inventory_policy: None,
+                                inventory_management: Some(product.manage_stock),
+                                continues_selling_when_out_of_stock: None,
+                                weight: None,
+                                weight_unit: None,
+                                requires_shipping: None,
+                                is_active: Some(product.status == "publish"),
+                                is_featured: None,
+                                seo_title: Some(Some(product.name.clone())),
+                                seo_description: Some(product.short_description.clone()),
+                                product_type: Some(product_type),
+                                subscription_interval: None,
+                                subscription_interval_count: None,
+                                subscription_trial_days: None,
+                                subscription_setup_fee: None,
+                                subscription_min_cycles: None,
+                                subscription_max_cycles: None,
+                                file_url: None,
+                                file_size: None,
+                                file_hash: None,
+                                download_limit: None,
+                                license_key_enabled: None,
+                                download_expiry_days: None,
+                                bundle_pricing_strategy: None,
+                                bundle_discount_percentage: None,
+                            };
+
+                            match repo.update_with_request(existing_product.id, update_request).await {
                                 Ok(_) => {
                                     stats.updated += 1;
                                     tracing::info!("Updated product: {}", product.name);
@@ -381,10 +392,6 @@ impl PlatformImporter for WooCommerceImporter {
                         }
                     } else {
                         // Create new product
-                        let db = Database::new(pool.clone());
-                        let repo = ProductRepository::new(db);
-
-                        // Create product request
                         let create_request = CreateProductRequest {
                             title: product.name.clone(),
                             slug: if product.slug.is_empty() {
