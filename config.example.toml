@@ -308,8 +308,9 @@ continue_on_error = true
 # "X-Shopify-Access-Token" = "your-access-token"
 
 # WooCommerce import configuration
-# [import.woocommerce]
-# api_url = "https://your-store.com/wp-json/wc/v3"
+# [import.platforms.woocommerce]
+# # Base store URL (without /wp-json/wc/v3 - that path is added automatically)
+# api_url = "https://your-store.com"
 # api_key = "your-consumer-key"
 # api_secret = "your-consumer-secret"
 # entities = ["products", "customers", "orders"]

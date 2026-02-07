@@ -111,10 +111,20 @@ curl -X GET "https://yourstore.com/wp-json/wc/v3/products?per_page=100" \
 
 ### Import to R Commerce
 
+> **Note:** For WooCommerce platform imports, use the base store URL (e.g., `https://your-store.com`). 
+> The `/wp-json/wc/v3` path is added automatically by the importer.
+
 ```bash
-# Import products
+# Import products from file
 rcommerce import woocommerce products \
   --source woocommerce_products.json \
+  --config config.toml
+
+# Import directly from WooCommerce API
+rcommerce import platform woocommerce \
+  --api-url https://your-store.com \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET \
   --config config.toml
 
 # Import with attribute mapping

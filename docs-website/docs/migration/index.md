@@ -85,7 +85,7 @@ rcommerce import platform shopify \
 # Import from WooCommerce
 rcommerce import platform woocommerce \
   -c config.toml \
-  --api-url https://your-store.com/wp-json/wc/v3 \
+  --api-url https://your-store.com \
   --api-key YOUR_CONSUMER_KEY \
   --api-secret YOUR_CONSUMER_SECRET
 ```

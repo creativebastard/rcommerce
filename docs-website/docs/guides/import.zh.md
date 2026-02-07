@@ -111,10 +111,20 @@ curl -X GET "https://yourstore.com/wp-json/wc/v3/products?per_page=100" \
 
 ### 导入到 R Commerce
 
+> **注意：** 对于 WooCommerce 平台导入，请使用基础商店 URL（例如 `https://your-store.com`）。
+> `/wp-json/wc/v3` 路径将由导入器自动添加。
+
 ```bash
-# 导入产品
+# 从文件导入产品
 rcommerce import woocommerce products \
   --source woocommerce_products.json \
+  --config config.toml
+
+# 直接从 WooCommerce API 导入
+rcommerce import platform woocommerce \
+  --api-url https://your-store.com \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET \
   --config config.toml
 
 # 带属性映射导入
