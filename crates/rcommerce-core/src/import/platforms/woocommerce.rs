@@ -244,8 +244,18 @@ impl PlatformImporter for WooCommerceImporter {
 
         // Create database pool and repository if not dry run
         let pool = if !dry_run {
-            Some(self.create_pool(&config.database_url).await?)
+            match self.create_pool(&config.database_url).await {
+                Ok(pool) => {
+                    tracing::info!("Database pool created successfully");
+                    Some(pool)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to create database pool: {}", e);
+                    return Err(e);
+                }
+            }
         } else {
+            tracing::info!("Dry run mode - no database connection needed");
             None
         };
 
@@ -364,15 +374,18 @@ impl PlatformImporter for WooCommerceImporter {
                     match repo.create_with_request(create_request).await {
                         Ok(_created_product) => {
                             stats.created += 1;
+                            tracing::info!("Created product: {}", product.name);
                             // TODO: Import product images if available
                             // TODO: Import product categories if available
                         }
                         Err(e) => {
                             stats.errors += 1;
-                            stats.error_details.push(format!(
+                            let error_msg = format!(
                                 "Failed to create product '{}': {}",
                                 product.name, e
-                            ));
+                            );
+                            tracing::error!("{}", error_msg);
+                            stats.error_details.push(error_msg);
                             if !config.options.continue_on_error {
                                 break;
                             }

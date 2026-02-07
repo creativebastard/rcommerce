@@ -1021,6 +1021,8 @@ async fn main() -> Result<()> {
                                 all_stats.updated += stats.updated;
                                 all_stats.skipped += stats.skipped;
                                 all_stats.errors += stats.errors;
+                                all_stats.error_details.extend(stats.error_details);
+                                all_stats.total += stats.total;
                             }
                             Err(e) => {
                                 eprintln!("\n{}", format!("❌ Error importing {}: {}", entity, e).red());
