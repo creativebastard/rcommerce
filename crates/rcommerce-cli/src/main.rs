@@ -978,16 +978,64 @@ async fn main() -> Result<()> {
                         std::io::Write::flush(&mut std::io::stdout()).unwrap();
                     };
                     
-                    // Run import
-                    let result = match final_entities.as_str() {
-                        "products" => importer.import_products(&import_config, &progress).await,
-                        "customers" => importer.import_customers(&import_config, &progress).await,
-                        "orders" => importer.import_orders(&import_config, &progress).await,
-                        "all" => importer.import_all(&import_config, &progress).await,
-                        _ => {
-                            eprintln!("{}", format!("❌ Invalid entity type: {}", final_entities).red());
-                            std::process::exit(1);
+                    // Parse and validate entity types
+                    let entity_list: Vec<&str> = if final_entities == "all" {
+                        vec!["all"]
+                    } else {
+                        final_entities.split(',').map(|s| s.trim()).collect()
+                    };
+                    
+                    // Validate all entity types first
+                    for entity in &entity_list {
+                        match *entity {
+                            "products" | "customers" | "orders" | "all" => {},
+                            _ => {
+                                eprintln!("{}", format!("❌ Invalid entity type: {}", entity).red());
+                                std::process::exit(1);
+                            }
                         }
+                    }
+                    
+                    // Run imports for each entity type
+                    let mut all_stats = rcommerce_core::import::ImportStats::default();
+                    let mut has_error = false;
+                    
+                    for entity in entity_list {
+                        if entity == "all" {
+                            println!("\n  {}", "Importing all entities...".bold());
+                        } else {
+                            println!("\n  {} {}", "Importing".bold(), entity.cyan());
+                        }
+                        
+                        let result = match entity {
+                            "products" => importer.import_products(&import_config, &progress).await,
+                            "customers" => importer.import_customers(&import_config, &progress).await,
+                            "orders" => importer.import_orders(&import_config, &progress).await,
+                            "all" => importer.import_all(&import_config, &progress).await,
+                            _ => unreachable!(),
+                        };
+                        
+                        match result {
+                            Ok(stats) => {
+                                all_stats.created += stats.created;
+                                all_stats.updated += stats.updated;
+                                all_stats.skipped += stats.skipped;
+                                all_stats.errors += stats.errors;
+                            }
+                            Err(e) => {
+                                eprintln!("\n{}", format!("❌ Error importing {}: {}", entity, e).red());
+                                has_error = true;
+                                if !import_config.options.continue_on_error {
+                                    std::process::exit(1);
+                                }
+                            }
+                        }
+                    }
+                    
+                    let result = if has_error {
+                        Err(rcommerce_core::Error::internal("One or more imports failed"))
+                    } else {
+                        Ok(all_stats)
                     };
                     
                     println!(); // New line after progress
