@@ -567,8 +567,11 @@ quality = 85
 # SHIPPING CONFIGURATION
 # ============================================================================
 [shipping]
-# Default shipping provider: manual, shipstation, easypost, or shippo
-provider = "manual"
+# Default shipping provider: manual, dhl, fedex, ups, usps, shipstation, easypost, or shippo
+default_provider = "manual"
+
+# Enable test mode for shipping (use sandbox APIs)
+test_mode = true
 
 # Default shipping origin address
 [shipping.origin]
@@ -581,7 +584,42 @@ country = "US"
 zip = "94102"
 phone = "+1-555-123-4567"
 
-# Shipping providers
+# DHL Express Configuration
+# Get credentials from: https://developer.dhl.com/
+[shipping.dhl]
+enabled = false
+api_key = "${DHL_API_KEY}"
+api_secret = "${DHL_API_SECRET}"
+account_number = "${DHL_ACCOUNT_NUMBER}"
+sandbox = true
+
+# FedEx Configuration
+# Get credentials from: https://developer.fedex.com/
+[shipping.fedex]
+enabled = false
+api_key = "${FEDEX_API_KEY}"
+api_secret = "${FEDEX_API_SECRET}"
+account_number = "${FEDEX_ACCOUNT_NUMBER}"
+sandbox = true
+
+# UPS Configuration
+# Get credentials from: https://developer.ups.com/
+[shipping.ups]
+enabled = false
+api_key = "${UPS_API_KEY}"
+username = "${UPS_USERNAME}"
+password = "${UPS_PASSWORD}"
+account_number = "${UPS_ACCOUNT_NUMBER}"
+sandbox = true
+
+# USPS Configuration
+# Get credentials from: https://developer.usps.com/
+[shipping.usps]
+enabled = false
+api_key = "${USPS_API_KEY}"
+sandbox = true
+
+# Third-party Shipping Aggregators
 [shipping.shipstation]
 enabled = false
 api_key = "${SHIPSTATION_API_KEY}"

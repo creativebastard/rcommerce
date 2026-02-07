@@ -110,6 +110,8 @@ plugins:
             WeChat Pay: 微信支付
             Guides: 指南
             API Keys: API 密钥
+            Rate Limiting: 速率限制
+            Import Guide: 导入指南
             Working with Webhooks: Webhook 使用
             Error Handling: 错误处理
             Testing: 测试
@@ -129,6 +131,7 @@ plugins:
             launchd: launchd
             Kubernetes: Kubernetes
             Binary: 二进制
+            TLS Configuration: TLS 配置
             Reverse Proxies: 反向代理
             Caddy: Caddy
             Nginx: Nginx
@@ -149,6 +152,8 @@ plugins:
             Subscription Lifecycle: 订阅生命周期
             Development: 开发
             Local Setup: 本地设置
+            Database Migrations: 数据库迁移
+            Email Templates: 邮件模板
             Contributing: 贡献
             CLI Reference: CLI 参考
             Migration: 迁移
@@ -290,7 +295,9 @@ nav:
   
   - Guides:
     - API Keys: guides/api-keys.md
+    - Rate Limiting: guides/rate-limiting.md
     - Shipping Configuration: guides/shipping.md
+    - Import Guide: guides/import.md
     - Dunning Management: guides/dunning.md
     - Notifications: guides/notifications.md
   
@@ -308,6 +315,7 @@ nav:
       - launchd: deployment/macos/launchd.md
     - Kubernetes: deployment/kubernetes.md
     - Binary: deployment/binary.md
+    - TLS Configuration: deployment/tls.md
     - Reverse Proxies:
       - Caddy: deployment/reverse-proxies/caddy.md
       - Nginx: deployment/reverse-proxies/nginx.md
@@ -330,6 +338,8 @@ nav:
   - Development:
     - Overview: development/index.md
     - Local Setup: development/local-setup.md
+    - Database Migrations: development/migrations.md
+    - Email Templates: development/email-templates.md
     - Contributing: development/contributing.md
     - Testing: development/testing.md
     - CLI Reference: development/cli-reference.md

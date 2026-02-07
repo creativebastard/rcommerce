@@ -1,5 +1,8 @@
 # GraphQL API
 
+!!! warning "即将推出"
+    GraphQL API 计划在未来版本（v0.2）中发布。以下文档描述了计划的实现，可能会有变更。
+
 GraphQL API 提供灵活、类型安全的查询语言，用于访问您的 R Commerce 数据。
 
 ## 概览

@@ -1,3 +1,5 @@
+pub mod products;
+
 use crate::state::AppState;
 use axum::{extract::State, routing::get, Json, Router};
 
@@ -24,6 +26,7 @@ pub async fn list_api_keys(State(_state): State<AppState>) -> Json<serde_json::V
 /// Router for admin routes
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/stats", get(get_stats))
-        .route("/api-keys", get(list_api_keys))
+        .route("/admin/stats", get(get_stats))
+        .route("/admin/api-keys", get(list_api_keys))
+        .merge(products::router())
 }

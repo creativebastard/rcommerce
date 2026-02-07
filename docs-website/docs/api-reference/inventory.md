@@ -1,5 +1,8 @@
 # Inventory API
 
+!!! warning "Module Only - API Coming Soon"
+    The Inventory module is implemented for internal use with product stock tracking. The public REST API endpoints described below are planned for release in v0.2. Basic inventory operations are available through the product API.
+
 The Inventory API provides comprehensive stock management including inventory levels, stock reservations, movements, and low stock alerts. It supports multi-location inventory tracking and automated stock reservation for orders.
 
 ## Base URL

@@ -1,6 +1,6 @@
 //! Cart Service
 //!
-//! Handles all cart-related business logic.
+//! Handles all cart-related business logic including bundle product expansion.
 
 use std::sync::Arc;
 
@@ -14,8 +14,8 @@ use crate::{
         Cart, CartItem, CartWithItems, CartIdentifier, AddToCartInput, 
         UpdateCartItemInput, ApplyCouponInput,
     },
-    repository::{CartRepository, CouponRepository},
-    services::CouponService,
+    repository::{CartRepository, CouponRepository, Database},
+    services::{CouponService, BundleService},
 };
 
 /// Cart service for managing shopping carts
@@ -23,6 +23,8 @@ pub struct CartService {
     cart_repo: Arc<dyn CartRepository>,
     coupon_repo: Arc<dyn CouponRepository>,
     coupon_service: Arc<CouponService>,
+    bundle_service: Option<Arc<BundleService>>,
+    db: Option<Database>,
 }
 
 impl CartService {
@@ -36,7 +38,27 @@ impl CartService {
             cart_repo,
             coupon_repo,
             coupon_service,
+            bundle_service: None,
+            db: None,
         }
+    }
+
+    /// Create a new cart service with bundle support
+    pub fn with_bundle_service(
+        mut self,
+        bundle_service: Arc<BundleService>,
+    ) -> Self {
+        self.bundle_service = Some(bundle_service);
+        self
+    }
+
+    /// Create a new cart service with database access (for bundle expansion)
+    pub fn with_database(
+        mut self,
+        db: Database,
+    ) -> Self {
+        self.db = Some(db);
+        self
     }
 
     /// Get or create a cart for a customer or session
@@ -179,6 +201,91 @@ impl CartService {
         Ok(item)
     }
 
+    /// Add a bundle product to cart (expands into components)
+    pub async fn add_bundle_item(
+        &self,
+        cart_id: Uuid,
+        bundle_product_id: Uuid,
+        quantity: i32,
+        bundle_details: BundleCartDetails,
+    ) -> Result<Vec<CartItem>> {
+        // Verify cart exists and is not converted
+        let cart = self.cart_repo
+            .find_by_id(cart_id)
+            .await?
+            .ok_or_else(|| Error::not_found("Cart not found"))?;
+
+        if cart.converted_to_order {
+            return Err(Error::validation("Cart has already been converted to an order"));
+        }
+
+        let mut added_items = Vec::new();
+
+        // Add the bundle parent item
+        let mut parent_item = CartItem {
+            id: Uuid::new_v4(),
+            cart_id,
+            product_id: bundle_product_id,
+            variant_id: None,
+            quantity,
+            unit_price: bundle_details.bundle_price,
+            original_price: bundle_details.original_price,
+            subtotal: Decimal::ZERO,
+            discount_amount: Decimal::ZERO,
+            total: Decimal::ZERO,
+            sku: bundle_details.sku,
+            title: bundle_details.title,
+            variant_title: Some("Bundle".to_string()),
+            image_url: bundle_details.image_url,
+            requires_shipping: bundle_details.requires_shipping,
+            is_gift_card: false,
+            custom_attributes: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+
+        parent_item.calculate_totals();
+        self.cart_repo.add_item(&parent_item).await?;
+        added_items.push(parent_item);
+
+        // Add bundle component items
+        for component in bundle_details.components {
+            let mut item = CartItem {
+                id: Uuid::new_v4(),
+                cart_id,
+                product_id: component.product_id,
+                variant_id: None,
+                quantity: component.quantity * quantity,
+                unit_price: component.unit_price,
+                original_price: component.unit_price,
+                subtotal: Decimal::ZERO,
+                discount_amount: Decimal::ZERO,
+                total: Decimal::ZERO,
+                sku: component.sku,
+                title: component.title,
+                variant_title: Some(format!("Bundle Component ({}x)", component.quantity)),
+                image_url: component.image_url,
+                requires_shipping: component.requires_shipping,
+                is_gift_card: false,
+                custom_attributes: Some(serde_json::json!({
+                    "bundle_parent_id": bundle_product_id.to_string(),
+                    "is_bundle_component": true
+                })),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            };
+
+            item.calculate_totals();
+            self.cart_repo.add_item(&item).await?;
+            added_items.push(item);
+        }
+
+        // Recalculate cart totals
+        self.recalculate_cart(cart_id).await?;
+
+        Ok(added_items)
+    }
+
     /// Update cart item quantity
     pub async fn update_item(&self, cart_id: Uuid, item_id: Uuid, input: UpdateCartItemInput) -> Result<CartItem> {
         let mut item = self.cart_repo
@@ -284,8 +391,11 @@ impl CartService {
             .await?
             .ok_or_else(|| Error::not_found("Cart not found"))?;
 
-        // Calculate subtotals
-        cart.subtotal = items.iter().map(|i| i.subtotal).sum();
+        // Calculate subtotals (only count parent items, not bundle components)
+        cart.subtotal = items.iter()
+            .filter(|i| !self.is_bundle_component(i))
+            .map(|i| i.subtotal)
+            .sum();
         
         // Calculate discount if coupon applied
         cart.discount_total = if let Some(ref coupon_code) = cart.coupon_code {
@@ -298,8 +408,9 @@ impl CartService {
             Decimal::ZERO
         };
 
-        // Apply discount to items proportionally
-        for mut item in items {
+        // Apply discount to items proportionally (only to parent items)
+        let parent_items: Vec<_> = items.iter().filter(|i| !self.is_bundle_component(i)).cloned().collect();
+        for mut item in parent_items {
             let item_ratio = if cart.subtotal > Decimal::ZERO {
                 item.subtotal / cart.subtotal
             } else {
@@ -316,6 +427,15 @@ impl CartService {
 
         self.cart_repo.update(&cart).await?;
         Ok(())
+    }
+
+    /// Check if a cart item is a bundle component
+    fn is_bundle_component(&self, item: &CartItem) -> bool {
+        item.custom_attributes
+            .as_ref()
+            .and_then(|attrs| attrs.get("is_bundle_component"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false)
     }
 
     /// Merge guest cart into customer cart
@@ -418,4 +538,28 @@ pub struct ProductDetails {
     pub image_url: Option<String>,
     pub requires_shipping: bool,
     pub is_gift_card: bool,
+}
+
+/// Bundle component details for cart
+#[derive(Debug, Clone)]
+pub struct BundleComponentDetails {
+    pub product_id: Uuid,
+    pub quantity: i32,
+    pub unit_price: Decimal,
+    pub sku: Option<String>,
+    pub title: String,
+    pub image_url: Option<String>,
+    pub requires_shipping: bool,
+}
+
+/// Bundle details for adding to cart
+#[derive(Debug, Clone)]
+pub struct BundleCartDetails {
+    pub bundle_price: Decimal,
+    pub original_price: Decimal,
+    pub sku: Option<String>,
+    pub title: String,
+    pub image_url: Option<String>,
+    pub requires_shipping: bool,
+    pub components: Vec<BundleComponentDetails>,
 }

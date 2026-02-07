@@ -1,5 +1,8 @@
 # Shipping API
 
+!!! warning "Module Only - API Coming Soon"
+    The Shipping module is implemented for internal use. The public REST API endpoints described below are planned for release in v0.2. For now, shipping functionality is available through the core library and order management system.
+
 The Shipping API provides comprehensive shipping management including rate calculation, shipment creation, tracking, and carrier management.
 
 ## Base URL

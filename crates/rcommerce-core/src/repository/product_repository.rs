@@ -6,7 +6,7 @@ use crate::{
     Result, Pagination, SortParams, SortDirection,
     models::{
         Product, ProductVariant, ProductImage, ProductFilter,
-        CreateProductRequest, UpdateProductRequest
+        CreateProductRequest, UpdateProductRequest, BundleComponent
     },
     traits::Repository,
 };
@@ -135,6 +135,25 @@ impl ProductRepository {
         
         Ok(images)
     }
+
+    /// Find bundle components for a product
+    pub async fn find_bundle_components(&self, product_id: Uuid) -> Result<Vec<BundleComponent>> {
+        let components = sqlx::query_as::<_, BundleComponent>(
+            r#"
+            SELECT bc.*, 
+                p.id as "component_product_id", p.title, p.slug, p.price
+            FROM bundle_components bc
+            JOIN products p ON bc.component_product_id = p.id
+            WHERE bc.bundle_product_id = $1
+            ORDER BY bc.sort_order, bc.created_at
+            "#
+        )
+        .bind(product_id)
+        .fetch_all(self.db.pool())
+        .await?;
+        
+        Ok(components)
+    }
 }
 
 #[async_trait]
@@ -185,12 +204,15 @@ impl ProductRepository {
         let product = sqlx::query_as::<_, Product>(
             r#"
             INSERT INTO products (
-                title, slug, description, sku, price, compare_at_price, cost_price,
+                title, slug, description, sku, product_type, price, compare_at_price, cost_price,
                 currency, inventory_quantity, inventory_policy, inventory_management,
                 continues_selling_when_out_of_stock, weight, weight_unit, requires_shipping,
-                is_active, is_featured, seo_title, seo_description
+                is_active, is_featured, seo_title, seo_description,
+                file_url, file_size, file_hash, download_limit, license_key_enabled, download_expiry_days,
+                bundle_pricing_strategy, bundle_discount_percentage
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                    $21, $22, $23, $24, $25, $26, $27, $28)
             RETURNING *
             "#
         )
@@ -198,6 +220,7 @@ impl ProductRepository {
         .bind(request.slug)
         .bind(request.description)
         .bind(request.sku)
+        .bind(request.product_type)
         .bind(request.price)
         .bind(request.compare_at_price)
         .bind(request.cost_price)
@@ -213,6 +236,16 @@ impl ProductRepository {
         .bind(request.is_featured)
         .bind(request.seo_title)
         .bind(request.seo_description)
+        // Digital product fields
+        .bind(request.file_url)
+        .bind(request.file_size)
+        .bind(request.file_hash)
+        .bind(request.download_limit)
+        .bind(request.license_key_enabled)
+        .bind(request.download_expiry_days)
+        // Bundle product fields
+        .bind(request.bundle_pricing_strategy)
+        .bind(request.bundle_discount_percentage)
         .fetch_one(self.db.pool())
         .await?;
         
@@ -230,6 +263,15 @@ impl ProductRepository {
         let has_description = request.description.is_some();
         let has_price = request.price.is_some();
         let has_is_active = request.is_active.is_some();
+        let has_product_type = request.product_type.is_some();
+        let has_file_url = request.file_url.is_some();
+        let has_file_size = request.file_size.is_some();
+        let has_file_hash = request.file_hash.is_some();
+        let has_download_limit = request.download_limit.is_some();
+        let has_license_key_enabled = request.license_key_enabled.is_some();
+        let has_download_expiry_days = request.download_expiry_days.is_some();
+        let has_bundle_pricing_strategy = request.bundle_pricing_strategy.is_some();
+        let has_bundle_discount_percentage = request.bundle_discount_percentage.is_some();
         
         if has_title {
             param_count += 1;
@@ -250,6 +292,42 @@ impl ProductRepository {
         if has_is_active {
             param_count += 1;
             sets.push(format!("is_active = ${}", param_count));
+        }
+        if has_product_type {
+            param_count += 1;
+            sets.push(format!("product_type = ${}", param_count));
+        }
+        if has_file_url {
+            param_count += 1;
+            sets.push(format!("file_url = ${}", param_count));
+        }
+        if has_file_size {
+            param_count += 1;
+            sets.push(format!("file_size = ${}", param_count));
+        }
+        if has_file_hash {
+            param_count += 1;
+            sets.push(format!("file_hash = ${}", param_count));
+        }
+        if has_download_limit {
+            param_count += 1;
+            sets.push(format!("download_limit = ${}", param_count));
+        }
+        if has_license_key_enabled {
+            param_count += 1;
+            sets.push(format!("license_key_enabled = ${}", param_count));
+        }
+        if has_download_expiry_days {
+            param_count += 1;
+            sets.push(format!("download_expiry_days = ${}", param_count));
+        }
+        if has_bundle_pricing_strategy {
+            param_count += 1;
+            sets.push(format!("bundle_pricing_strategy = ${}", param_count));
+        }
+        if has_bundle_discount_percentage {
+            param_count += 1;
+            sets.push(format!("bundle_discount_percentage = ${}", param_count));
         }
         
         if sets.is_empty() {
@@ -280,6 +358,33 @@ impl ProductRepository {
         }
         if let Some(is_active) = request.is_active {
             query_builder = query_builder.bind(is_active);
+        }
+        if let Some(product_type) = request.product_type {
+            query_builder = query_builder.bind(product_type);
+        }
+        if let Some(file_url) = request.file_url {
+            query_builder = query_builder.bind(file_url);
+        }
+        if let Some(file_size) = request.file_size {
+            query_builder = query_builder.bind(file_size);
+        }
+        if let Some(file_hash) = request.file_hash {
+            query_builder = query_builder.bind(file_hash);
+        }
+        if let Some(download_limit) = request.download_limit {
+            query_builder = query_builder.bind(download_limit);
+        }
+        if let Some(license_key_enabled) = request.license_key_enabled {
+            query_builder = query_builder.bind(license_key_enabled);
+        }
+        if let Some(download_expiry_days) = request.download_expiry_days {
+            query_builder = query_builder.bind(download_expiry_days);
+        }
+        if let Some(bundle_pricing_strategy) = request.bundle_pricing_strategy {
+            query_builder = query_builder.bind(bundle_pricing_strategy);
+        }
+        if let Some(bundle_discount_percentage) = request.bundle_discount_percentage {
+            query_builder = query_builder.bind(bundle_discount_percentage);
         }
         query_builder = query_builder.bind(id);
         

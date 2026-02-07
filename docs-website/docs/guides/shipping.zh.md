@@ -46,25 +46,123 @@ test_mode = true
 
 ### 获取承运商凭证
 
-**UPS：**
+#### UPS
+
 1. 在 [UPS Developer Kit](https://developer.ups.com/) 注册
 2. 为您的账户申请 API 访问权限
 3. 在开发者门户生成 API 凭证
 
-**FedEx：**
+**所需凭证：**
+- API 密钥
+- 用户名
+- 密码
+- 账户号码
+
+**可用的 UPS 服务：**
+- UPS Ground
+- UPS 3 Day Select
+- UPS 2nd Day Air
+- UPS Next Day Air
+- UPS Worldwide Express
+
+#### FedEx
+
 1. 在 [FedEx Developer Portal](https://developer.fedex.com/) 创建账户
 2. 注册您的应用程序
 3. 获取 API 密钥和密钥
 
-**DHL：**
+**所需凭证：**
+- API 密钥
+- API 密钥
+- 账户号码
+- 仪表号码（某些服务需要）
+
+**可用的 FedEx 服务：**
+- FedEx Ground
+- FedEx Express Saver
+- FedEx 2Day
+- FedEx Priority Overnight
+- FedEx International Priority
+
+#### DHL
+
 1. 在 [DHL API Developer Portal](https://developer.dhl.com/) 注册
 2. 订阅 Express API
 3. 获取您的 API 凭证
 
-**EasyPost（推荐用于多个承运商）：**
+**所需凭证：**
+- API 密钥
+- API 密钥
+- 账户号码
+
+**可用的 DHL 服务：**
+- DHL Express Worldwide
+- DHL Express 9:00
+- DHL Express 10:30
+- DHL Express 12:00
+
+#### USPS
+
+1. 在 [USPS Web Tools](https://www.usps.com/business/web-tools-apis/) 注册
+2. 申请 API 访问权限
+3. 通过电子邮件接收凭证
+
+**所需凭证：**
+- 用户 ID
+- 密码（某些服务需要）
+
+**可用的 USPS 服务：**
+- First-Class Mail
+- Priority Mail
+- Priority Mail Express
+- Parcel Select
+
+#### EasyPost（推荐用于多个承运商）
+
 1. 在 [EasyPost](https://www.easypost.com/) 创建账户
 2. 从仪表板复制您的 API 密钥
 3. 通过 EasyPost 界面添加承运商账户
+
+**所需凭证：**
+- API 密钥（测试或生产）
+
+**EasyPost 功能：**
+- 100 多个承运商的统一 API
+- 自动承运商账户管理
+- 地址验证
+- 保险选项
+
+### API 凭证设置
+
+使用环境变量安全存储凭证：
+
+```bash
+# .env 文件
+UPS_API_KEY=your_ups_key
+UPS_USERNAME=your_ups_username
+UPS_PASSWORD=your_ups_password
+UPS_ACCOUNT=your_ups_account
+
+FEDEX_API_KEY=your_fedex_key
+FEDEX_SECRET=your_fedex_secret
+FEDEX_ACCOUNT=your_fedex_account
+
+DHL_API_KEY=your_dhl_key
+DHL_SECRET=your_dhl_secret
+
+EASYPOST_API_KEY=your_easypost_key
+```
+
+在配置中引用：
+
+```toml
+[shipping.ups]
+api_key = "${UPS_API_KEY}"
+username = "${UPS_USERNAME}"
+password = "${UPS_PASSWORD}"
+account_number = "${UPS_ACCOUNT}"
+test_mode = false
+```
 
 ## 步骤 2：设置运输区域
 

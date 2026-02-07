@@ -1,5 +1,8 @@
 # Webhooks API
 
+!!! info "Implementation Status"
+    Payment webhooks are fully implemented. Order, product, and customer webhooks are available with basic functionality. Advanced webhook features like delivery logs and retry configuration are planned for v0.2.
+
 The Webhooks API allows you to receive real-time event notifications via HTTP callbacks.
 
 ## Overview

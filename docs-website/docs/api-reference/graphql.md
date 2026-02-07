@@ -1,5 +1,8 @@
 # GraphQL API
 
+!!! warning "Coming Soon"
+    The GraphQL API is planned for a future release (v0.2). The documentation below describes the planned implementation and is subject to change.
+
 The GraphQL API provides a flexible, type-safe query language for accessing your R Commerce data.
 
 ## Overview

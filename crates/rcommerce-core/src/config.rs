@@ -39,6 +39,12 @@ pub struct Config {
     
     #[serde(default)]
     pub dunning: DunningConfig,
+    
+    #[serde(default)]
+    pub payment: PaymentConfig,
+    
+    #[serde(default)]
+    pub shipping: ShippingConfig,
 }
 
 impl Config {
@@ -1258,6 +1264,269 @@ fn default_cancellation_template() -> String {
 
 fn default_recovered_template() -> String {
     "dunning/recovered".to_string()
+}
+
+/// Payment gateway configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PaymentConfig {
+    /// Default payment gateway ID
+    #[serde(default = "default_payment_gateway")]
+    pub default_gateway: String,
+    
+    /// Enable test mode for payments
+    #[serde(default)]
+    pub test_mode: bool,
+    
+    /// Stripe configuration
+    #[serde(default)]
+    pub stripe: StripeConfig,
+    
+    /// WeChat Pay configuration
+    #[serde(default)]
+    pub wechatpay: WeChatPayConfig,
+    
+    /// AliPay configuration
+    #[serde(default)]
+    pub alipay: AliPayConfig,
+    
+    /// Airwallex configuration
+    #[serde(default)]
+    pub airwallex: AirwallexConfig,
+}
+
+fn default_payment_gateway() -> String {
+    "mock".to_string()
+}
+
+/// Stripe payment gateway configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct StripeConfig {
+    /// Enable Stripe gateway
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// Stripe API secret key
+    pub secret_key: Option<String>,
+    
+    /// Stripe webhook secret
+    pub webhook_secret: Option<String>,
+    
+    /// Stripe publishable key (for frontend)
+    pub publishable_key: Option<String>,
+}
+
+/// WeChat Pay configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct WeChatPayConfig {
+    /// Enable WeChat Pay gateway
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// Merchant ID (mchid)
+    pub mch_id: Option<String>,
+    
+    /// App ID
+    pub app_id: Option<String>,
+    
+    /// API v3 Key
+    pub api_key: Option<String>,
+    
+    /// API Client Serial Number
+    pub serial_no: Option<String>,
+    
+    /// Private key for signing (PEM format)
+    pub private_key: Option<String>,
+    
+    /// Use sandbox environment
+    #[serde(default = "default_true")]
+    pub sandbox: bool,
+}
+
+/// AliPay configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AliPayConfig {
+    /// Enable AliPay gateway
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// App ID
+    pub app_id: Option<String>,
+    
+    /// Merchant Private Key (RSA2)
+    pub private_key: Option<String>,
+    
+    /// AliPay Public Key (for verification)
+    pub alipay_public_key: Option<String>,
+    
+    /// Use sandbox environment
+    #[serde(default = "default_true")]
+    pub sandbox: bool,
+}
+
+/// Airwallex configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AirwallexConfig {
+    /// Enable Airwallex gateway
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// Client ID
+    pub client_id: Option<String>,
+    
+    /// API Key
+    pub api_key: Option<String>,
+    
+    /// Webhook secret
+    pub webhook_secret: Option<String>,
+    
+    /// Use demo environment
+    #[serde(default)]
+    pub demo: bool,
+}
+
+/// Shipping configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ShippingConfig {
+    /// Default shipping provider
+    #[serde(default = "default_shipping_provider")]
+    pub default_provider: String,
+    
+    /// Enable test mode for shipping (use sandbox APIs)
+    #[serde(default)]
+    pub test_mode: bool,
+    
+    /// Default shipping origin address
+    #[serde(default)]
+    pub origin: Option<ShippingOriginConfig>,
+    
+    /// DHL Express configuration
+    #[serde(default)]
+    pub dhl: DhlConfig,
+    
+    /// FedEx configuration
+    #[serde(default)]
+    pub fedex: FedExConfig,
+    
+    /// UPS configuration
+    #[serde(default)]
+    pub ups: UpsConfig,
+    
+    /// USPS configuration
+    #[serde(default)]
+    pub usps: UspsConfig,
+}
+
+fn default_shipping_provider() -> String {
+    "manual".to_string()
+}
+
+/// Shipping origin address configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShippingOriginConfig {
+    pub name: String,
+    pub address1: String,
+    pub address2: Option<String>,
+    pub city: String,
+    pub state: String,
+    pub country: String,
+    pub zip: String,
+    pub phone: Option<String>,
+}
+
+impl Default for ShippingOriginConfig {
+    fn default() -> Self {
+        Self {
+            name: "Your Store".to_string(),
+            address1: "123 Commerce St".to_string(),
+            address2: None,
+            city: "San Francisco".to_string(),
+            state: "CA".to_string(),
+            country: "US".to_string(),
+            zip: "94102".to_string(),
+            phone: None,
+        }
+    }
+}
+
+/// DHL Express configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct DhlConfig {
+    /// Enable DHL Express
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// DHL API Key
+    pub api_key: Option<String>,
+    
+    /// DHL API Secret
+    pub api_secret: Option<String>,
+    
+    /// DHL Account Number
+    pub account_number: Option<String>,
+    
+    /// Use sandbox environment
+    #[serde(default)]
+    pub sandbox: bool,
+}
+
+/// FedEx configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct FedExConfig {
+    /// Enable FedEx
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// FedEx API Key (Client ID)
+    pub api_key: Option<String>,
+    
+    /// FedEx API Secret (Client Secret)
+    pub api_secret: Option<String>,
+    
+    /// FedEx Account Number
+    pub account_number: Option<String>,
+    
+    /// Use sandbox environment
+    #[serde(default)]
+    pub sandbox: bool,
+}
+
+/// UPS configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct UpsConfig {
+    /// Enable UPS
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// UPS API Key (Client ID)
+    pub api_key: Option<String>,
+    
+    /// UPS Username
+    pub username: Option<String>,
+    
+    /// UPS Password
+    pub password: Option<String>,
+    
+    /// UPS Account Number
+    pub account_number: Option<String>,
+    
+    /// Use sandbox environment (Customer Integration Environment)
+    #[serde(default)]
+    pub sandbox: bool,
+}
+
+/// USPS configuration
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct UspsConfig {
+    /// Enable USPS
+    #[serde(default)]
+    pub enabled: bool,
+    
+    /// USPS API Key (Consumer Key)
+    pub api_key: Option<String>,
+    
+    /// Use sandbox environment
+    #[serde(default)]
+    pub sandbox: bool,
 }
 
 #[cfg(test)]

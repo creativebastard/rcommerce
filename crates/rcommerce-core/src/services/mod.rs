@@ -8,6 +8,8 @@ pub mod api_key_scopes;
 pub mod subscription_service;
 pub mod statistics_service;
 pub mod dunning_service;
+pub mod digital_product_service;
+pub mod bundle_service;
 
 pub use product_service::ProductService;
 pub use customer_service::CustomerService;
@@ -25,6 +27,8 @@ pub use statistics_service::{
     StatisticsService, FullDashboardData, SalesReport,
 };
 pub use dunning_service::{DunningService, DunningHistory, RetryableInvoice, RetryProcessingResult};
+pub use digital_product_service::DigitalProductService;
+pub use bundle_service::BundleService;
 
 use crate::Result;
 

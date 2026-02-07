@@ -19,6 +19,9 @@ use std::sync::Arc;
 use rcommerce_core::services::{AuthService, CustomerService, ProductService, CouponService};
 use rcommerce_core::payment::agnostic::PaymentService;
 use rcommerce_core::payment::gateways::stripe_agnostic::StripeAgnosticGateway;
+use rcommerce_core::payment::gateways::wechatpay_agnostic::WeChatPayAgnosticGateway;
+use rcommerce_core::payment::gateways::alipay_agnostic::AliPayAgnosticGateway;
+use rcommerce_core::payment::gateways::airwallex_agnostic::AirwallexAgnosticGateway;
 use rcommerce_core::payment::gateways::MockPaymentGateway;
 use rcommerce_core::{Config, Result};
 
@@ -340,24 +343,108 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     let coupon_service = CouponService::new(Arc::new(coupon_repo), Arc::new(cart_repo));
 
     // Initialize payment service with gateways
-    let mut payment_service = PaymentService::new("mock".to_string());
+    let default_gateway = config.payment.default_gateway.clone();
+    let mut payment_service = PaymentService::new(default_gateway);
     
     // Register mock gateway for testing/development
     let mock_gateway = Box::new(MockPaymentGateway::new());
     payment_service.register_gateway("mock".to_string(), mock_gateway);
+    info!("Mock payment gateway registered");
     
-    // Register Stripe gateway if API key is available
-    if let Ok(stripe_key) = std::env::var("STRIPE_API_KEY") {
-        let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default();
-        let stripe_gateway = Box::new(StripeAgnosticGateway::new(stripe_key, webhook_secret));
-        payment_service.register_gateway("stripe".to_string(), stripe_gateway);
-        info!("Stripe gateway registered");
-    } else {
-        info!("Stripe API key not found, using mock gateway only");
+    // Register Stripe gateway if enabled and API key is available
+    if config.payment.stripe.enabled {
+        if let Some(stripe_key) = config.payment.stripe.secret_key.clone()
+            .or_else(|| std::env::var("STRIPE_API_KEY").ok()) {
+            let webhook_secret = config.payment.stripe.webhook_secret.clone()
+                .unwrap_or_else(|| std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_default());
+            let stripe_gateway = Box::new(StripeAgnosticGateway::new(stripe_key, webhook_secret));
+            payment_service.register_gateway("stripe".to_string(), stripe_gateway);
+            info!("Stripe gateway registered");
+        } else {
+            warn!("Stripe gateway enabled but API key not found");
+        }
+    }
+    
+    // Register WeChat Pay gateway if enabled
+    if config.payment.wechatpay.enabled {
+        if let (Some(mch_id), Some(app_id), Some(api_key), Some(serial_no), Some(private_key)) = (
+            config.payment.wechatpay.mch_id.clone()
+                .or_else(|| std::env::var("WECHATPAY_MCH_ID").ok()),
+            config.payment.wechatpay.app_id.clone()
+                .or_else(|| std::env::var("WECHATPAY_APP_ID").ok()),
+            config.payment.wechatpay.api_key.clone()
+                .or_else(|| std::env::var("WECHATPAY_API_KEY").ok()),
+            config.payment.wechatpay.serial_no.clone()
+                .or_else(|| std::env::var("WECHATPAY_SERIAL_NO").ok()),
+            config.payment.wechatpay.private_key.clone()
+                .or_else(|| std::env::var("WECHATPAY_PRIVATE_KEY").ok()),
+        ) {
+            let wechatpay_gateway = Box::new(WeChatPayAgnosticGateway::new(
+                mch_id,
+                api_key,
+                app_id,
+                serial_no,
+                private_key,
+                config.payment.wechatpay.sandbox,
+            ));
+            payment_service.register_gateway("wechatpay".to_string(), wechatpay_gateway);
+            info!("WeChat Pay gateway registered (sandbox: {})", config.payment.wechatpay.sandbox);
+        } else {
+            warn!("WeChat Pay gateway enabled but configuration incomplete");
+        }
+    }
+    
+    // Register AliPay gateway if enabled
+    if config.payment.alipay.enabled {
+        if let (Some(app_id), Some(private_key), Some(alipay_public_key)) = (
+            config.payment.alipay.app_id.clone()
+                .or_else(|| std::env::var("ALIPAY_APP_ID").ok()),
+            config.payment.alipay.private_key.clone()
+                .or_else(|| std::env::var("ALIPAY_PRIVATE_KEY").ok()),
+            config.payment.alipay.alipay_public_key.clone()
+                .or_else(|| std::env::var("ALIPAY_PUBLIC_KEY").ok()),
+        ) {
+            let alipay_gateway = Box::new(AliPayAgnosticGateway::new(
+                app_id,
+                private_key,
+                alipay_public_key,
+                config.payment.alipay.sandbox,
+            ));
+            payment_service.register_gateway("alipay".to_string(), alipay_gateway);
+            info!("AliPay gateway registered (sandbox: {})", config.payment.alipay.sandbox);
+        } else {
+            warn!("AliPay gateway enabled but configuration incomplete");
+        }
+    }
+    
+    // Register Airwallex gateway if enabled
+    if config.payment.airwallex.enabled {
+        if let (Some(client_id), Some(api_key)) = (
+            config.payment.airwallex.client_id.clone()
+                .or_else(|| std::env::var("AIRWALLEX_CLIENT_ID").ok()),
+            config.payment.airwallex.api_key.clone()
+                .or_else(|| std::env::var("AIRWALLEX_API_KEY").ok()),
+        ) {
+            let webhook_secret = config.payment.airwallex.webhook_secret.clone()
+                .unwrap_or_else(|| std::env::var("AIRWALLEX_WEBHOOK_SECRET").unwrap_or_default());
+            let airwallex_gateway = Box::new(AirwallexAgnosticGateway::new(
+                client_id,
+                api_key,
+                webhook_secret,
+                config.payment.airwallex.demo,
+            ));
+            payment_service.register_gateway("airwallex".to_string(), airwallex_gateway);
+            info!("Airwallex gateway registered (demo: {})", config.payment.airwallex.demo);
+        } else {
+            warn!("Airwallex gateway enabled but configuration incomplete");
+        }
     }
 
     // Initialize Redis (optional)
     let redis = init_redis(config).await;
+
+    // Initialize file upload service
+    let file_upload_service = rcommerce_core::FileUploadService::from_config(config)?;
 
     // Create app state
     Ok(AppState::new(AppStateParams::new(
@@ -370,6 +457,7 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         subscription_repo,
         coupon_service,
         payment_service,
+        file_upload_service,
     )))
 }
 

@@ -38,6 +38,19 @@ pub enum SubscriptionInterval {
     Annually,
 }
 
+/// Bundle pricing strategy
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, Eq, Default)]
+#[sqlx(type_name = "bundle_pricing_strategy", rename_all = "snake_case")]
+pub enum BundlePricingStrategy {
+    /// Fixed price for the bundle
+    #[default]
+    Fixed,
+    /// Sum of component prices
+    Sum,
+    /// Percentage discount from sum of components
+    PercentageDiscount,
+}
+
 /// Product entity
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Product {
@@ -72,6 +85,16 @@ pub struct Product {
     pub subscription_setup_fee: Option<Decimal>,
     pub subscription_min_cycles: Option<i32>,
     pub subscription_max_cycles: Option<i32>,
+    // Digital product fields
+    pub file_url: Option<String>,
+    pub file_size: Option<i64>,
+    pub file_hash: Option<String>,
+    pub download_limit: Option<i32>,
+    pub license_key_enabled: Option<bool>,
+    pub download_expiry_days: Option<i32>,
+    // Bundle product fields
+    pub bundle_pricing_strategy: Option<BundlePricingStrategy>,
+    pub bundle_discount_percentage: Option<Decimal>,
 }
 
 /// Product variant
@@ -172,6 +195,22 @@ pub struct ProductVariantAttribute {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Bundle component - links a bundle product to its component products
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct BundleComponent {
+    pub id: Uuid,
+    pub bundle_product_id: Uuid,
+    pub component_product_id: Uuid,
+    pub quantity: i32,
+    pub is_optional: bool,
+    pub sort_order: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    // Joined fields (not in table)
+    #[sqlx(skip)]
+    pub component_product: Option<Product>,
+}
+
 /// Create product request
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CreateProductRequest {
@@ -229,6 +268,19 @@ pub struct CreateProductRequest {
     
     // For variable products - attributes like Size, Color
     pub attributes: Option<Vec<CreateAttributeRequest>>,
+    
+    // Digital product fields
+    pub file_url: Option<String>,
+    pub file_size: Option<i64>,
+    pub file_hash: Option<String>,
+    pub download_limit: Option<i32>,
+    pub license_key_enabled: Option<bool>,
+    pub download_expiry_days: Option<i32>,
+    
+    // Bundle product fields
+    pub bundle_pricing_strategy: Option<BundlePricingStrategy>,
+    pub bundle_discount_percentage: Option<Decimal>,
+    pub bundle_components: Option<Vec<CreateBundleComponentRequest>>,
 }
 
 /// Update product request
@@ -284,6 +336,18 @@ pub struct UpdateProductRequest {
     pub subscription_setup_fee: Option<Option<Decimal>>,
     pub subscription_min_cycles: Option<Option<i32>>,
     pub subscription_max_cycles: Option<Option<i32>>,
+    
+    // Digital product fields
+    pub file_url: Option<Option<String>>,
+    pub file_size: Option<Option<i64>>,
+    pub file_hash: Option<Option<String>>,
+    pub download_limit: Option<Option<i32>>,
+    pub license_key_enabled: Option<Option<bool>>,
+    pub download_expiry_days: Option<Option<i32>>,
+    
+    // Bundle product fields
+    pub bundle_pricing_strategy: Option<Option<BundlePricingStrategy>>,
+    pub bundle_discount_percentage: Option<Option<Decimal>>,
 }
 
 /// Create attribute request (for variable products)
@@ -350,6 +414,30 @@ pub struct CreateVariantRequest {
     pub is_active: bool,
 }
 
+/// Create bundle component request
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct CreateBundleComponentRequest {
+    pub component_product_id: Uuid,
+    
+    #[validate(range(min = 1))]
+    pub quantity: i32,
+    
+    pub is_optional: bool,
+    
+    pub sort_order: i32,
+}
+
+/// Update bundle component request
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpdateBundleComponentRequest {
+    #[validate(range(min = 1))]
+    pub quantity: Option<i32>,
+    
+    pub is_optional: Option<bool>,
+    
+    pub sort_order: Option<i32>,
+}
+
 /// Product status filter
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ProductStatus {
@@ -399,4 +487,59 @@ pub struct Collection {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub published_scope: String, // web, global
+}
+
+/// Order item download tracking
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct OrderItemDownload {
+    pub id: Uuid,
+    pub order_item_id: Uuid,
+    pub customer_id: Option<Uuid>,
+    pub download_token: String,
+    pub download_count: i32,
+    pub download_limit: Option<i32>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// License key for digital products
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct LicenseKey {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub order_item_id: Option<Uuid>,
+    pub customer_id: Option<Uuid>,
+    pub license_key: String,
+    pub is_used: bool,
+    pub used_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Download response with URL and metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadResponse {
+    pub download_url: String,
+    pub file_name: String,
+    pub file_size: i64,
+    pub expires_at: DateTime<Utc>,
+    pub download_count: i32,
+    pub download_limit: Option<i32>,
+}
+
+/// Product with bundle details
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductWithBundle {
+    #[serde(flatten)]
+    pub product: Product,
+    pub components: Vec<BundleComponentWithProduct>,
+}
+
+/// Bundle component with full product details
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BundleComponentWithProduct {
+    #[serde(flatten)]
+    pub component: BundleComponent,
+    pub product: Option<Product>,
 }

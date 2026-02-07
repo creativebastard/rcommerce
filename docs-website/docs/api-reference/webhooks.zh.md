@@ -1,5 +1,8 @@
 # Webhooks API
 
+!!! info "实现状态"
+    支付 webhooks 已完全实现。订单、产品和客户 webhooks 具有基本功能。高级 webhook 功能（如传递日志和重试配置）计划在未来版本（v0.2）中实现。
+
 Webhooks API 允许您通过 HTTP 回调接收实时事件通知。
 
 ## 概览

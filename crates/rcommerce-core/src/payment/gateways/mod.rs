@@ -3,8 +3,11 @@
 pub mod stripe;
 pub mod stripe_agnostic;
 pub mod airwallex;
+pub mod airwallex_agnostic;
 pub mod wechatpay;
+pub mod wechatpay_agnostic;
 pub mod alipay;
+pub mod alipay_agnostic;
 
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};

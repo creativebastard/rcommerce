@@ -110,6 +110,13 @@ pub struct OrderItem {
     pub image_url: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    // Digital product fields
+    pub is_digital: Option<bool>,
+    pub download_url: Option<String>,
+    pub license_key: Option<String>,
+    // Bundle product fields
+    pub bundle_parent_id: Option<Uuid>,
+    pub is_bundle_component: Option<bool>,
 }
 
 /// Order fulfillment
@@ -186,4 +193,23 @@ pub struct OrderNote {
     pub note: String,
     pub is_customer_notified: bool,
     pub created_at: DateTime<Utc>,
+}
+
+/// Order item with digital product details
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderItemWithDownloads {
+    #[serde(flatten)]
+    pub order_item: OrderItem,
+    pub downloads: Vec<super::OrderItemDownload>,
+    pub license_key: Option<super::LicenseKey>,
+}
+
+/// Order with all related data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderWithDetails {
+    #[serde(flatten)]
+    pub order: Order,
+    pub items: Vec<OrderItemWithDownloads>,
+    pub fulfillments: Vec<Fulfillment>,
+    pub notes: Vec<OrderNote>,
 }

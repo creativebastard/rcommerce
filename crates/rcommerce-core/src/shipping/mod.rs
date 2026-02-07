@@ -419,6 +419,63 @@ impl ShippingProviderFactory {
         }
     }
     
+    /// Create a factory from configuration
+    pub fn from_config(config: &crate::config::ShippingConfig) -> Self {
+        let mut factory = Self::new();
+        
+        // Register DHL if configured
+        if config.dhl.enabled {
+            if let (Some(api_key), Some(api_secret), Some(account_number)) = 
+                (&config.dhl.api_key, &config.dhl.api_secret, &config.dhl.account_number) {
+                let provider = crate::shipping::carriers::DhlProvider::new(
+                    api_key.clone(),
+                    api_secret.clone(),
+                    account_number.clone(),
+                ).with_test_mode(config.dhl.sandbox || config.test_mode);
+                factory.register(Box::new(provider));
+            }
+        }
+        
+        // Register FedEx if configured
+        if config.fedex.enabled {
+            if let (Some(api_key), Some(api_secret), Some(account_number)) = 
+                (&config.fedex.api_key, &config.fedex.api_secret, &config.fedex.account_number) {
+                let provider = crate::shipping::carriers::FedExProvider::new(
+                    api_key.clone(),
+                    api_secret.clone(),
+                    account_number.clone(),
+                ).with_test_mode(config.fedex.sandbox || config.test_mode);
+                factory.register(Box::new(provider));
+            }
+        }
+        
+        // Register UPS if configured
+        if config.ups.enabled {
+            if let (Some(api_key), Some(username), Some(password), Some(account_number)) = 
+                (&config.ups.api_key, &config.ups.username, &config.ups.password, &config.ups.account_number) {
+                let provider = crate::shipping::carriers::UpsProvider::new(
+                    api_key.clone(),
+                    username.clone(),
+                    password.clone(),
+                    account_number.clone(),
+                ).with_test_mode(config.ups.sandbox || config.test_mode);
+                factory.register(Box::new(provider));
+            }
+        }
+        
+        // Register USPS if configured
+        if config.usps.enabled {
+            if let Some(api_key) = &config.usps.api_key {
+                let provider = crate::shipping::carriers::UspsProvider::new(
+                    api_key.clone(),
+                ).with_test_mode(config.usps.sandbox || config.test_mode);
+                factory.register(Box::new(provider));
+            }
+        }
+        
+        factory
+    }
+    
     /// Register a provider
     pub fn register(&mut self, provider: Box<dyn ShippingProvider>) {
         self.providers.insert(provider.id().to_string(), provider);
