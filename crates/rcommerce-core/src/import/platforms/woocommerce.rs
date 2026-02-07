@@ -53,10 +53,30 @@ impl WooCommerceImporter {
                 .await?;
 
             if !response.status().is_success() {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                
+                // Provide helpful error messages for common issues
+                let help_msg = if status == 404 {
+                    format!(
+                        "\n\nHelp: The WooCommerce REST API endpoint was not found (404).\n\
+                        Common causes:\n\
+                        1. Incorrect API URL - verify your store URL (e.g., https://example.com)\n\
+                        2. WooCommerce REST API not enabled - enable in WP Admin > WooCommerce > Settings > Advanced > REST API\n\
+                        3. Permalinks not configured - set to 'Post name' in WP Admin > Settings > Permalinks\n\
+                        4. Pretty permalinks not supported - try adding ?rest_route=/wc/v3/ to your URL\n\
+                        Requested URL: {}",
+                        request_url
+                    )
+                } else if status == 401 {
+                    "\n\nHelp: Authentication failed. Verify your consumer key and secret are correct.".to_string()
+                } else {
+                    String::new()
+                };
+                
                 return Err(ImportError::Api(format!(
-                    "WooCommerce API error: {} - {}",
-                    response.status(),
-                    response.text().await.unwrap_or_default()
+                    "WooCommerce API error: {} - {}{}",
+                    status, body, help_msg
                 )));
             }
 
@@ -131,6 +151,8 @@ impl PlatformImporter for WooCommerceImporter {
         });
 
         let url = self.api_url(&base_url, "products");
+        tracing::info!("WooCommerce API URL: {}", url);
+        
         let wc_products: Vec<WooCommerceProduct> = self
             .fetch_paginated(&url, &consumer_key, &consumer_secret, config.options.limit)
             .await?;
