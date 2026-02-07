@@ -286,9 +286,6 @@ impl PlatformImporter for WooCommerceImporter {
             } else {
                 // Create product in database
                 if let Some(ref pool) = pool {
-                    let db = Database::new(pool.clone());
-                    let repo = ProductRepository::new(db);
-
                     // Generate slug for lookup
                     let slug = if product.slug.is_empty() {
                         product.name.to_lowercase().replace(" ", "-")
@@ -296,19 +293,14 @@ impl PlatformImporter for WooCommerceImporter {
                         product.slug.clone()
                     };
 
-                    // Check for existing product by slug
-                    match repo.find_by_slug(&slug).await {
-                        Ok(Some(_existing)) => {
-                            tracing::info!("Product with slug '{}' already exists, skipping", slug);
-                            stats.skipped += 1;
-                            continue;
-                        }
-                        Ok(None) => {}
-                        Err(e) => {
-                            tracing::warn!("Failed to check existing product '{}': {}", product.name, e);
-                            // Continue anyway, the insert will fail if duplicate
-                        }
-                    }
+                    // Check for existing product by slug using raw SQL to avoid file_url column issue
+                    let existing: Option<(Uuid,)> = sqlx::query_as(
+                        "SELECT id FROM products WHERE slug = $1"
+                    )
+                    .bind(&slug)
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
 
                     // Parse price - use sale_price if available, otherwise regular_price or price
                     let price = if !product.sale_price.is_empty() && product.sale_price != "0" {
@@ -334,67 +326,126 @@ impl PlatformImporter for WooCommerceImporter {
                         _ => ProductType::Simple,
                     };
 
-                    // Create product request
-                    let create_request = CreateProductRequest {
-                        title: product.name.clone(),
-                        slug: if product.slug.is_empty() {
-                            product.name.to_lowercase().replace(" ", "-")
+                    if let Some((existing_id,)) = existing {
+                        // Product exists - check if we should update
+                        if config.options.update_existing {
+                            // Update existing product using raw SQL
+                            match sqlx::query(
+                                r#"
+                                UPDATE products SET 
+                                    title = $1, 
+                                    description = $2, 
+                                    price = $3,
+                                    compare_at_price = $4,
+                                    inventory_quantity = $5,
+                                    sku = $6,
+                                    product_type = $7,
+                                    is_active = $8,
+                                    updated_at = NOW()
+                                WHERE id = $9
+                                "#
+                            )
+                            .bind(&product.name)
+                            .bind(&product.description)
+                            .bind(price)
+                            .bind(compare_at_price)
+                            .bind(product.stock_quantity.unwrap_or(0))
+                            .bind(&product.sku)
+                            .bind(format!("{:?}", product_type).to_lowercase())
+                            .bind(product.status == "publish")
+                            .bind(existing_id)
+                            .execute(pool)
+                            .await {
+                                Ok(_) => {
+                                    stats.updated += 1;
+                                    tracing::info!("Updated product: {}", product.name);
+                                }
+                                Err(e) => {
+                                    stats.errors += 1;
+                                    let error_msg = format!(
+                                        "Failed to update product '{}': {}",
+                                        product.name, e
+                                    );
+                                    tracing::error!("{}", error_msg);
+                                    stats.error_details.push(error_msg);
+                                    if !config.options.continue_on_error {
+                                        break;
+                                    }
+                                }
+                            }
                         } else {
-                            product.slug.clone()
-                        },
-                        description: product.description.clone(),
-                        sku: product.sku.clone(),
-                        product_type,
-                        price,
-                        compare_at_price,
-                        cost_price: None,
-                        currency: Currency::USD, // Default, could be configurable
-                        inventory_quantity: product.stock_quantity.unwrap_or(0),
-                        inventory_policy: InventoryPolicy::Deny,
-                        inventory_management: product.manage_stock,
-                        continues_selling_when_out_of_stock: false,
-                        weight: None,
-                        weight_unit: Some(WeightUnit::Lb),
-                        requires_shipping: product_type != ProductType::Digital,
-                        is_active: product.status == "publish",
-                        is_featured: false,
-                        seo_title: Some(product.name.clone()),
-                        seo_description: product.short_description.clone(),
-                        subscription_interval: None,
-                        subscription_interval_count: None,
-                        subscription_trial_days: None,
-                        subscription_setup_fee: None,
-                        subscription_min_cycles: None,
-                        subscription_max_cycles: None,
-                        file_url: None,
-                        file_size: None,
-                        file_hash: None,
-                        download_limit: None,
-                        license_key_enabled: None,
-                        download_expiry_days: None,
-                        bundle_pricing_strategy: None,
-                        bundle_discount_percentage: None,
-                        attributes: None,
-                        bundle_components: None,
-                    };
-
-                    match repo.create_with_request(create_request).await {
-                        Ok(_created_product) => {
-                            stats.created += 1;
-                            tracing::info!("Created product: {}", product.name);
-                            // TODO: Import product images if available
-                            // TODO: Import product categories if available
+                            // Skip existing product
+                            tracing::info!("Product with slug '{}' already exists, skipping", slug);
+                            stats.skipped += 1;
+                            continue;
                         }
-                        Err(e) => {
-                            stats.errors += 1;
-                            let error_msg = format!(
-                                "Failed to create product '{}': {}",
-                                product.name, e
-                            );
-                            tracing::error!("{}", error_msg);
-                            stats.error_details.push(error_msg);
-                            if !config.options.continue_on_error {
-                                break;
+                    } else {
+                        // Create new product
+                        let db = Database::new(pool.clone());
+                        let repo = ProductRepository::new(db);
+
+                        // Create product request
+                        let create_request = CreateProductRequest {
+                            title: product.name.clone(),
+                            slug: if product.slug.is_empty() {
+                                product.name.to_lowercase().replace(" ", "-")
+                            } else {
+                                product.slug.clone()
+                            },
+                            description: product.description.clone(),
+                            sku: product.sku.clone(),
+                            product_type,
+                            price,
+                            compare_at_price,
+                            cost_price: None,
+                            currency: Currency::USD, // Default, could be configurable
+                            inventory_quantity: product.stock_quantity.unwrap_or(0),
+                            inventory_policy: InventoryPolicy::Deny,
+                            inventory_management: product.manage_stock,
+                            continues_selling_when_out_of_stock: false,
+                            weight: None,
+                            weight_unit: Some(WeightUnit::Lb),
+                            requires_shipping: product_type != ProductType::Digital,
+                            is_active: product.status == "publish",
+                            is_featured: false,
+                            seo_title: Some(product.name.clone()),
+                            seo_description: product.short_description.clone(),
+                            subscription_interval: None,
+                            subscription_interval_count: None,
+                            subscription_trial_days: None,
+                            subscription_setup_fee: None,
+                            subscription_min_cycles: None,
+                            subscription_max_cycles: None,
+                            file_url: None,
+                            file_size: None,
+                            file_hash: None,
+                            download_limit: None,
+                            license_key_enabled: None,
+                            download_expiry_days: None,
+                            bundle_pricing_strategy: None,
+                            bundle_discount_percentage: None,
+                            attributes: None,
+                            bundle_components: None,
+                        };
+
+                        match repo.create_with_request(create_request).await {
+                            Ok(_created_product) => {
+                                stats.created += 1;
+                                tracing::info!("Created product: {}", product.name);
+                                // TODO: Import product images if available
+                                // TODO: Import product categories if available
+                            }
+                            Err(e) => {
+                                stats.errors += 1;
+                                let error_msg = format!(
+                                    "Failed to create product '{}': {}",
+                                    product.name, e
+                                );
+                                tracing::error!("{}", error_msg);
+                                stats.error_details.push(error_msg);
+                                if !config.options.continue_on_error {
+                                    break;
+                                }
                             }
                         }
                     }

@@ -255,6 +255,10 @@ pub enum ImportCommands {
         /// Dry run - validate without importing
         #[arg(long, help = "Dry run without importing")]
         dry_run: bool,
+        
+        /// Overwrite existing products instead of skipping
+        #[arg(long, help = "Update existing products instead of skipping")]
+        overwrite: bool,
     },
     
     /// Import from a file (csv, json, xml)
@@ -880,7 +884,7 @@ async fn main() -> Result<()> {
             use rcommerce_core::import::types::{ImportOptions, SourceConfig};
             
             match command {
-                ImportCommands::Platform { platform, api_url, api_key, api_secret, entities, limit, dry_run } => {
+                ImportCommands::Platform { platform, api_url, api_key, api_secret, entities, limit, dry_run, overwrite } => {
                     println!("{} {}", "Importing from".bold(), platform.cyan());
                     
                     // Get the platform importer
@@ -960,7 +964,8 @@ async fn main() -> Result<()> {
                             dry_run,
                             limit: limit.unwrap_or(0),
                             batch_size: config.import.default_options.batch_size,
-                            skip_existing: config.import.default_options.skip_existing,
+                            skip_existing: !overwrite, // If overwrite is true, don't skip existing
+                            update_existing: overwrite, // If overwrite is true, update existing
                             continue_on_error: config.import.default_options.continue_on_error,
                             ..Default::default()
                         },
