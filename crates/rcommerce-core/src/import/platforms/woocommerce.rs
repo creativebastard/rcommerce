@@ -40,7 +40,8 @@ impl WooCommerceImporter {
     ) -> ImportResult<Vec<T>> {
         let mut results = Vec::new();
         let mut page = 1;
-        let per_page = 100.min(limit);
+        // WooCommerce requires per_page between 1-100, default to 100 if no limit
+        let per_page = if limit == 0 { 100 } else { 100.min(limit) };
 
         loop {
             let request_url = format!("{}?page={}&per_page={}", url, page, per_page);
