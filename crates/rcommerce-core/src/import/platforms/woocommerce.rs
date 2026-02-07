@@ -5,10 +5,19 @@ use crate::import::{
     types::{ImportConfig, ImportProgress, ImportStats},
     PlatformImporter,
 };
+use crate::models::{
+    CreateProductRequest, CreateCustomerRequest, Currency, ProductType,
+    InventoryPolicy, WeightUnit, OrderStatus, PaymentStatus, FulfillmentStatus,
+};
+use crate::repository::{ProductRepository, CustomerRepository, Database};
+
 use async_trait::async_trait;
 use reqwest::Client;
+use rust_decimal::Decimal;
 use serde::Deserialize;
+use sqlx::PgPool;
 use std::time::Duration;
+use uuid::Uuid;
 
 /// WooCommerce API client and importer
 pub struct WooCommerceImporter {
@@ -28,6 +37,19 @@ impl WooCommerceImporter {
     /// Get WooCommerce API URL
     fn api_url(&self, base_url: &str, endpoint: &str) -> String {
         format!("{}/wp-json/wc/v3/{}", base_url.trim_end_matches('/'), endpoint)
+    }
+
+    /// Create database pool from config
+    async fn create_pool(&self, database_url: &str) -> ImportResult<PgPool> {
+        use sqlx::postgres::PgPoolOptions;
+        
+        let pool = PgPoolOptions::new()
+            .max_connections(5)
+            .connect(database_url)
+            .await
+            .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+        
+        Ok(pool)
     }
 
     /// Fetch paginated data from WooCommerce
@@ -122,6 +144,41 @@ impl WooCommerceImporter {
 
         Ok(results)
     }
+
+    /// Convert WooCommerce price string to Decimal
+    fn parse_price(&self, price: &str) -> Decimal {
+        price.parse::<Decimal>().unwrap_or(Decimal::ZERO)
+    }
+
+    /// Map WooCommerce status to OrderStatus
+    fn map_order_status(&self, status: &str) -> OrderStatus {
+        match status {
+            "pending" => OrderStatus::Pending,
+            "processing" => OrderStatus::Processing,
+            "on-hold" => OrderStatus::OnHold,
+            "completed" => OrderStatus::Completed,
+            "cancelled" => OrderStatus::Cancelled,
+            "refunded" => OrderStatus::Refunded,
+            "failed" => OrderStatus::Cancelled,
+            _ => OrderStatus::Pending,
+        }
+    }
+
+    /// Map WooCommerce currency string to Currency
+    fn parse_currency(&self, currency: &str) -> Currency {
+        match currency {
+            "USD" => Currency::USD,
+            "EUR" => Currency::EUR,
+            "GBP" => Currency::GBP,
+            "JPY" => Currency::JPY,
+            "AUD" => Currency::AUD,
+            "CAD" => Currency::CAD,
+            "CNY" => Currency::CNY,
+            "HKD" => Currency::HKD,
+            "SGD" => Currency::SGD,
+            _ => Currency::USD, // Default to USD
+        }
+    }
 }
 
 impl Default for WooCommerceImporter {
@@ -185,6 +242,13 @@ impl PlatformImporter for WooCommerceImporter {
             ..Default::default()
         };
 
+        // Create database pool and repository if not dry run
+        let pool = if !dry_run {
+            Some(self.create_pool(&config.database_url).await?)
+        } else {
+            None
+        };
+
         for (i, product) in wc_products.iter().enumerate() {
             progress(ImportProgress {
                 stage: "products".to_string(),
@@ -210,8 +274,111 @@ impl PlatformImporter for WooCommerceImporter {
             if dry_run {
                 stats.created += 1;
             } else {
-                // In real implementation, insert into database
-                stats.created += 1;
+                // Create product in database
+                if let Some(ref pool) = pool {
+                    let db = Database::new(pool.clone());
+                    let repo = ProductRepository::new(db);
+
+                    // Check for existing product by SKU
+                    if let Some(ref sku) = product.sku {
+                        if !sku.is_empty() {
+                            // Note: We'd need a find_by_sku method, for now we skip this check
+                            // or could query by slug
+                            if let Ok(Some(_existing)) = repo.find_by_slug(&product.slug).await {
+                                if config.options.skip_existing {
+                                    stats.skipped += 1;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    // Parse price - use sale_price if available, otherwise regular_price or price
+                    let price = if !product.sale_price.is_empty() && product.sale_price != "0" {
+                        self.parse_price(&product.sale_price)
+                    } else if !product.regular_price.is_empty() {
+                        self.parse_price(&product.regular_price)
+                    } else {
+                        self.parse_price(&product.price)
+                    };
+
+                    let compare_at_price = if !product.regular_price.is_empty() && product.sale_price != "0" {
+                        Some(self.parse_price(&product.regular_price))
+                    } else {
+                        None
+                    };
+
+                    // Determine product type
+                    let product_type = match product.product_type.as_str() {
+                        "simple" => ProductType::Simple,
+                        "variable" => ProductType::Variable,
+                        "subscription" => ProductType::Subscription,
+                        "bundle" => ProductType::Bundle,
+                        _ => ProductType::Simple,
+                    };
+
+                    // Create product request
+                    let create_request = CreateProductRequest {
+                        title: product.name.clone(),
+                        slug: if product.slug.is_empty() {
+                            product.name.to_lowercase().replace(" ", "-")
+                        } else {
+                            product.slug.clone()
+                        },
+                        description: product.description.clone(),
+                        sku: product.sku.clone(),
+                        product_type,
+                        price,
+                        compare_at_price,
+                        cost_price: None,
+                        currency: Currency::USD, // Default, could be configurable
+                        inventory_quantity: product.stock_quantity.unwrap_or(0),
+                        inventory_policy: InventoryPolicy::Deny,
+                        inventory_management: product.manage_stock,
+                        continues_selling_when_out_of_stock: false,
+                        weight: None,
+                        weight_unit: Some(WeightUnit::Lb),
+                        requires_shipping: product_type != ProductType::Digital,
+                        is_active: product.status == "publish",
+                        is_featured: false,
+                        seo_title: Some(product.name.clone()),
+                        seo_description: product.short_description.clone(),
+                        subscription_interval: None,
+                        subscription_interval_count: None,
+                        subscription_trial_days: None,
+                        subscription_setup_fee: None,
+                        subscription_min_cycles: None,
+                        subscription_max_cycles: None,
+                        file_url: None,
+                        file_size: None,
+                        file_hash: None,
+                        download_limit: None,
+                        license_key_enabled: None,
+                        download_expiry_days: None,
+                        bundle_pricing_strategy: None,
+                        bundle_discount_percentage: None,
+                        attributes: None,
+                        bundle_components: None,
+                    };
+
+                    match repo.create_with_request(create_request).await {
+                        Ok(_created_product) => {
+                            stats.created += 1;
+                            // TODO: Import product images if available
+                            // TODO: Import product categories if available
+                        }
+                        Err(e) => {
+                            stats.errors += 1;
+                            stats.error_details.push(format!(
+                                "Failed to create product '{}': {}",
+                                product.name, e
+                            ));
+                            if !config.options.continue_on_error {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -265,6 +432,13 @@ impl PlatformImporter for WooCommerceImporter {
             ..Default::default()
         };
 
+        // Create database pool and repository if not dry run
+        let pool = if !dry_run {
+            Some(self.create_pool(&config.database_url).await?)
+        } else {
+            None
+        };
+
         for (i, customer) in wc_customers.iter().enumerate() {
             progress(ImportProgress {
                 stage: "customers".to_string(),
@@ -290,8 +464,90 @@ impl PlatformImporter for WooCommerceImporter {
             if dry_run {
                 stats.created += 1;
             } else {
-                // In real implementation, insert into database
-                stats.created += 1;
+                // Create customer in database
+                if let Some(ref pool) = pool {
+                    let db = Database::new(pool.clone());
+                    let repo = CustomerRepository::new(db);
+
+                    // Check for existing customer by email
+                    match repo.find_by_email(&customer.email).await {
+                        Ok(Some(_existing)) => {
+                            if config.options.skip_existing {
+                                stats.skipped += 1;
+                                continue;
+                            }
+                            // If update_existing is true, we would update here
+                            // For now, just skip
+                            stats.skipped += 1;
+                            continue;
+                        }
+                        Ok(None) => {}
+                        Err(e) => {
+                            stats.errors += 1;
+                            stats.error_details.push(format!(
+                                "Failed to check existing customer '{}': {}",
+                                customer.email, e
+                            ));
+                            if !config.options.continue_on_error {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+
+                    // Create customer request
+                    let create_request = CreateCustomerRequest {
+                        email: customer.email.clone(),
+                        first_name: if customer.first_name.is_empty() {
+                            customer.username.clone()
+                        } else {
+                            customer.first_name.clone()
+                        },
+                        last_name: customer.last_name.clone(),
+                        phone: customer.billing.as_ref().and_then(|b| b.phone.clone()),
+                        accepts_marketing: false,
+                        currency: Currency::USD,
+                    };
+
+                    match repo.create_with_request(create_request).await {
+                        Ok(created_customer) => {
+                            stats.created += 1;
+
+                            // Create addresses if available
+                            // Billing address
+                            if let Some(ref billing) = customer.billing {
+                                if let Err(e) = self.create_address(pool, created_customer.id, billing, true, false).await {
+                                    stats.error_details.push(format!(
+                                        "Failed to create billing address for customer '{}': {}",
+                                        customer.email, e
+                                    ));
+                                }
+                            }
+
+                            // Shipping address
+                            if let Some(ref shipping) = customer.shipping {
+                                let is_default_shipping = customer.billing.is_none() || 
+                                    (shipping.address_1 != customer.billing.as_ref().unwrap().address_1);
+                                if let Err(e) = self.create_address(pool, created_customer.id, shipping, false, is_default_shipping).await {
+                                    stats.error_details.push(format!(
+                                        "Failed to create shipping address for customer '{}': {}",
+                                        customer.email, e
+                                    ));
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            stats.errors += 1;
+                            stats.error_details.push(format!(
+                                "Failed to create customer '{}': {}",
+                                customer.email, e
+                            ));
+                            if !config.options.continue_on_error {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -345,6 +601,13 @@ impl PlatformImporter for WooCommerceImporter {
             ..Default::default()
         };
 
+        // Create database pool if not dry run
+        let pool = if !dry_run {
+            Some(self.create_pool(&config.database_url).await?)
+        } else {
+            None
+        };
+
         for (i, order) in wc_orders.iter().enumerate() {
             progress(ImportProgress {
                 stage: "orders".to_string(),
@@ -370,12 +633,332 @@ impl PlatformImporter for WooCommerceImporter {
             if dry_run {
                 stats.created += 1;
             } else {
-                // In real implementation, insert into database
-                stats.created += 1;
+                // Create order in database
+                if let Some(ref pool) = pool {
+                    // Get customer email from billing or use placeholder
+                    let customer_email = order.billing.as_ref()
+                        .and_then(|b| b.email.clone())
+                        .unwrap_or_else(|| "unknown@example.com".to_string());
+
+                    // Parse totals
+                    let total = self.parse_price(&order.total);
+                    let tax_total = order.total_tax.as_ref()
+                        .map(|t| self.parse_price(t))
+                        .unwrap_or(Decimal::ZERO);
+                    let shipping_total = order.shipping_total.as_ref()
+                        .map(|s| self.parse_price(s))
+                        .unwrap_or(Decimal::ZERO);
+                    let discount_total = order.discount_total.as_ref()
+                        .map(|d| self.parse_price(d))
+                        .unwrap_or(Decimal::ZERO);
+                    let subtotal = total - tax_total - shipping_total + discount_total;
+
+                    // Map status
+                    let status = self.map_order_status(&order.status);
+                    let payment_status = match order.status.as_str() {
+                        "completed" | "processing" => PaymentStatus::Paid,
+                        "on-hold" => PaymentStatus::Pending,
+                        "pending" => PaymentStatus::Pending,
+                        "cancelled" => PaymentStatus::Cancelled,
+                        "refunded" => PaymentStatus::Refunded,
+                        "failed" => PaymentStatus::Failed,
+                        _ => PaymentStatus::Pending,
+                    };
+                    let fulfillment_status = match order.status.as_str() {
+                        "completed" => FulfillmentStatus::Delivered,
+                        "processing" => FulfillmentStatus::Processing,
+                        "on-hold" => FulfillmentStatus::Pending,
+                        "pending" => FulfillmentStatus::Pending,
+                        "cancelled" => FulfillmentStatus::Cancelled,
+                        _ => FulfillmentStatus::Pending,
+                    };
+
+                    let currency = self.parse_currency(&order.currency);
+
+                    // Generate order number
+                    let order_number = order.order_number.clone()
+                        .unwrap_or_else(|| format!("WC-{}", order.id));
+
+                    // Create addresses and get their IDs
+                    let mut billing_address_id: Option<Uuid> = None;
+                    let mut shipping_address_id: Option<Uuid> = None;
+
+                    // Note: For orders, we need to find the customer first or create as guest order
+                    // For simplicity, we'll create guest orders (customer_id = None)
+                    // In a full implementation, we'd look up the customer by email
+
+                    // Create billing address
+                    if let Some(ref billing) = order.billing {
+                        match self.create_address_for_order(pool, billing).await {
+                            Ok(id) => billing_address_id = Some(id),
+                            Err(e) => {
+                                stats.error_details.push(format!(
+                                    "Failed to create billing address for order {}: {}",
+                                    order.id, e
+                                ));
+                            }
+                        }
+                    }
+
+                    // Create shipping address
+                    if let Some(ref shipping) = order.shipping {
+                        match self.create_address_for_order(pool, shipping).await {
+                            Ok(id) => shipping_address_id = Some(id),
+                            Err(e) => {
+                                stats.error_details.push(format!(
+                                    "Failed to create shipping address for order {}: {}",
+                                    order.id, e
+                                ));
+                            }
+                        }
+                    }
+
+                    // Insert order
+                    let order_id = Uuid::new_v4();
+                    let result = sqlx::query(
+                        r#"
+                        INSERT INTO orders (
+                            id, order_number, customer_id, email,
+                            currency, status, fulfillment_status, payment_status,
+                            subtotal, tax_total, shipping_total, discount_total, total,
+                            billing_address_id, shipping_address_id,
+                            notes, tags, draft, created_at, updated_at
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW(), NOW())
+                        "#
+                    )
+                    .bind(order_id)
+                    .bind(&order_number)
+                    .bind(None::<Uuid>) // customer_id - would need to look up by email
+                    .bind(&customer_email)
+                    .bind(currency.to_string())
+                    .bind(format!("{:?}", status).to_lowercase())
+                    .bind(format!("{:?}", fulfillment_status).to_lowercase())
+                    .bind(format!("{:?}", payment_status).to_lowercase())
+                    .bind(subtotal)
+                    .bind(tax_total)
+                    .bind(shipping_total)
+                    .bind(discount_total)
+                    .bind(total)
+                    .bind(billing_address_id)
+                    .bind(shipping_address_id)
+                    .bind(None::<String>) // notes
+                    .bind(&[] as &[String]) // tags
+                    .bind(false) // draft
+                    .execute(pool)
+                    .await;
+
+                    match result {
+                        Ok(_) => {
+                            // Create order items
+                            if let Some(ref line_items) = order.line_items {
+                                for item in line_items {
+                                    let item_price = self.parse_price(&item.subtotal) / Decimal::from(item.quantity.max(1));
+                                    let item_subtotal = self.parse_price(&item.subtotal);
+                                    let item_total = self.parse_price(&item.total);
+                                    let item_tax = item_total - item_subtotal;
+
+                                    let item_result = sqlx::query(
+                                        r#"
+                                        INSERT INTO order_items (
+                                            id, order_id, product_id, variant_id,
+                                            quantity, price, subtotal, tax_amount, total,
+                                            sku, title, variant_title, requires_shipping,
+                                            created_at, updated_at
+                                        )
+                                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+                                        "#
+                                    )
+                                    .bind(Uuid::new_v4())
+                                    .bind(order_id)
+                                    .bind(Uuid::nil()) // product_id - would need to look up by SKU or ID
+                                    .bind(None::<Uuid>) // variant_id
+                                    .bind(item.quantity)
+                                    .bind(item_price)
+                                    .bind(item_subtotal)
+                                    .bind(item_tax)
+                                    .bind(item_total)
+                                    .bind(item.sku.clone())
+                                    .bind(&item.name)
+                                    .bind(None::<String>) // variant_title
+                                    .bind(true) // requires_shipping
+                                    .execute(pool)
+                                    .await;
+
+                                    if let Err(e) = item_result {
+                                        stats.error_details.push(format!(
+                                            "Failed to create order item for order {}: {}",
+                                            order.id, e
+                                        ));
+                                    }
+                                }
+                            }
+
+                            stats.created += 1;
+                        }
+                        Err(e) => {
+                            stats.errors += 1;
+                            stats.error_details.push(format!(
+                                "Failed to create order {}: {}",
+                                order.id, e
+                            ));
+                            if !config.options.continue_on_error {
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
 
         Ok(stats)
+    }
+}
+
+impl WooCommerceImporter {
+    /// Helper method to create an address for a customer
+    async fn create_address(
+        &self,
+        pool: &PgPool,
+        customer_id: Uuid,
+        wc_addr: &WooCommerceAddress,
+        is_default_billing: bool,
+        is_default_shipping: bool,
+    ) -> ImportResult<()> {
+        // Only create if we have minimum required fields
+        let address1 = match wc_addr.address_1 {
+            Some(ref addr) if !addr.is_empty() => addr.clone(),
+            _ => return Ok(()), // Skip if no address
+        };
+
+        let city = match wc_addr.city {
+            Some(ref c) if !c.is_empty() => c.clone(),
+            _ => return Ok(()), // Skip if no city
+        };
+
+        let country = match wc_addr.country {
+            Some(ref c) if !c.is_empty() => c.clone(),
+            _ => "US".to_string(), // Default to US
+        };
+
+        let zip = match wc_addr.postcode {
+            Some(ref z) if !z.is_empty() => z.clone(),
+            _ => "00000".to_string(), // Default zip
+        };
+
+        let first_name = wc_addr.first_name.clone().unwrap_or_default();
+        let last_name = wc_addr.last_name.clone().unwrap_or_default();
+
+        // Use a default name if both are empty
+        let (first_name, last_name) = if first_name.is_empty() && last_name.is_empty() {
+            ("Unknown".to_string(), "Customer".to_string())
+        } else {
+            (first_name, last_name)
+        };
+
+        let result = sqlx::query(
+            r#"
+            INSERT INTO addresses (
+                id, customer_id, first_name, last_name, company,
+                phone, address1, address2, city, state, country, zip,
+                is_default_shipping, is_default_billing, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+            "#
+        )
+        .bind(Uuid::new_v4())
+        .bind(customer_id)
+        .bind(first_name)
+        .bind(last_name)
+        .bind(wc_addr.company.clone())
+        .bind(wc_addr.phone.clone())
+        .bind(address1)
+        .bind(wc_addr.address_2.clone())
+        .bind(city)
+        .bind(wc_addr.state.clone())
+        .bind(country)
+        .bind(zip)
+        .bind(is_default_shipping)
+        .bind(is_default_billing)
+        .execute(pool)
+        .await;
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(ImportError::Database(crate::Error::Database(e))),
+        }
+    }
+
+    /// Helper method to create an address for an order (not linked to a customer)
+    async fn create_address_for_order(
+        &self,
+        pool: &PgPool,
+        wc_addr: &WooCommerceAddress,
+    ) -> ImportResult<Uuid> {
+        let address_id = Uuid::new_v4();
+
+        // Only create if we have minimum required fields
+        let address1 = match wc_addr.address_1 {
+            Some(ref addr) if !addr.is_empty() => addr.clone(),
+            _ => "Unknown".to_string(),
+        };
+
+        let city = match wc_addr.city {
+            Some(ref c) if !c.is_empty() => c.clone(),
+            _ => "Unknown".to_string(),
+        };
+
+        let country = match wc_addr.country {
+            Some(ref c) if !c.is_empty() => c.clone(),
+            _ => "US".to_string(),
+        };
+
+        let zip = match wc_addr.postcode {
+            Some(ref z) if !z.is_empty() => z.clone(),
+            _ => "00000".to_string(),
+        };
+
+        let first_name = wc_addr.first_name.clone().unwrap_or_default();
+        let last_name = wc_addr.last_name.clone().unwrap_or_default();
+
+        // Use a default name if both are empty
+        let (first_name, last_name) = if first_name.is_empty() && last_name.is_empty() {
+            ("Unknown".to_string(), "Customer".to_string())
+        } else {
+            (first_name, last_name)
+        };
+
+        let result = sqlx::query(
+            r#"
+            INSERT INTO addresses (
+                id, customer_id, first_name, last_name, company,
+                phone, address1, address2, city, state, country, zip,
+                is_default_shipping, is_default_billing, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
+            "#
+        )
+        .bind(address_id)
+        .bind(None::<Uuid>) // No customer_id for order addresses
+        .bind(first_name)
+        .bind(last_name)
+        .bind(wc_addr.company.clone())
+        .bind(wc_addr.phone.clone())
+        .bind(address1)
+        .bind(wc_addr.address_2.clone())
+        .bind(city)
+        .bind(wc_addr.state.clone())
+        .bind(country)
+        .bind(zip)
+        .bind(false)
+        .bind(false)
+        .execute(pool)
+        .await;
+
+        match result {
+            Ok(_) => Ok(address_id),
+            Err(e) => Err(ImportError::Database(crate::Error::Database(e))),
+        }
     }
 }
 
