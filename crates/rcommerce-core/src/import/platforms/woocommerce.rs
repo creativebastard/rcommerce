@@ -81,7 +81,29 @@ impl WooCommerceImporter {
                 )));
             }
 
-            let items: Vec<T> = response.json().await?;
+            // Parse JSON with better error handling
+            let body_text = response.text().await?;
+            let items: Vec<T> = match serde_json::from_str(&body_text) {
+                Ok(items) => items,
+                Err(e) => {
+                    // Try to parse as error response
+                    if let Ok(error_json) = serde_json::from_str::<serde_json::Value>(&body_text) {
+                        if let Some(code) = error_json.get("code").and_then(|c| c.as_str()) {
+                            return Err(ImportError::Api(format!(
+                                "WooCommerce API returned error: {} - {}",
+                                code,
+                                error_json.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error")
+                            )));
+                        }
+                    }
+                    
+                    return Err(ImportError::Api(format!(
+                        "Failed to parse WooCommerce response: {}. Response preview: {:.200}",
+                        e,
+                        body_text
+                    )));
+                }
+            };
             let item_count = items.len();
 
             results.extend(items);
@@ -429,16 +451,16 @@ struct WooCommerceCustomer {
 #[derive(Debug, Deserialize)]
 struct WooCommerceAddress {
     #[serde(rename = "first_name")]
-    first_name: String,
+    first_name: Option<String>,
     #[serde(rename = "last_name")]
-    last_name: String,
-    company: String,
-    address_1: String,
-    address_2: String,
-    city: String,
-    state: String,
-    postcode: String,
-    country: String,
+    last_name: Option<String>,
+    company: Option<String>,
+    address_1: Option<String>,
+    address_2: Option<String>,
+    city: Option<String>,
+    state: Option<String>,
+    postcode: Option<String>,
+    country: Option<String>,
     email: Option<String>,
     phone: Option<String>,
 }
@@ -448,20 +470,20 @@ struct WooCommerceAddress {
 struct WooCommerceOrder {
     id: u64,
     #[serde(rename = "order_number")]
-    order_number: String,
+    order_number: Option<String>,
     status: String,
     currency: String,
     total: String,
     #[serde(rename = "total_tax")]
-    total_tax: String,
+    total_tax: Option<String>,
     #[serde(rename = "shipping_total")]
-    shipping_total: String,
+    shipping_total: Option<String>,
     #[serde(rename = "discount_total")]
-    discount_total: String,
-    billing: WooCommerceAddress,
-    shipping: WooCommerceAddress,
+    discount_total: Option<String>,
+    billing: Option<WooCommerceAddress>,
+    shipping: Option<WooCommerceAddress>,
     #[serde(rename = "line_items")]
-    line_items: Vec<WooCommerceLineItem>,
+    line_items: Option<Vec<WooCommerceLineItem>>,
 }
 
 #[allow(dead_code)]
