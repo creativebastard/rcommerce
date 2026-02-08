@@ -4,6 +4,13 @@
 //! - Runs migrations on startup
 //! - Tracks applied migrations
 //! - Supports seeding demo data
+//! 
+//! MIGRATION SYSTEM NOTES:
+//! - Migrations 1-11 were the original core migrations
+//! - Migration 25 (025_fix_all_schema_issues.sql) is a comprehensive idempotent migration
+//!   that ensures all tables and columns exist. It can be safely run multiple times.
+//! - Previous migrations 12-24 had various issues (duplicates, wrong file references, etc.)
+//!   and have been consolidated into migration 25.
 
 use sqlx::{PgPool, Row};
 use tracing::{info, warn, error};
@@ -91,30 +98,23 @@ impl Migrator {
         info!("Found {} applied migrations", applied.len());
 
         // Define all migrations
+        // Note: Migrations 1-11 are the original core migrations
+        // Migration 25 is the comprehensive fix-all migration that ensures all schema is correct
         let migrations = vec![
             (1, "initial_schema", include_str!("../../migrations/001_initial_schema.sql")),
             (2, "carts_and_coupons", include_str!("../../migrations/002_carts_and_coupons.sql")),
             (3, "demo_products", include_str!("../../migrations/003_demo_products.sql")),
             (4, "fix_product_schema", include_str!("../../migrations/004_fix_product_schema.sql")),
-            (5, "customer_fields", include_str!("../../migrations/006_customer_fields.sql")),
-            (6, "api_keys", include_str!("../../migrations/005_api_keys.sql")),
+            (5, "api_keys", include_str!("../../migrations/005_api_keys.sql")),
+            (6, "customer_fields", include_str!("../../migrations/006_customer_fields.sql")),
             (7, "fix_currency_type", include_str!("../../migrations/007_fix_currency_type.sql")),
             (8, "add_order_fields", include_str!("../../migrations/008_add_order_fields.sql")),
             (9, "add_address_ids", include_str!("../../migrations/009_add_address_ids.sql")),
             (10, "add_all_order_columns", include_str!("../../migrations/010_add_all_order_columns.sql")),
             (11, "add_order_item_columns", include_str!("../../migrations/011_add_order_item_columns.sql")),
-            (12, "statistics_views", include_str!("../../migrations/013_statistics_views.sql")),
-            (13, "fix_address_columns", include_str!("../../migrations/014_fix_address_columns.sql")),
-            (14, "add_customer_role", include_str!("../../migrations/015_add_customer_role.sql")),
-            (15, "create_product_categories", include_str!("../../migrations/016_create_product_categories.sql")),
-            (16, "create_fulfillments", include_str!("../../migrations/017_create_fulfillments.sql")),
-            (17, "create_order_notes", include_str!("../../migrations/018_create_order_notes.sql")),
-            (18, "create_subscription_items", include_str!("../../migrations/019_create_subscription_items.sql")),
-            (19, "create_collections", include_str!("../../migrations/020_create_collections.sql")),
-            (20, "fix_coupon_applications_fk", include_str!("../../migrations/021_fix_coupon_applications_fk.sql")),
-            (21, "digital_products", include_str!("../../migrations/022_digital_products.sql")),
-            (22, "order_downloads", include_str!("../../migrations/023_order_downloads.sql")),
-            (23, "bundle_components", include_str!("../../migrations/024_bundle_components.sql"))
+            // Migration 25 is the comprehensive fix-all migration
+            // It is idempotent and can safely run multiple times
+            (25, "fix_all_schema_issues", include_str!("../../migrations/025_fix_all_schema_issues.sql")),
         ];
 
         for (version, name, sql) in migrations {
