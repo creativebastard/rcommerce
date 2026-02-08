@@ -7,6 +7,10 @@ use tracing::info;
 use rcommerce_core::{Result, Config};
 use rcommerce_core::models::{ProductType, Currency};
 
+mod commands {
+    pub mod setup;
+}
+
 /// Security checks for CLI operations
 mod security {
     use colored::Colorize;
@@ -140,6 +144,13 @@ pub enum Commands {
     Email {
         #[command(subcommand)]
         command: EmailCommands,
+    },
+    
+    /// Interactive setup wizard
+    Setup {
+        /// Output file path for the configuration
+        #[arg(short, long, help = "Output configuration file path")]
+        output: Option<PathBuf>,
     },
 }
 
@@ -1489,6 +1500,13 @@ async fn main() -> Result<()> {
                         std::process::exit(1);
                     }
                 }
+            }
+        }
+        
+        Commands::Setup { output } => {
+            if let Err(e) = commands::setup::run_setup(output).await {
+                eprintln!("{}", format!("❌ Setup failed: {}", e).red().bold());
+                std::process::exit(1);
             }
         }
     }
