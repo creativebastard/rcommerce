@@ -903,7 +903,10 @@ CREATE INDEX IF NOT EXISTS idx_dunning_emails_sent_at ON dunning_emails(sent_at)
 -- ============================================================================
 
 -- Create the trigger function
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+-- Drop first to avoid ownership issues
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+
+CREATE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
