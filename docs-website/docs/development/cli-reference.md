@@ -508,6 +508,7 @@ Options:
   -e, --entities <ENTITIES>    Comma-separated list: products,customers,orders [default: all]
       --limit <LIMIT>          Maximum records to import per entity
       --dry-run                Validate data without importing
+      --overwrite              Update existing records (default: skip)
 ```
 
 **Supported Platforms:**
@@ -545,6 +546,14 @@ rcommerce import platform woocommerce \
   --api-key YOUR_CONSUMER_KEY \
   --api-secret YOUR_CONSUMER_SECRET \
   --limit 100
+
+# Import and update existing records
+rcommerce import platform woocommerce \
+  -c config.toml \
+  --api-url https://your-store.com \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET \
+  --overwrite
 ```
 
 **Dry Run Mode:**

@@ -127,6 +127,14 @@ rcommerce import platform woocommerce \
   --api-secret YOUR_CONSUMER_SECRET \
   --config config.toml
 
+# Import with overwrite (update existing records)
+rcommerce import platform woocommerce \
+  --api-url https://your-store.com \
+  --api-key YOUR_CONSUMER_KEY \
+  --api-secret YOUR_CONSUMER_SECRET \
+  --config config.toml \
+  --overwrite
+
 # Import with attribute mapping
 rcommerce import woocommerce products \
   --source products.json \
@@ -139,6 +147,28 @@ rcommerce import woocommerce orders \
   --payment-gateway-map '{"bacs":"bank_transfer","cod":"cash_on_delivery"}' \
   --config config.toml
 ```
+
+#### WooCommerce Platform Import Behavior
+
+When using `rcommerce import platform woocommerce`:
+
+| Flag | Behavior |
+|------|----------|
+| (no flag) | Skips existing products, customers, and orders |
+| `--overwrite` | Updates existing products, customers, and orders |
+| `--skip-existing` | Always skips existing records (same as no flag) |
+
+**What gets imported:**
+- **Products** - All products with SKUs, images, and inventory
+- **Customers** - All customers with billing/shipping addresses
+- **Orders** - All orders with line items (linked to imported products and customers)
+
+**Order Item Mapping:**
+Order items are automatically linked to products by:
+1. Matching SKU (preferred method)
+2. Matching product name (fallback)
+
+If a product is not found, the order item is skipped with a warning.
 
 ### WooCommerce-Specific Mappings
 
