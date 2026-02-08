@@ -7,7 +7,7 @@ use dialoguer::{Confirm, Input, Password, Select};
 use std::path::PathBuf;
 
 use rcommerce_core::config::{
-    Config, DatabaseType, CacheType, StorageType,
+    Config, DatabaseType, CacheType, StorageType, LetsEncryptConfig,
 };
 
 /// Run the interactive setup wizard
@@ -355,23 +355,103 @@ async fn setup_tls(mut config: Config) -> Result<Config, String> {
         .map_err(|e| format!("Input error: {}", e))?;
 
     if enable_tls {
-        let cert_path: String = Input::new()
-            .with_prompt("Path to TLS certificate file")
-            .default("./certs/cert.pem".to_string())
+        let tls_options = vec![
+            "Let's Encrypt (Auto - Recommended)",
+            "Manual Certificates (Existing files)",
+        ];
+        let tls_idx = Select::new()
+            .with_prompt("TLS certificate source")
+            .items(&tls_options)
+            .default(0)
             .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+            .map_err(|e| format!("Selection error: {}", e))?;
 
-        let key_path: String = Input::new()
-            .with_prompt("Path to TLS private key file")
-            .default("./certs/key.pem".to_string())
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+        if tls_idx == 0 {
+            // Let's Encrypt
+            println!("\n{}", "Let's Encrypt Configuration".cyan());
+            
+            let email: String = Input::new()
+                .with_prompt("Contact email for Let's Encrypt")
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
 
-        config.tls.enabled = true;
-        config.tls.cert_file = Some(PathBuf::from(cert_path));
-        config.tls.key_file = Some(PathBuf::from(key_path));
+            let domains_input: String = Input::new()
+                .with_prompt("Domains (comma-separated, e.g., example.com,www.example.com)")
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+            
+            let domains: Vec<String> = domains_input
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
 
-        println!("{}", "✓ TLS configured".green());
+            let use_staging = Confirm::new()
+                .with_prompt("Use Let's Encrypt staging server? (for testing)")
+                .default(false)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            let cache_dir: String = Input::new()
+                .with_prompt("Certificate cache directory")
+                .default("./certs".to_string())
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            let https_port: u16 = Input::new()
+                .with_prompt("HTTPS port")
+                .default(443)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            let http_port: u16 = Input::new()
+                .with_prompt("HTTP port (for ACME challenges and redirects)")
+                .default(80)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            config.tls.enabled = true;
+            config.tls.https_port = https_port;
+            config.tls.http_port = http_port;
+            config.tls.lets_encrypt = Some(LetsEncryptConfig {
+                enabled: true,
+                email,
+                domains,
+                use_staging,
+                cache_dir: PathBuf::from(cache_dir),
+                ..Default::default()
+            });
+
+            println!("\n{}", "✓ Let's Encrypt configured".green());
+            println!("{}", "  Note: Ensure ports 80 and 443 are accessible from the internet".dimmed());
+            println!("{}", "  and DNS records point to this server.".dimmed());
+        } else {
+            // Manual certificates
+            let cert_path: String = Input::new()
+                .with_prompt("Path to TLS certificate file")
+                .default("./certs/cert.pem".to_string())
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            let key_path: String = Input::new()
+                .with_prompt("Path to TLS private key file")
+                .default("./certs/key.pem".to_string())
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            let https_port: u16 = Input::new()
+                .with_prompt("HTTPS port")
+                .default(443)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+
+            config.tls.enabled = true;
+            config.tls.https_port = https_port;
+            config.tls.cert_file = Some(PathBuf::from(cert_path));
+            config.tls.key_file = Some(PathBuf::from(key_path));
+
+            println!("{}", "✓ Manual TLS certificates configured".green());
+        }
     } else {
         config.tls.enabled = false;
         println!("{}", "✓ TLS disabled (will use HTTP)".yellow());
