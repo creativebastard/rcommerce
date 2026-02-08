@@ -553,9 +553,47 @@ impl PlatformImporter for WooCommerceImporter {
                     .await
                     .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
                     
-                    if existing.is_some() {
+                    // Handle existing customer
+                    if let Some((existing_id,)) = existing {
                         if config.options.skip_existing {
                             stats.skipped += 1;
+                            continue;
+                        }
+                        if config.options.update_existing {
+                            // Update existing customer
+                            let first_name = if customer.first_name.is_empty() {
+                                customer.username.clone()
+                            } else {
+                                customer.first_name.clone()
+                            };
+                            let last_name = customer.last_name.clone();
+                            let phone = customer.billing.as_ref().and_then(|b| b.phone.clone());
+                            
+                            match sqlx::query(
+                                r#"
+                                UPDATE customers 
+                                SET first_name = $1, last_name = $2, phone = $3, updated_at = NOW()
+                                WHERE id = $4
+                                "#
+                            )
+                            .bind(&first_name)
+                            .bind(&last_name)
+                            .bind(&phone)
+                            .bind(existing_id)
+                            .execute(pool)
+                            .await {
+                                Ok(_) => {
+                                    stats.updated += 1;
+                                    tracing::info!("Updated customer: {}", customer.email);
+                                }
+                                Err(e) => {
+                                    stats.errors += 1;
+                                    stats.error_details.push(format!(
+                                        "Failed to update customer '{}': {}",
+                                        customer.email, e
+                                    ));
+                                }
+                            }
                             continue;
                         }
                         stats.skipped += 1;
@@ -589,7 +627,7 @@ impl PlatformImporter for WooCommerceImporter {
                     .bind(&phone)
                     .bind(false)  // accepts_marketing
                     .bind(false)  // tax_exempt
-                    .bind("USD")  // currency
+                    .bind(Currency::USD)  // currency - use proper enum type
                     .bind(false)  // is_verified
                     .bind(false)  // marketing_opt_in
                     .bind(true)   // email_notifications
@@ -727,6 +765,17 @@ impl PlatformImporter for WooCommerceImporter {
                         .and_then(|b| b.email.clone())
                         .unwrap_or_else(|| "unknown@example.com".to_string());
 
+                    // Look up customer by email (needed for both create and update)
+                    let customer_id = if !customer_email.is_empty() && customer_email != "unknown@example.com" {
+                        sqlx::query_scalar::<_, Uuid>("SELECT id FROM customers WHERE email = $1")
+                            .bind(&customer_email)
+                            .fetch_optional(pool)
+                            .await
+                            .map_err(|e| ImportError::Database(crate::Error::Database(e)))?
+                    } else {
+                        None
+                    };
+
                     // Parse totals
                     let total = self.parse_price(&order.total);
                     let tax_total = order.total_tax.as_ref()
@@ -766,17 +815,131 @@ impl PlatformImporter for WooCommerceImporter {
                     let order_number = order.order_number.clone()
                         .unwrap_or_else(|| format!("WC-{}", order.id));
 
+                    // Check if order already exists
+                    let existing_order: Option<Uuid> = sqlx::query_scalar(
+                        "SELECT id FROM orders WHERE order_number = $1"
+                    )
+                    .bind(&order_number)
+                    .fetch_optional(pool)
+                    .await
+                    .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+
+                    if let Some(existing_order_id) = existing_order {
+                        if config.options.skip_existing {
+                            stats.skipped += 1;
+                            continue;
+                        }
+                        if config.options.update_existing {
+                            // Delete existing order items first
+                            let _ = sqlx::query("DELETE FROM order_items WHERE order_id = $1")
+                                .bind(existing_order_id)
+                                .execute(pool)
+                                .await;
+                            
+                            // Update existing order
+                            match sqlx::query(
+                                r#"
+                                UPDATE orders 
+                                SET customer_id = $1, email = $2, currency = $3, status = $4,
+                                    fulfillment_status = $5, payment_status = $6, subtotal = $7,
+                                    tax_total = $8, shipping_total = $9, discount_total = $10, total = $11,
+                                    updated_at = NOW()
+                                WHERE id = $12
+                                "#
+                            )
+                            .bind(customer_id)
+                            .bind(&customer_email)
+                            .bind(currency)
+                            .bind(status)
+                            .bind(fulfillment_status)
+                            .bind(payment_status)
+                            .bind(subtotal)
+                            .bind(tax_total)
+                            .bind(shipping_total)
+                            .bind(discount_total)
+                            .bind(total)
+                            .bind(existing_order_id)
+                            .execute(pool)
+                            .await {
+                                Ok(_) => {
+                                    // Re-create order items
+                                    if let Some(ref line_items) = order.line_items {
+                                        for item in line_items {
+                                            let item_price = self.parse_price(&item.subtotal) / Decimal::from(item.quantity.max(1));
+                                            let item_subtotal = self.parse_price(&item.subtotal);
+                                            let item_total = self.parse_price(&item.total);
+                                            let item_tax = item_total - item_subtotal;
+
+                                            // Look up product by SKU first, then by name
+                                            let product_id = if let Some(ref sku) = item.sku {
+                                                self.lookup_product_by_sku(pool, sku).await.ok().flatten()
+                                            } else {
+                                                None
+                                            };
+                                            
+                                            let product_id = match product_id {
+                                                Some(id) => Some(id),
+                                                None => self.lookup_product_by_name(pool, &item.name).await.ok().flatten(),
+                                            };
+                                            
+                                            let product_id = match product_id {
+                                                Some(id) => id,
+                                                None => continue,
+                                            };
+
+                                            let _ = sqlx::query(
+                                                r#"
+                                                INSERT INTO order_items (
+                                                    id, order_id, product_id, variant_id,
+                                                    quantity, price, subtotal, tax_amount, total,
+                                                    sku, title, variant_title, requires_shipping,
+                                                    created_at, updated_at
+                                                )
+                                                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+                                                "#
+                                            )
+                                            .bind(Uuid::new_v4())
+                                            .bind(existing_order_id)
+                                            .bind(product_id)
+                                            .bind(None::<Uuid>)
+                                            .bind(item.quantity)
+                                            .bind(item_price)
+                                            .bind(item_subtotal)
+                                            .bind(item_tax)
+                                            .bind(item_total)
+                                            .bind(item.sku.clone())
+                                            .bind(&item.name)
+                                            .bind(None::<String>)
+                                            .bind(true)
+                                            .execute(pool)
+                                            .await;
+                                        }
+                                    }
+                                    
+                                    stats.updated += 1;
+                                    tracing::info!("Updated order: {}", order_number);
+                                }
+                                Err(e) => {
+                                    stats.errors += 1;
+                                    stats.error_details.push(format!(
+                                        "Failed to update order {}: {}",
+                                        order.id, e
+                                    ));
+                                }
+                            }
+                            continue;
+                        }
+                        stats.skipped += 1;
+                        continue;
+                    }
+
                     // Create addresses and get their IDs
                     let mut billing_address_id: Option<Uuid> = None;
                     let mut shipping_address_id: Option<Uuid> = None;
 
-                    // Note: For orders, we need to find the customer first or create as guest order
-                    // For simplicity, we'll create guest orders (customer_id = None)
-                    // In a full implementation, we'd look up the customer by email
-
-                    // Create billing address
+                    // Create billing address (with customer_id if found)
                     if let Some(ref billing) = order.billing {
-                        match self.create_address_for_order(pool, billing).await {
+                        match self.create_address_for_order(pool, customer_id, billing).await {
                             Ok(id) => billing_address_id = Some(id),
                             Err(e) => {
                                 stats.error_details.push(format!(
@@ -787,9 +950,9 @@ impl PlatformImporter for WooCommerceImporter {
                         }
                     }
 
-                    // Create shipping address
+                    // Create shipping address (with customer_id if found)
                     if let Some(ref shipping) = order.shipping {
-                        match self.create_address_for_order(pool, shipping).await {
+                        match self.create_address_for_order(pool, customer_id, shipping).await {
                             Ok(id) => shipping_address_id = Some(id),
                             Err(e) => {
                                 stats.error_details.push(format!(
@@ -816,12 +979,12 @@ impl PlatformImporter for WooCommerceImporter {
                     )
                     .bind(order_id)
                     .bind(&order_number)
-                    .bind(None::<Uuid>) // customer_id - would need to look up by email
+                    .bind(customer_id) // Use looked-up customer_id
                     .bind(&customer_email)
-                    .bind(currency.to_string())
-                    .bind(format!("{:?}", status).to_lowercase())
-                    .bind(format!("{:?}", fulfillment_status).to_lowercase())
-                    .bind(format!("{:?}", payment_status).to_lowercase())
+                    .bind(currency)  // Use Currency enum directly
+                    .bind(status)  // Use OrderStatus enum directly
+                    .bind(fulfillment_status)  // Use FulfillmentStatus enum directly
+                    .bind(payment_status)  // Use PaymentStatus enum directly
                     .bind(subtotal)
                     .bind(tax_total)
                     .bind(shipping_total)
@@ -845,6 +1008,31 @@ impl PlatformImporter for WooCommerceImporter {
                                     let item_total = self.parse_price(&item.total);
                                     let item_tax = item_total - item_subtotal;
 
+                                    // Look up product by SKU first, then by name
+                                    let product_id = if let Some(ref sku) = item.sku {
+                                        self.lookup_product_by_sku(pool, sku).await.ok().flatten()
+                                    } else {
+                                        None
+                                    };
+                                    
+                                    // Fallback to lookup by name if SKU not found
+                                    let product_id = match product_id {
+                                        Some(id) => Some(id),
+                                        None => self.lookup_product_by_name(pool, &item.name).await.ok().flatten(),
+                                    };
+                                    
+                                    // Skip order item if product not found
+                                    let product_id = match product_id {
+                                        Some(id) => id,
+                                        None => {
+                                            stats.error_details.push(format!(
+                                                "Order item '{}' not found in product catalog for order {}",
+                                                item.name, order.id
+                                            ));
+                                            continue;
+                                        }
+                                    };
+
                                     let item_result = sqlx::query(
                                         r#"
                                         INSERT INTO order_items (
@@ -858,7 +1046,7 @@ impl PlatformImporter for WooCommerceImporter {
                                     )
                                     .bind(Uuid::new_v4())
                                     .bind(order_id)
-                                    .bind(Uuid::nil()) // product_id - would need to look up by SKU or ID
+                                    .bind(product_id)
                                     .bind(None::<Uuid>) // variant_id
                                     .bind(item.quantity)
                                     .bind(item_price)
@@ -976,10 +1164,11 @@ impl WooCommerceImporter {
         }
     }
 
-    /// Helper method to create an address for an order (not linked to a customer)
+    /// Helper method to create an address for an order (optionally linked to a customer)
     async fn create_address_for_order(
         &self,
         pool: &PgPool,
+        customer_id: Option<Uuid>,
         wc_addr: &WooCommerceAddress,
     ) -> ImportResult<Uuid> {
         let address_id = Uuid::new_v4();
@@ -1026,7 +1215,7 @@ impl WooCommerceImporter {
             "#
         )
         .bind(address_id)
-        .bind(None::<Uuid>) // No customer_id for order addresses
+        .bind(customer_id) // Link to customer if found
         .bind(first_name)
         .bind(last_name)
         .bind(wc_addr.company.clone())
@@ -1046,6 +1235,48 @@ impl WooCommerceImporter {
             Ok(_) => Ok(address_id),
             Err(e) => Err(ImportError::Database(crate::Error::Database(e))),
         }
+    }
+    
+    /// Look up product ID by SKU
+    async fn lookup_product_by_sku(
+        &self,
+        pool: &PgPool,
+        sku: &str,
+    ) -> ImportResult<Option<Uuid>> {
+        if sku.is_empty() {
+            return Ok(None);
+        }
+        
+        let product_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM products WHERE sku = $1 LIMIT 1"
+        )
+        .bind(sku)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+        
+        Ok(product_id)
+    }
+    
+    /// Look up product ID by name (fallback if SKU not found)
+    async fn lookup_product_by_name(
+        &self,
+        pool: &PgPool,
+        name: &str,
+    ) -> ImportResult<Option<Uuid>> {
+        if name.is_empty() {
+            return Ok(None);
+        }
+        
+        let product_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM products WHERE title = $1 LIMIT 1"
+        )
+        .bind(name)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ImportError::Database(crate::Error::Database(e)))?;
+        
+        Ok(product_id)
     }
 }
 
