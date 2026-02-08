@@ -262,6 +262,7 @@ impl ProductRepository {
         let has_slug = request.slug.is_some();
         let has_description = request.description.is_some();
         let has_price = request.price.is_some();
+        let has_currency = request.currency.is_some();
         let has_is_active = request.is_active.is_some();
         let has_product_type = request.product_type.is_some();
         let has_file_url = request.file_url.is_some();
@@ -288,6 +289,10 @@ impl ProductRepository {
         if has_price {
             param_count += 1;
             sets.push(format!("price = ${}", param_count));
+        }
+        if has_currency {
+            param_count += 1;
+            sets.push(format!("currency = ${}", param_count));
         }
         if has_is_active {
             param_count += 1;
@@ -355,6 +360,9 @@ impl ProductRepository {
         }
         if let Some(price) = request.price {
             query_builder = query_builder.bind(price);
+        }
+        if let Some(currency) = request.currency {
+            query_builder = query_builder.bind(currency);
         }
         if let Some(is_active) = request.is_active {
             query_builder = query_builder.bind(is_active);

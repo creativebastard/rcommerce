@@ -328,6 +328,9 @@ impl PlatformImporter for WooCommerceImporter {
                     if let Some(existing_product) = existing {
                         // Product exists - check if we should update
                         if config.options.update_existing {
+                            // Parse default currency from config
+                            let default_currency = self.parse_currency(&config.options.default_currency);
+                            
                             // Update existing product using repository
                             let update_request = UpdateProductRequest {
                                 title: Some(product.name.clone()),
@@ -337,7 +340,7 @@ impl PlatformImporter for WooCommerceImporter {
                                 price: Some(price),
                                 compare_at_price: Some(compare_at_price),
                                 cost_price: None,
-                                currency: None,
+                                currency: Some(default_currency),
                                 inventory_quantity: Some(product.stock_quantity.unwrap_or(0)),
                                 inventory_policy: None,
                                 inventory_management: Some(product.manage_stock),
@@ -392,6 +395,9 @@ impl PlatformImporter for WooCommerceImporter {
                         }
                     } else {
                         // Create new product
+                        // Parse default currency from config
+                        let default_currency = self.parse_currency(&config.options.default_currency);
+                        
                         let create_request = CreateProductRequest {
                             title: product.name.clone(),
                             slug: if product.slug.is_empty() {
@@ -405,7 +411,7 @@ impl PlatformImporter for WooCommerceImporter {
                             price,
                             compare_at_price,
                             cost_price: None,
-                            currency: Currency::USD, // Default, could be configurable
+                            currency: default_currency, // Use configured default currency
                             inventory_quantity: product.stock_quantity.unwrap_or(0),
                             inventory_policy: InventoryPolicy::Deny,
                             inventory_management: product.manage_stock,
@@ -568,17 +574,19 @@ impl PlatformImporter for WooCommerceImporter {
                             };
                             let last_name = customer.last_name.clone();
                             let phone = customer.billing.as_ref().and_then(|b| b.phone.clone());
+                            let default_currency = self.parse_currency(&config.options.default_currency);
                             
                             match sqlx::query(
                                 r#"
                                 UPDATE customers 
-                                SET first_name = $1, last_name = $2, phone = $3, updated_at = NOW()
-                                WHERE id = $4
+                                SET first_name = $1, last_name = $2, phone = $3, currency = $4, updated_at = NOW()
+                                WHERE id = $5
                                 "#
                             )
                             .bind(&first_name)
                             .bind(&last_name)
                             .bind(&phone)
+                            .bind(default_currency)
                             .bind(existing_id)
                             .execute(pool)
                             .await {
@@ -610,6 +618,9 @@ impl PlatformImporter for WooCommerceImporter {
                     let last_name = customer.last_name.clone();
                     let phone = customer.billing.as_ref().and_then(|b| b.phone.clone());
                     
+                    // Parse default currency from config
+                    let default_currency = self.parse_currency(&config.options.default_currency);
+                    
                     match sqlx::query(
                         r#"
                         INSERT INTO customers (
@@ -627,7 +638,7 @@ impl PlatformImporter for WooCommerceImporter {
                     .bind(&phone)
                     .bind(false)  // accepts_marketing
                     .bind(false)  // tax_exempt
-                    .bind(Currency::USD)  // currency - use proper enum type
+                    .bind(default_currency)  // currency - use configured default
                     .bind(false)  // is_verified
                     .bind(false)  // marketing_opt_in
                     .bind(true)   // email_notifications

@@ -81,6 +81,10 @@ pub struct ImportOptions {
     /// Transform rules
     #[serde(default)]
     pub transforms: Vec<TransformRule>,
+
+    /// Default currency for imported records (e.g., "USD", "AUD", "EUR")
+    #[serde(default = "default_currency")]
+    pub default_currency: String,
 }
 
 impl Default for ImportOptions {
@@ -95,6 +99,7 @@ impl Default for ImportOptions {
             field_mappings: HashMap::new(),
             default_values: HashMap::new(),
             transforms: Vec::new(),
+            default_currency: default_currency(),
         }
     }
 }
@@ -209,4 +214,8 @@ fn default_true() -> bool {
 
 fn default_batch_size() -> usize {
     100
+}
+
+fn default_currency() -> String {
+    "USD".to_string()
 }
