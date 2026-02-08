@@ -6,11 +6,11 @@
 //! - Supports seeding demo data
 //! 
 //! MIGRATION SYSTEM NOTES:
-//! - Migrations 1-11 were the original core migrations
-//! - Migration 25 (025_fix_all_schema_issues.sql) is a comprehensive idempotent migration
-//!   that ensures all tables and columns exist. It can be safely run multiple times.
-//! - Previous migrations 12-24 had various issues (duplicates, wrong file references, etc.)
-//!   and have been consolidated into migration 25.
+//! - Migration 1 (001_complete_schema.sql) is a comprehensive, self-contained migration
+//!   that creates the entire database schema in correct dependency order.
+//! - This is the ONLY migration needed for fresh installations.
+//! - All previous migrations (001-025) have been consolidated into this single file.
+//! - The migration is idempotent - it drops everything first and recreates from scratch.
 
 use sqlx::{PgPool, Row};
 use tracing::{info, warn, error};
@@ -98,23 +98,9 @@ impl Migrator {
         info!("Found {} applied migrations", applied.len());
 
         // Define all migrations
-        // Note: Migrations 1-11 are the original core migrations
-        // Migration 25 is the comprehensive fix-all migration that ensures all schema is correct
+        // Note: Only migration 1 is needed - it's a comprehensive schema creation
         let migrations = vec![
-            (1, "initial_schema", include_str!("../../migrations/001_initial_schema.sql")),
-            (2, "carts_and_coupons", include_str!("../../migrations/002_carts_and_coupons.sql")),
-            (3, "demo_products", include_str!("../../migrations/003_demo_products.sql")),
-            (4, "fix_product_schema", include_str!("../../migrations/004_fix_product_schema.sql")),
-            (5, "api_keys", include_str!("../../migrations/005_api_keys.sql")),
-            (6, "customer_fields", include_str!("../../migrations/006_customer_fields.sql")),
-            (7, "fix_currency_type", include_str!("../../migrations/007_fix_currency_type.sql")),
-            (8, "add_order_fields", include_str!("../../migrations/008_add_order_fields.sql")),
-            (9, "add_address_ids", include_str!("../../migrations/009_add_address_ids.sql")),
-            (10, "add_all_order_columns", include_str!("../../migrations/010_add_all_order_columns.sql")),
-            (11, "add_order_item_columns", include_str!("../../migrations/011_add_order_item_columns.sql")),
-            // Migration 25 is the comprehensive fix-all migration
-            // It is idempotent and can safely run multiple times
-            (25, "fix_all_schema_issues", include_str!("../../migrations/025_fix_all_schema_issues.sql")),
+            (1, "complete_schema", include_str!("../../migrations/001_complete_schema.sql")),
         ];
 
         for (version, name, sql) in migrations {
@@ -201,8 +187,82 @@ impl Migrator {
             return Ok(());
         }
 
-        // Demo data is already included in migration 003
-        // If we need additional seed data, add it here
+        // Insert demo products
+        sqlx::query(
+            r#"
+            INSERT INTO products (
+                id, title, slug, description, sku, price, compare_at_price, cost_price,
+                currency, inventory_quantity, inventory_policy, product_type, inventory_management,
+                weight, weight_unit, requires_shipping, is_active, is_featured,
+                seo_title, seo_description, created_at, updated_at, published_at
+            ) VALUES 
+            (
+                '550e8400-e29b-41d4-a716-446655440001',
+                'Premium Wireless Headphones',
+                'premium-wireless-headphones',
+                'High-quality wireless headphones with active noise cancellation and 30-hour battery life.',
+                'HEADPHONES-001', 299.99, 349.99, 150.00, 'USD', 100, 'deny', 'simple', true,
+                0.25, 'kg', true, true, true,
+                'Premium Wireless Headphones - 30hr Battery | R Commerce',
+                'Experience premium sound with our wireless headphones.',
+                NOW(), NOW(), NOW()
+            ),
+            (
+                '550e8400-e29b-41d4-a716-446655440002',
+                'Smart Watch Pro',
+                'smart-watch-pro',
+                'Advanced fitness tracking smartwatch with heart rate monitoring and GPS.',
+                'WATCH-001', 399.99, 449.99, 200.00, 'USD', 75, 'deny', 'simple', true,
+                0.05, 'kg', true, true, true,
+                'Smart Watch Pro - Fitness & Health Tracking | R Commerce',
+                'Track your fitness and health with Smart Watch Pro.',
+                NOW(), NOW(), NOW()
+            ),
+            (
+                '550e8400-e29b-41d4-a716-446655440003',
+                'Portable Bluetooth Speaker',
+                'portable-bluetooth-speaker',
+                '360-degree immersive sound in a compact, portable design.',
+                'SPEAKER-001', 149.99, 179.99, 75.00, 'USD', 150, 'deny', 'simple', true,
+                0.5, 'kg', true, true, false,
+                'Portable Bluetooth Speaker - 360 Sound | R Commerce',
+                'Take your music anywhere with our portable Bluetooth speaker.',
+                NOW(), NOW(), NOW()
+            )
+            "#
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(Error::Database)?;
+
+        // Insert product images
+        sqlx::query(
+            r#"
+            INSERT INTO product_images (id, product_id, position, src, alt_text, created_at) VALUES
+            ('550e8400-e29b-41d4-a716-446655441001', '550e8400-e29b-41d4-a716-446655440001', 1, '/uploads/products/headphones-main.jpg', 'Premium Wireless Headphones - Main View', NOW()),
+            ('550e8400-e29b-41d4-a716-446655441002', '550e8400-e29b-41d4-a716-446655440002', 1, '/uploads/products/watch-main.jpg', 'Smart Watch Pro - Main View', NOW()),
+            ('550e8400-e29b-41d4-a716-446655441003', '550e8400-e29b-41d4-a716-446655440003', 1, '/uploads/products/speaker-main.jpg', 'Portable Bluetooth Speaker - Main View', NOW())
+            "#
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(Error::Database)?;
+
+        // Insert product variants
+        sqlx::query(
+            r#"
+            INSERT INTO product_variants (
+                id, product_id, title, sku, price, compare_at_price, cost_price,
+                currency, inventory_quantity, inventory_policy, is_active, created_at, updated_at
+            ) VALUES
+            ('550e8400-e29b-41d4-a716-446655442001', '550e8400-e29b-41d4-a716-446655440001', 'Default', 'HEADPHONES-001-DEFAULT', 299.99, 349.99, 150.00, 'USD', 100, 'deny', true, NOW(), NOW()),
+            ('550e8400-e29b-41d4-a716-446655442002', '550e8400-e29b-41d4-a716-446655440002', 'Default', 'WATCH-001-DEFAULT', 399.99, 449.99, 200.00, 'USD', 75, 'deny', true, NOW(), NOW()),
+            ('550e8400-e29b-41d4-a716-446655442003', '550e8400-e29b-41d4-a716-446655440003', 'Default', 'SPEAKER-001-DEFAULT', 149.99, 179.99, 75.00, 'USD', 150, 'deny', true, NOW(), NOW())
+            "#
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(Error::Database)?;
         
         info!("Demo data seeded successfully!");
         Ok(())
