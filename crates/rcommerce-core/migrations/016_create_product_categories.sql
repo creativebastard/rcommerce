@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS product_categories (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Add is_active column if table exists but column doesn't (for backwards compatibility)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'product_categories')
+       AND NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                       WHERE table_name = 'product_categories' AND column_name = 'is_active') THEN
+        ALTER TABLE product_categories ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+    END IF;
+END $$;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_product_categories_slug ON product_categories(slug);
 CREATE INDEX IF NOT EXISTS idx_product_categories_parent_id ON product_categories(parent_id) WHERE parent_id IS NOT NULL;
