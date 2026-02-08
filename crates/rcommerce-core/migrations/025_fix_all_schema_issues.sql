@@ -541,6 +541,39 @@ CREATE INDEX IF NOT EXISTS idx_subscription_items_product_id ON subscription_ite
 -- FULFILLMENTS TABLE
 -- ====================
 
+-- Fix existing fulfillments table by adding missing columns
+DO $$
+BEGIN
+    -- Add missing columns if table exists but columns don't
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'fulfillments') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'status') THEN
+            ALTER TABLE fulfillments ADD COLUMN status fulfillment_status NOT NULL DEFAULT 'pending';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'tracking_number') THEN
+            ALTER TABLE fulfillments ADD COLUMN tracking_number VARCHAR(255);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'tracking_url') THEN
+            ALTER TABLE fulfillments ADD COLUMN tracking_url TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'tracking_company') THEN
+            ALTER TABLE fulfillments ADD COLUMN tracking_company VARCHAR(100);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'shipped_at') THEN
+            ALTER TABLE fulfillments ADD COLUMN shipped_at TIMESTAMPTZ;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'delivered_at') THEN
+            ALTER TABLE fulfillments ADD COLUMN delivered_at TIMESTAMPTZ;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'created_at') THEN
+            ALTER TABLE fulfillments ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'fulfillments' AND column_name = 'updated_at') THEN
+            ALTER TABLE fulfillments ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+        END IF;
+    END IF;
+END $$;
+
+-- Create table if it doesn't exist
 CREATE TABLE IF NOT EXISTS fulfillments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
