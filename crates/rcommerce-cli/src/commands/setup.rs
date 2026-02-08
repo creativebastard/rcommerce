@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use rcommerce_core::config::{
     Config, DatabaseType, CacheType, StorageType, LetsEncryptConfig,
 };
+use rcommerce_core::db::migrate::Migrator;
 
 /// Run the interactive setup wizard
 pub async fn run_setup(output_path: Option<PathBuf>) -> Result<(), String> {
@@ -24,26 +25,35 @@ pub async fn run_setup(output_path: Option<PathBuf>) -> Result<(), String> {
     // Step 2: Database Configuration
     config = setup_database(config).await?;
 
-    // Step 3: Server Configuration
-    config = setup_server(config).await?;
+    // Step 3: Database Setup (migrations)
+    setup_database_schema(&config).await?;
 
-    // Step 4: Cache/Redis Configuration
-    config = setup_cache(config).await?;
+    // Step 4: Data Import (optional)
+    let import_done = setup_import(&config).await?;
 
-    // Step 5: Security & JWT
-    config = setup_security(config).await?;
+    // Only continue with other config if user didn't exit during import
+    if !import_done {
+        // Step 5: Server Configuration
+        config = setup_server(config).await?;
 
-    // Step 6: Media Storage
-    config = setup_media(config).await?;
+        // Step 6: Cache/Redis Configuration
+        config = setup_cache(config).await?;
 
-    // Step 7: TLS/SSL
-    config = setup_tls(config).await?;
+        // Step 7: Security & JWT
+        config = setup_security(config).await?;
 
-    // Step 8: Payment Gateways (optional)
-    config = setup_payment_gateways(config).await?;
+        // Step 8: Media Storage
+        config = setup_media(config).await?;
 
-    // Step 9: Notifications (optional)
-    config = setup_notifications(config).await?;
+        // Step 9: TLS/SSL
+        config = setup_tls(config).await?;
+
+        // Step 10: Payment Gateways (optional)
+        config = setup_payment_gateways(config).await?;
+
+        // Step 11: Notifications (optional)
+        config = setup_notifications(config).await?;
+    }
 
     // Generate and save config
     save_config(&config, output_path).await?;
@@ -573,6 +583,323 @@ async fn setup_notifications(mut config: Config) -> Result<Config, String> {
     }
 
     Ok(config)
+}
+
+/// Setup database schema (run migrations)
+async fn setup_database_schema(config: &Config) -> Result<(), String> {
+    println!("\n{}", "🗄️  Database Setup".bold().green());
+    println!("{}", "------------------".green());
+
+    // Check if we can connect to the database
+    println!("{}", "Connecting to database...".yellow());
+    
+    // Try to create database connection pool
+    let pool = match sqlx::postgres::PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&config.database.url())
+        .await
+    {
+        Ok(pool) => {
+            println!("{}", "✓ Connected to database".green());
+            pool
+        }
+        Err(e) => {
+            println!("{}", format!("❌ Cannot connect to database: {}", e).red());
+            
+            let continue_anyway = Confirm::new()
+                .with_prompt("Continue without database setup? (You'll need to run migrations manually)")
+                .default(false)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+            
+            if continue_anyway {
+                println!("{}", "⚠️  Skipping database setup. Run 'rcommerce db migrate' later.".yellow());
+                return Ok(());
+            } else {
+                return Err("Database connection required".to_string());
+            }
+        }
+    };
+
+    // Check if database has existing tables
+    let has_tables: bool = sqlx::query_scalar(
+        "SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = '_migrations'
+        )"
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap_or(false);
+
+    if has_tables {
+        println!("\n{}", "⚠️  Database already has tables!".yellow().bold());
+        
+        let check_data: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM products")
+            .fetch_one(&pool)
+            .await
+            .unwrap_or(0);
+        
+        if check_data > 0 {
+            println!("{}", format!("   Found existing data ({} products)", check_data).dimmed());
+        }
+
+        let action = Select::new()
+            .with_prompt("What would you like to do?")
+            .items(&[
+                "Keep existing data (skip migrations)",
+                "Reset database (delete all data and start fresh)",
+                "Exit setup and investigate",
+            ])
+            .default(0)
+            .interact()
+            .map_err(|e| format!("Selection error: {}", e))?;
+
+        match action {
+            0 => {
+                println!("{}", "✓ Keeping existing database. Skipping migrations.".green());
+                return Ok(());
+            }
+            1 => {
+                let confirm = Confirm::new()
+                    .with_prompt("⚠️  WARNING: This will DELETE ALL DATA. Are you sure?")
+                    .default(false)
+                    .interact()
+                    .map_err(|e| format!("Input error: {}", e))?;
+
+                if confirm {
+                    println!("{}", "Resetting database...".yellow());
+                    
+                    // Run database reset
+                    let migrator = Migrator::new(pool.clone());
+                    match migrator.reset().await {
+                        Ok(_) => println!("{}", "✓ Database reset complete".green()),
+                        Err(e) => {
+                            println!("{}", format!("❌ Database reset failed: {}", e).red());
+                            return Err(format!("Database reset failed: {}", e));
+                        }
+                    }
+                } else {
+                    println!("{}", "Reset cancelled. Skipping migrations.".yellow());
+                    return Ok(());
+                }
+            }
+            2 => {
+                return Err("Setup cancelled by user".to_string());
+            }
+            _ => {}
+        }
+    }
+
+    // Run migrations
+    println!("{}", "Running database migrations...".yellow());
+    
+    let migrator = Migrator::new(pool.clone());
+    match migrator.migrate().await {
+        Ok(_) => {
+            println!("{}", "✓ Database migrations completed".green());
+        }
+        Err(e) => {
+            println!("{}", format!("❌ Migration failed: {}", e).red());
+            
+            let continue_anyway = Confirm::new()
+                .with_prompt("Continue despite migration failure?")
+                .default(false)
+                .interact()
+                .map_err(|e| format!("Input error: {}", e))?;
+            
+            if !continue_anyway {
+                return Err(format!("Migration failed: {}", e));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Setup data import from existing store
+async fn setup_import(config: &Config) -> Result<bool, String> {
+    println!("\n{}", "📥 Data Import (Optional)".bold().green());
+    println!("{}", "------------------------".green());
+
+    let do_import = Confirm::new()
+        .with_prompt("Would you like to import data from an existing store?")
+        .default(false)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    if !do_import {
+        println!("{}", "ℹ️  You can import data later using 'rcommerce import'".dimmed());
+        return Ok(false);
+    }
+
+    // Select platform
+    let platforms = vec![
+        "WooCommerce",
+        "Shopify",
+        "Magento",
+        "Medusa",
+        "CSV File",
+        "Skip import",
+    ];
+    
+    let platform_idx = Select::new()
+        .with_prompt("Select source platform")
+        .items(&platforms)
+        .default(0)
+        .interact()
+        .map_err(|e| format!("Selection error: {}", e))?;
+
+    if platform_idx == 5 {
+        println!("{}", "ℹ️  Import skipped. You can run it later.".dimmed());
+        return Ok(false);
+    }
+
+    let platform = match platform_idx {
+        0 => "woocommerce",
+        1 => "shopify",
+        2 => "magento",
+        3 => "medusa",
+        4 => "csv",
+        _ => return Ok(false),
+    };
+
+    if platform == "csv" {
+        println!("\n{}", "CSV Import".cyan());
+        println!("{}", "Please use the following command to import:".dimmed());
+        println!("  rcommerce import csv <file> -c config.toml");
+        return Ok(false);
+    }
+
+    // Get platform-specific details
+    println!("\n{}", format!("{} API Configuration", platforms[platform_idx]).cyan());
+    
+    let api_url: String = Input::new()
+        .with_prompt(format!("{} store URL", platforms[platform_idx]))
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    let api_key: String = Input::new()
+        .with_prompt("API Key / Consumer Key")
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    let api_secret: String = Password::new()
+        .with_prompt("API Secret / Consumer Secret (if required)")
+        .allow_empty_password(true)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    let default_currency: String = Input::new()
+        .with_prompt("Default currency for imported records")
+        .default("USD".to_string())
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    let overwrite = Confirm::new()
+        .with_prompt("Update existing records if they exist?")
+        .default(true)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    // Confirm before import
+    println!("\n{}", "Import Summary:".bold());
+    println!("  Platform: {}", platforms[platform_idx]);
+    println!("  Store URL: {}", api_url);
+    println!("  Currency: {}", default_currency);
+    println!("  Update existing: {}", if overwrite { "Yes" } else { "No" });
+
+    let confirm = Confirm::new()
+        .with_prompt("Start import?")
+        .default(true)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    if !confirm {
+        println!("{}", "Import cancelled.".yellow());
+        return Ok(false);
+    }
+
+    // Run the import
+    println!("\n{}", format!("🚀 Starting {} import...", platforms[platform_idx]).bold().cyan());
+    
+    // Build import config
+    let import_config = rcommerce_core::import::ImportConfig {
+        database_url: config.database.url(),
+        source: rcommerce_core::import::types::SourceConfig::Platform {
+            platform: platform.to_string(),
+            api_url,
+            api_key,
+            headers: if api_secret.is_empty() {
+                std::collections::HashMap::new()
+            } else {
+                let mut h = std::collections::HashMap::new();
+                h.insert("consumer_secret".to_string(), api_secret);
+                h
+            },
+        },
+        options: rcommerce_core::import::types::ImportOptions {
+            default_currency,
+            update_existing: overwrite,
+            skip_existing: !overwrite,
+            ..Default::default()
+        },
+    };
+
+    // Get importer and run
+    match rcommerce_core::import::get_platform_importer(platform) {
+        Some(importer) => {
+            let progress = |p: rcommerce_core::import::ImportProgress| {
+                print!("\r  [{}] {} - {}/{}", 
+                    p.stage.bright_blue(),
+                    p.message,
+                    p.current,
+                    p.total
+                );
+                std::io::Write::flush(&mut std::io::stdout()).unwrap();
+            };
+
+            println!("\n{}", "Importing data...".yellow());
+            
+            match importer.import_all(&import_config, &progress).await {
+                Ok(stats) => {
+                    println!("\n\n{}", "✅ Import completed!".green().bold());
+                    println!("  Created: {}", stats.created);
+                    println!("  Updated: {}", stats.updated);
+                    println!("  Skipped: {}", stats.skipped);
+                    println!("  Errors:  {}", stats.errors);
+                    
+                    if !stats.error_details.is_empty() {
+                        println!("\n{}", "Warnings:".yellow());
+                        for error in stats.error_details.iter().take(5) {
+                            println!("  • {}", error);
+                        }
+                        if stats.error_details.len() > 5 {
+                            println!("  ... and {} more", stats.error_details.len() - 5);
+                        }
+                    }
+                }
+                Err(e) => {
+                    println!("\n{}", format!("❌ Import failed: {}", e).red());
+                    return Ok(false);
+                }
+            }
+        }
+        None => {
+            println!("{}", format!("❌ Platform '{}' not supported", platform).red());
+            return Ok(false);
+        }
+    }
+
+    // Ask if user wants to continue with more configuration or exit
+    let continue_setup = Confirm::new()
+        .with_prompt("Continue with additional configuration (server, cache, etc.)?")
+        .default(true)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
+
+    Ok(!continue_setup) // Return true if user wants to exit (import done, skip rest)
 }
 
 /// Save configuration to file
