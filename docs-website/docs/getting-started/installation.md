@@ -109,14 +109,34 @@ target/release/rcommerce
 
 # Run tests
 cargo test --release
+```
 
-# Check platform compatibility
-cargo check --target x86_64-unknown-linux-gnu     # Linux x86_64
-cargo check --target aarch64-unknown-linux-gnu    # Linux ARM64
-cargo check --target x86_64-unknown-freebsd      # FreeBSD x86_64
-cargo check --target aarch64-unknown-freebsd     # FreeBSD ARM64
-cargo check --target x86_64-apple-darwin         # macOS x86_64
-cargo check --target aarch64-apple-darwin        # macOS ARM64 (Apple Silicon)
+## Initial Setup
+
+After building, use the interactive setup wizard to configure your instance:
+
+```bash
+# Run setup wizard
+./target/release/rcommerce setup
+
+# The wizard will guide you through:
+# - Database configuration and migrations
+# - Optional data import from existing stores
+# - Server, cache, and security settings
+# - TLS/SSL (including Let's Encrypt)
+# - Payment gateways and notifications
+```
+
+**Setup Wizard Options:**
+
+```bash
+# Save config to specific location
+./target/release/rcommerce setup -o /etc/rcommerce/config.toml
+
+# If you skip the wizard, configure manually:
+# 1. Create config.toml (see Configuration Guide)
+# 2. Run migrations: ./target/release/rcommerce db migrate -c config.toml
+# 3. Start server: ./target/release/rcommerce server -c config.toml
 ```
 
 ## Docker Installation

@@ -14,6 +14,61 @@ Options:
   -V, --version                Print version
 ```
 
+## Setup Wizard
+
+The interactive setup wizard helps you configure a new R Commerce instance:
+
+```bash
+rcommerce setup [OPTIONS]
+
+Options:
+  -o, --output <OUTPUT>  Output configuration file path
+```
+
+**What the wizard configures:**
+
+1. **Store Information** - Store name and default currency
+2. **Database** - PostgreSQL, MySQL, or SQLite configuration
+3. **Database Setup** - Runs migrations, handles existing databases
+4. **Data Import** - Optional import from WooCommerce, Shopify, Magento, or Medusa
+5. **Server** - Bind address, port, worker threads
+6. **Cache** - In-memory or Redis caching
+7. **Security** - JWT secrets, rate limiting
+8. **Media Storage** - Local filesystem or S3
+9. **TLS/SSL** - Let's Encrypt (auto) or manual certificates
+10. **Payments** - Stripe and other payment gateways
+11. **Notifications** - Email (SMTP) configuration
+
+**Examples:**
+
+```bash
+# Run interactive setup
+rcommerce setup
+
+# Save to specific file
+rcommerce setup -o ./production.toml
+```
+
+**Database Setup Options:**
+
+When the wizard detects an existing database, it offers:
+- **Keep existing data** - Skip migrations
+- **Reset database** - Delete all data and start fresh
+- **Exit** - Investigate manually
+
+**Data Import:**
+
+The wizard can import from:
+- WooCommerce (via REST API)
+- Shopify (via Admin API)
+- Magento (via REST API)
+- Medusa (via REST API)
+
+Import settings include:
+- Store URL and API credentials
+- Default currency for imported records
+- Whether to update existing records
+
 ## Commands
 
 ### Server

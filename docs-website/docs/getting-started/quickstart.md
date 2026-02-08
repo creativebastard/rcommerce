@@ -42,7 +42,28 @@ docker-compose ps
 
 ## Configuration
 
-### 1. Create Configuration File
+### Option 1: Interactive Setup Wizard (Recommended)
+
+The easiest way to configure R Commerce is using the setup wizard:
+
+```bash
+# Run the interactive setup wizard
+./target/release/rcommerce setup
+
+# Or with a specific output file
+./target/release/rcommerce setup -o config/production.toml
+```
+
+The wizard will guide you through:
+- Store configuration (name, currency)
+- Database setup (PostgreSQL, MySQL, or SQLite)
+- Database migrations (with handling for existing databases)
+- Optional data import from WooCommerce, Shopify, Magento, or Medusa
+- Server, cache, and security settings
+- TLS/SSL configuration (including Let's Encrypt)
+- Payment gateways and email notifications
+
+### Option 2: Manual Configuration
 
 Create a `config/development.toml` file:
 
@@ -50,10 +71,9 @@ Create a `config/development.toml` file:
 [server]
 host = "127.0.0.1"
 port = 8080
-log_level = "debug"
 
 [database]
-type = "postgres"
+db_type = "Postgres"
 host = "localhost"
 port = 5432
 username = "rcommerce_dev"
@@ -62,23 +82,15 @@ database = "rcommerce_dev"
 pool_size = 5
 
 [cache]
-provider = "memory"  # Use in-memory cache for development
+cache_type = "Memory"
 
-[payments]
-default_gateway = "mock"
-
-[logging]
-level = "debug"
-format = "text"
-
-[features]
-development_mode = true
-debug_api = true
+[payment]
+test_mode = true
 ```
 
-### 2. Set Up Database
+### Database Setup
 
-**PostgreSQL:**
+**Create Database (PostgreSQL):**
 
 ```bash
 # Create database
@@ -87,22 +99,12 @@ psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
 ```
 
-**MySQL:**
+**Run Migrations:**
 
 ```bash
-mysql -u root -p <<EOF
-CREATE DATABASE rcommerce_dev;
-CREATE USER 'rcommerce_dev'@'localhost' IDENTIFIED BY 'devpass';
-GRANT ALL PRIVILEGES ON rcommerce_dev.* TO 'rcommerce_dev'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-```
-
-### 3. Run Migrations
-
-```bash
-# Run database migrations
-cargo run -- migrate run
+# If using setup wizard, migrations run automatically
+# Otherwise, run manually:
+./target/release/rcommerce db migrate -c config.toml
 ```
 
 ## Running the Server

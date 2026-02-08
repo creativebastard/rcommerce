@@ -42,7 +42,31 @@ docker-compose ps
 
 ## 配置
 
-### 1. 创建配置文件
+### 选项 1：使用设置向导（推荐）
+
+运行交互式设置向导：
+
+```bash
+# 运行设置向导
+./target/release/rcommerce setup
+
+# 或保存到特定路径
+./target/release/rcommerce setup -o /etc/rcommerce/config.toml
+```
+
+向导将引导您完成：
+1. 店铺信息（名称、默认货币）
+2. 数据库连接
+3. 数据库设置（迁移、导入）
+4. 服务器配置
+5. 缓存设置
+6. 安全设置
+7. 媒体存储
+8. TLS/SSL 证书
+9. 支付网关
+10. 通知（电子邮件）
+
+### 选项 2：手动配置
 
 创建 `config/development.toml` 文件：
 
