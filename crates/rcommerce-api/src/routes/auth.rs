@@ -285,20 +285,21 @@ pub async fn confirm_password_reset(
 }
 
 /// Public auth routes (no API key required)
-/// These routes handle initial authentication and password reset
-/// NOTE: Password reset endpoints have strict rate limiting to prevent abuse
+/// These routes handle initial authentication
+/// NOTE: All routes have strict rate limiting to prevent abuse
 pub fn public_router() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/refresh", post(refresh_token))
-        .route("/auth/password-reset", post(request_password_reset))
         .route("/auth/password-reset/confirm", post(confirm_password_reset))
         .layer(middleware::from_fn(auth_rate_limit_middleware))
 }
 
 /// Protected auth routes (API key required)
-/// Currently no auth routes require API key - all are public with rate limiting
+/// These routes require service-to-service authentication
 pub fn protected_router() -> Router<AppState> {
     Router::new()
+        // Password reset request requires API key to prevent abuse
+        .route("/auth/password-reset", post(request_password_reset))
 }

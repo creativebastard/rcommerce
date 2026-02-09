@@ -584,6 +584,8 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
         .merge(crate::routes::order_router())
         .merge(crate::routes::cart_router())
         .merge(crate::routes::coupon_router())
+        // Auth routes requiring API key (password reset request)
+        .merge(crate::routes::auth_protected_router())
         // Payment routes except webhooks
         .merge(crate::routes::payment::payment_routes())
         .route_layer(middleware::from_fn_with_state(
