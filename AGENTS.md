@@ -12,7 +12,7 @@ This file provides essential information for AI coding agents working on the R C
 
 - **Language**: Rust (edition 2021, minimum version 1.70.0)
 - **Architecture**: Headless/API-first (REST with WebSocket support)
-- **Database**: PostgreSQL (MySQL and SQLite support planned)
+- **Database**: PostgreSQL
 - **Cache**: In-memory (DashMap/LRU) or Redis
 - **License**: Dual-licensed under AGPL-3.0 and Commercial License
 - **Repository**: https://gitee.com/captainjez/gocart
@@ -232,7 +232,7 @@ port = 8080
 worker_threads = 0  # 0 = use CPU core count
 
 [database]
-db_type = "Postgres"  # Or Mysql, Sqlite
+db_type = "Postgres"
 host = "localhost"
 port = 5432
 database = "rcommerce"
@@ -362,7 +362,7 @@ impl<R: ProductRepository> ProductService<R> {
 
 - Use the `scripts/test_api.sh` script for endpoint testing
 - Tests against a running server instance
-- Uses SQLite for test database
+- Uses PostgreSQL for test database
 
 ```bash
 # Run full API test suite

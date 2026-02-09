@@ -156,8 +156,12 @@ async fn test_async_operation() {
 ```toml
 # config.test.toml
 [database]
-db_type = "Sqlite"
-sqlite_path = ":memory:"
+db_type = "Postgres"
+host = "localhost"
+port = 5432
+username = "rcommerce_test"
+password = "testpass"
+database = "rcommerce_test"
 ```
 
 使用测试配置运行测试：

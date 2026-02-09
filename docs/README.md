@@ -30,7 +30,7 @@ This directory contains comprehensive documentation for the R commerce headless 
 4. **[04-database-abstraction.md](architecture/04-database-abstraction.md)** - Database Abstraction Layer
    - Repository pattern implementation
    - SQLx integration
-   - Multi-database support (PostgreSQL, MySQL, SQLite)
+   - PostgreSQL database support
    - Query optimization strategies
    - Testing approach
 

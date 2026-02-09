@@ -925,22 +925,6 @@ CREATE INDEX idx_refunds_processed_at ON refunds(processed_at);
 - **GIN Indexes**: For JSONB fields and array columns
 - **Trigram Indexes**: For text search (PostgreSQL-specific)
 
-### MySQL Adaptations
-When using MySQL, adapt the schema:
-- Replace `UUID` with `CHAR(36)` or use binary UUIDs
-- Replace `JSONB` with `JSON`
-- Replace `TEXT[]` with separate tables or JSON
-- Replace `tstzvector` GIN indexes with MySQL full-text indexes
-- Remove PostgreSQL-specific functions (`gen_random_uuid()`, `NOW()`)
-
-### SQLite Adaptations
-For SQLite:
-- Simplified schema with fewer indexes
-- Use `INTEGER PRIMARY KEY` for IDs
-- No native UUID support - use TEXT
-- No array types - use JSON
-- No sophisticated full-text search
-
 ## Database Migrations
 
 Migration structure:

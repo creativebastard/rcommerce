@@ -91,7 +91,7 @@ graph TB
     end
     
     subgraph Data
-        DB[(PostgreSQL/MySQL)]
+        DB[(PostgreSQL)]
         REDIS[(Redis Cache)]
     end
     

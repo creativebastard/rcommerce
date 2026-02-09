@@ -64,8 +64,7 @@ apt-get install -y \
   libssl-dev \
   postgresql-client \
   libpq-dev
-apt-get install -y \
-  libmysqlclient-dev
+
 ```
 
 **Linux (CentOS/RHEL/Fedora):**

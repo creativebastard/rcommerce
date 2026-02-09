@@ -68,7 +68,7 @@ RUN apt-get update && \
     ca-certificates \
     libssl3 \
     libpq5 \
-    libsqlite3-0 \
+
     curl \
     && rm -rf /var/lib/apt/lists/*
 

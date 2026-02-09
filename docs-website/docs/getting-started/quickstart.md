@@ -56,7 +56,7 @@ The easiest way to configure R Commerce is using the setup wizard:
 
 The wizard will guide you through:
 - Store configuration (name, currency)
-- Database setup (PostgreSQL, MySQL, or SQLite)
+- Database setup (PostgreSQL)
 - Database migrations (with handling for existing databases)
 - Optional data import from WooCommerce, Shopify, Magento, or Medusa
 - Server, cache, and security settings

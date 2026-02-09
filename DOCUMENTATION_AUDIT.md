@@ -146,7 +146,7 @@ Date: 2026-01-27
 1. **Building from Source** 
    - Documented in: `deployment/01-cross-platform.md`
    - Covers: FreeBSD, Linux, macOS
-   - Prerequisites: Rust, PostgreSQL/MySQL/SQLite
+   - Prerequisites: Rust, PostgreSQL
 
 2. **Docker Deployment** 
    - Documented in: `deployment/01-docker.md`

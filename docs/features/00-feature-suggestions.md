@@ -6,7 +6,7 @@ This document outlines additional features beyond the initial requirements to ma
 
  **Initial Requirements:**
 1. Lightweight and performant
-2. Choice of database backends (PostgreSQL, MySQL, SQLite)
+2. PostgreSQL database backend
 3. Payment integration (Stripe, Airwallex + extensible system)
 4. Order management (CRUD, statuses, fraud detection)
 5. Shipping provider integration (ERP systems like dianxiaomi)

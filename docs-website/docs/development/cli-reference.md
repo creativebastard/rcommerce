@@ -28,7 +28,7 @@ Options:
 **What the wizard configures:**
 
 1. **Store Information** - Store name and default currency
-2. **Database** - PostgreSQL, MySQL, or SQLite connection
+2. **Database** - PostgreSQL connection
 3. **Database Setup** - Runs migrations, handles existing databases
 4. **Data Import** - Optional import from existing stores (WooCommerce, Shopify, etc.)
 5. **Server** - Bind address, port, worker threads

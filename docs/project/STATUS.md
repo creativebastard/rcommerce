@@ -62,7 +62,7 @@
 
 ### **Core Functionality:**
 -  Headless e-commerce platform
--  Multi-database support (PostgreSQL, MySQL, SQLite)
+-  PostgreSQL database support
 -  Payment processing (Stripe)
 -  Real-time inventory management
 -  Complete order lifecycle
@@ -92,7 +92,7 @@ crates/
 ├── rcommerce-core/     # Core library (~60,000 lines)
 │   ├── src/
 │   │   ├── models/      # Data models
-│   │   ├── repository/  # PostgreSQL/SQLite/MySQL
+│   │   ├── repository/  # PostgreSQL
 │   │   ├── services/    # Business logic
 │   │   ├── payment/     # Stripe integration
 │   │   ├── inventory/   # Stock management

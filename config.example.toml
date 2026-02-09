@@ -59,13 +59,13 @@ rate_limit_burst = 200
 # DATABASE CONFIGURATION
 # =============================================================================
 [database]
-# Database type: "Postgres", "Mysql", or "Sqlite" (default: Postgres)
+# Database type: "Postgres" (default: Postgres)
 db_type = "Postgres"
 
 # Database host (default: "localhost")
 host = "localhost"
 
-# Database port (default: 5432 for PostgreSQL, 3306 for MySQL)
+# Database port (default: 5432 for PostgreSQL)
 port = 5432
 
 # Database name
@@ -83,9 +83,7 @@ pool_size = 20
 # SSL mode: "Disable", "Prefer", or "Require" (default: Prefer)
 ssl_mode = "Prefer"
 
-# SQLite database path (only used when db_type = "Sqlite")
-# Default: "./rcommerce.db"
-sqlite_path = "./rcommerce.db"
+
 
 # =============================================================================
 # SECURITY & AUTHENTICATION

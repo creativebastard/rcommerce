@@ -240,10 +240,8 @@ The codebase demonstrates:
 -  Linux (Systemd/Docker)
 -  macOS (LaunchDaemon)
 
-### **Database Flexibility**
--  PostgreSQL (primary)
--  MySQL (ready to implement)
--  SQLite (ready to implement)
+### **Database**
+-  PostgreSQL
 
 ---
 

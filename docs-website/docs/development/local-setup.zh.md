@@ -5,7 +5,7 @@
 ## 前提条件
 
 - **Rust 1.70+**（从 [rustup.rs](https://rustup.rs/) 安装）
-- **PostgreSQL 13+** 或 **MySQL 8+** 或 **SQLite 3+**
+- **PostgreSQL 13+**
 - **Redis 6+**（可选，用于缓存）
 - **Git**
 
@@ -32,10 +32,6 @@ psql -U postgres -c "CREATE DATABASE rcommerce_dev;"
 psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
 ```
-
-#### 选项 B：SQLite（开发最简单）
-
-无需设置 - SQLite 将自动创建文件。
 
 ### 3. 配置环境
 
@@ -85,13 +81,6 @@ port = 5432
 database = "rcommerce_dev"
 username = "rcommerce_dev"
 password = "devpass"
-```
-
-**SQLite：**
-```toml
-[database]
-db_type = "Sqlite"
-sqlite_path = "./rcommerce_dev.db"
 ```
 
 ### 可选：Redis 缓存

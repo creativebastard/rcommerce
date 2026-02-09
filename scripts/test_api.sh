@@ -55,7 +55,7 @@ rate_limit_per_minute = 1000
 rate_limit_burst = 200
 
 [database]
-db_type = "Sqlite"
+db_type = "Postgres"
 host = "localhost"
 port = 5432
 database = "rcommerce"
@@ -63,7 +63,6 @@ username = "rcommerce"
 password = "password"
 pool_size = 5
 ssl_mode = "Prefer"
-sqlite_path = "./test.db"
 
 [logging]
 level = "info"

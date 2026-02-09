@@ -8,8 +8,8 @@ use anyhow::Result;
 use axum::Router;
 use rand::{Rng, seq::SliceRandom};
 use rust_decimal::Decimal;
-use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::{Pool, Sqlite};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::{Pool, Postgres};
 use tokio::net::TcpListener;
 use tokio::time::sleep;
 use uuid::Uuid;
@@ -376,11 +376,11 @@ pub struct DataStats {
 // =============================================================================
 
 pub struct DataGenerator<'a> {
-    db: &'a Pool<Sqlite>,
+    db: &'a Pool<Postgres>,
 }
 
 impl<'a> DataGenerator<'a> {
-    pub fn new(db: &'a Pool<Sqlite>) -> Self {
+    pub fn new(db: &'a Pool<Postgres>) -> Self {
         Self { db }
     }
     
@@ -476,7 +476,7 @@ impl<'a> DataGenerator<'a> {
 // =============================================================================
 
 pub struct TestHarness {
-    db_pool: Option<Pool<Sqlite>>,
+    db_pool: Option<Pool<Postgres>>,
     redis_conn: Option<redis::aio::MultiplexedConnection>,
     server_addr: Option<SocketAddr>,
     http_client: reqwest::Client,
@@ -485,7 +485,9 @@ pub struct TestHarness {
 
 impl TestHarness {
     pub async fn new(config: &TestConfig) -> Result<Self> {
-        let db_pool = SqlitePoolOptions::new().max_connections(5).connect("sqlite::memory:").await?;
+        let db_url = std::env::var("TEST_DATABASE_URL")
+            .unwrap_or_else(|_| "postgres://rcommerce:password@localhost:5432/rcommerce_test".to_string());
+        let db_pool = PgPoolOptions::new().max_connections(5).connect(&db_url).await?;
         Self::run_migrations(&db_pool).await?;
         
         let redis_conn = if let Some(ref url) = config.redis_url {
@@ -505,13 +507,13 @@ impl TestHarness {
         Ok(harness)
     }
     
-    async fn run_migrations(pool: &Pool<Sqlite>) -> Result<()> {
+    async fn run_migrations(pool: &Pool<Postgres>) -> Result<()> {
         let schema = r#"
-CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, title TEXT NOT NULL, slug TEXT NOT NULL, product_type TEXT, price TEXT, currency TEXT, inventory_quantity INTEGER, is_active BOOLEAN, created_at TEXT, updated_at TEXT);
-CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, email TEXT NOT NULL, first_name TEXT, last_name TEXT, accepts_marketing BOOLEAN, currency TEXT, created_at TEXT, updated_at TEXT);
-CREATE TABLE IF NOT EXISTS addresses (id TEXT PRIMARY KEY, customer_id TEXT, first_name TEXT, last_name TEXT, address1 TEXT, city TEXT, country TEXT, zip TEXT, is_default_shipping BOOLEAN, is_default_billing BOOLEAN, created_at TEXT, updated_at TEXT);
-CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, order_number TEXT, customer_id TEXT, email TEXT, currency TEXT, total TEXT, status TEXT, created_at TEXT, updated_at TEXT);
-CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, slug TEXT, description TEXT, sort_order INTEGER, created_at TEXT, updated_at TEXT);
+CREATE TABLE IF NOT EXISTS products (id UUID PRIMARY KEY, title TEXT NOT NULL, slug TEXT NOT NULL, product_type TEXT, price DECIMAL, currency TEXT, inventory_quantity INTEGER, is_active BOOLEAN, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ);
+CREATE TABLE IF NOT EXISTS customers (id UUID PRIMARY KEY, email TEXT NOT NULL, first_name TEXT, last_name TEXT, accepts_marketing BOOLEAN, currency TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ);
+CREATE TABLE IF NOT EXISTS addresses (id UUID PRIMARY KEY, customer_id UUID, first_name TEXT, last_name TEXT, address1 TEXT, city TEXT, country TEXT, zip TEXT, is_default_shipping BOOLEAN, is_default_billing BOOLEAN, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ);
+CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY, order_number TEXT, customer_id UUID, email TEXT, currency TEXT, total DECIMAL, status TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ);
+CREATE TABLE IF NOT EXISTS product_categories (id UUID PRIMARY KEY, name TEXT, slug TEXT, description TEXT, sort_order INTEGER, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ);
 "#;
         sqlx::query(schema).execute(pool).await?;
         Ok(())
@@ -569,7 +571,7 @@ CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, s
     
     pub async fn test_db_connection(&self) -> Result<()> {
         if let Some(pool) = &self.db_pool {
-            let row: (i64,) = sqlx::query_as("SELECT 1").fetch_one(pool).await?;
+            let row: (i32,) = sqlx::query_as("SELECT 1").fetch_one(pool).await?;
             assert_eq!(row.0, 1);
         }
         Ok(())
@@ -577,7 +579,8 @@ CREATE TABLE IF NOT EXISTS product_categories (id TEXT PRIMARY KEY, name TEXT, s
     
     pub async fn verify_schema(&self) -> Result<()> {
         if let Some(pool) = &self.db_pool {
-            let tables: Vec<(String,)> = sqlx::query_as("SELECT name FROM sqlite_master WHERE type='table'").fetch_all(pool).await?;
+            let tables: Vec<(String,)> = sqlx::query_as("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+                .fetch_all(pool).await?;
             let names: Vec<String> = tables.into_iter().map(|t| t.0).collect();
             assert!(names.contains(&"products".to_string()));
             assert!(names.contains(&"customers".to_string()));
@@ -919,9 +922,9 @@ async fn run_e2e_test_suite() {
                 status: TestStatus::Passed,
                 duration_ms: start.elapsed().as_millis() as u64,
                 error: None,
-                description: "Establishes connection to SQLite".to_string(),
+                description: "Establishes connection to PostgreSQL".to_string(),
                 steps: vec![TestStep { step: 1, description: "Create pool".to_string(), result: "Success".to_string() }],
-                raw_request: Some("sqlite::memory:".to_string()),
+                raw_request: Some("postgres://localhost:5432".to_string()),
                 raw_response: Some("Connected".to_string()),
                 created_items: vec![],
                 assertions: vec![Assertion { description: "Connected".to_string(), passed: true, expected: "true".to_string(), actual: "true".to_string() }],

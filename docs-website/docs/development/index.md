@@ -5,7 +5,7 @@ This guide helps developers understand how to set up, develop, test, and contrib
 ## Prerequisites
 
 - **Rust 1.70+** (install from [rustup.rs](https://rustup.rs/))
-- **PostgreSQL 13+** or **MySQL 8+** or **SQLite 3+**
+- **PostgreSQL 13+**
 - **Redis 6+** (optional, for caching)
 - **Node.js 16+** (for frontend tooling, optional)
 
@@ -60,35 +60,6 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce
 
 # Test connection
 psql -U rcommerce_dev -d rcommerce_dev -h localhost -W
-```
-
-#### MySQL
-
-```bash
-# Install MySQL
-brew install mysql  # macOS
-sudo apt-get install mysql-server  # Ubuntu
-
-# Configure MySQL
-mysql_secure_installation
-
-# Create database
-mysql -u root -p <<EOF
-CREATE DATABASE rcommerce_dev;
-CREATE USER 'rcommerce_dev'@'localhost' IDENTIFIED BY 'devpass';
-GRANT ALL PRIVILEGES ON rcommerce_dev.* TO 'rcommerce_dev'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-
-# Test connection
-mysql -u rcommerce_dev -p -D rcommerce_dev
-```
-
-#### SQLite (Development Only)
-
-```bash
-# SQLite requires no setup - just a file
-# Will be created automatically in your project directory
 ```
 
 ### 3. Redis Setup (Optional)

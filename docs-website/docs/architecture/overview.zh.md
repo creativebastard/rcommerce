@@ -28,7 +28,7 @@ R Commerce 采用模块化、API 优先的架构设计，注重性能、可靠�
 1. **模块化** - 基于插件的架构
 2. **配置即代码** - TOML/JSON 配置
 3. **API 完整性** - 100% 功能通过 API 提供
-4. **数据库无关** - 支持 PostgreSQL、MySQL、SQLite
+4. **PostgreSQL 支持** - 基于 PostgreSQL 构建，支持可靠性和性能
 5. **可观测性** - 内置日志和指标
 
 ## 相关文档

@@ -3,7 +3,7 @@
 # R Commerce End-to-End Test Suite Runner
 #
 # This script runs the comprehensive E2E test suite which:
-# 1. Spins up an instance with a fresh SQLite database
+# 1. Spins up an instance with a fresh PostgreSQL database
 # 2. Creates dummy data across all tables
 # 3. Tests order workflows and lifecycle
 # 4. Tests Redis caching functionality
@@ -22,7 +22,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default configuration
-DB_PATH="/tmp/rcommerce_e2e_test.db"
+DB_NAME="rcommerce_e2e_test"
 REDIS_URL="${REDIS_URL:-redis://127.0.0.1:6379}"
 RUN_SSL_TESTS="${RUN_SSL_TESTS:-0}"
 KEEP_DATA="${KEEP_DATA:-0}"
@@ -80,10 +80,7 @@ check_prerequisites() {
     fi
     
     # Clean up any existing test database
-    if [ -f "$DB_PATH" ]; then
-        print_info "Removing existing test database"
-        rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
-    fi
+    # Note: PostgreSQL database cleanup is handled by the test framework
     
     # Check payment gateway credentials
     print_section "Payment Gateway Configuration"
@@ -132,7 +129,7 @@ build_tests() {
 run_tests() {
     print_section "Running E2E Tests"
     
-    export RCOMMERCE_TEST_DB_PATH="$DB_PATH"
+    export RCOMMERCE_TEST_DB_NAME="$DB_NAME"
     export RCOMMERCE_TEST_REDIS_URL="$REDIS_URL"
     export RUN_SSL_TESTS="$RUN_SSL_TESTS"
     export RUST_BACKTRACE=1
@@ -148,7 +145,7 @@ run_tests() {
     fi
     
     print_info "Starting test execution..."
-    print_info "Database: $DB_PATH"
+    print_info "Database: $DB_NAME"
     print_info "Redis: ${REDIS_URL:-disabled}"
     print_info "SSL Tests: $([ "$RUN_SSL_TESTS" = "1" ] && echo "enabled" || echo "disabled")"
     print_info "Stripe: $([ -n "$STRIPE_TEST_SECRET_KEY" ] && echo "enabled" || echo "disabled")"
@@ -191,17 +188,13 @@ generate_reports() {
 cleanup() {
     if [ "$KEEP_DATA" = "1" ]; then
         print_info "Keeping test data (KEEP_DATA=1)"
-        print_info "Database: $DB_PATH"
+        print_info "Database: $DB_NAME"
         return
     fi
     
     print_section "Cleaning Up"
     
-    # Remove test database
-    if [ -f "$DB_PATH" ]; then
-        rm -f "$DB_PATH" "$DB_PATH-shm" "$DB_PATH-wal"
-        print_success "Test database removed"
-    fi
+    # Note: PostgreSQL database cleanup is handled by the test framework
     
     # Clean up temp files
     rm -f /tmp/test_cert.pem /tmp/test_key.pem

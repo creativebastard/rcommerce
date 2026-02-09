@@ -92,23 +92,6 @@ connection_timeout = "30s"
 ssl_mode = "prefer"  # Options: "disable", "prefer", "require"
 ```
 
-### MySQL
-
-```toml
-[database]
-type = "mysql"
-host = "localhost"
-port = 3306
-username = "rcommerce"
-password = "secure_password"
-database = "rcommerce_prod"
-
-# Connection pooling
-pool_size = 20
-max_lifetime = "30min"
-idle_timeout = "10min"
-connection_timeout = "30s"
-
 ## Cache Configuration
 
 ### Redis Cache

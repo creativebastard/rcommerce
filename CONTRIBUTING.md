@@ -17,7 +17,7 @@ provides guidelines for contributing to the project.
 ## Prerequisites
 
 - Rust 1.70.0 or later
-- PostgreSQL 14+ (or MySQL 8+, or SQLite 3.35+)
+- PostgreSQL 14+
 - Git
 
 ## Development Setup

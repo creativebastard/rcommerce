@@ -669,7 +669,7 @@ maintain_medusa_compatibility = false
 - **WooCommerce API compatibility**: Useful for existing integrations
 - **Dianxiaomi integration**: Chinese-specific features
 - **Advanced fraud detection**: Built-in system
-- **Multi-database support**: PostgreSQL, MySQL, SQLite
+- **PostgreSQL powered**: Built on PostgreSQL for reliability and performance
 - **Cross-platform deployments**: FreeBSD support
 
 This migration is the most straightforward due to architectural similarities between Medusa.js and R commerce.

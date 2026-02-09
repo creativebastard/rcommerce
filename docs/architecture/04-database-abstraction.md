@@ -4,10 +4,8 @@
 
 The Database Abstraction Layer (DAL) provides a unified interface for interacting with multiple database backends, allowing R commerce to support different database systems without changing application code. This enables operators to choose the database that best fits their operational requirements, scaling needs, and existing infrastructure.
 
-**Supported Databases:**
+**Supported Database:**
 - PostgreSQL (Recommended for production)
-- MySQL / MariaDB
-- SQLite (For development and small deployments)
 
 ## Design Goals
 
@@ -60,8 +58,7 @@ n- Connection pooling for each database
 ┌──────────────────────────▼──────────────────────────────────┐
 │              Database-Specific Implementations             │
 │  - PostgreSQL (sqlx::Postgres)                           │
-│  - MySQL (sqlx::MySql)                                   │
-│  - SQLite (sqlx::Sqlite)                                 │
+
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -78,7 +75,7 @@ n- Connection pooling for each database
 - Compile-time query checking
 - Async-first design
 - Type-safe query results
-- Supports PostgreSQL, MySQL, and SQLite
+- Supports PostgreSQL
 - Runtime database selection
 
 **Key Features:**
@@ -337,10 +334,10 @@ impl OrderRepository for PgOrderRepository {
 
 ```toml
 [database]
-# Type: "postgres", "mysql", or "sqlite"
+# Type: "postgres"
 type = "postgres"
 
-# PostgreSQL/MySQL
+# Connection settings
 host = "localhost"
 port = 5432
 username = "rcommerce"
@@ -352,10 +349,6 @@ pool_size = 20
 max_lifetime = "30min"
 idle_timeout = "10min"
 connection_timeout = "30s"
-
-# SQLite (alternative)
-# type = "sqlite"
-# path = "./rcommerce.db"
 
 [database.postgres]
 # PostgreSQL-specific settings
@@ -409,16 +402,6 @@ pub async fn update_meta_json(&self, id: Uuid, path: &str, value: serde_json::Va
     Ok(())
 }
 
-// MySQL: Use JSON operations (different syntax)
-pub async fn update_meta_json_mysql(&self, id: Uuid, path: &str, value: serde_json::Value) -> Result<()> {
-    sqlx::query("UPDATE orders SET meta_data = JSON_SET(meta_data, $1, $2) WHERE id = $3")
-        .bind(path)
-        .bind(value)
-        .bind(id)
-        .execute(&self.pool)
-        .await?;
-    Ok(())
-}
 ```
 
 ### 3. **Query Builder Abstraction**
@@ -448,8 +431,7 @@ impl QueryBuilder {
         self.bindings.push(json!(value));
         match self.db_type {
             DatabaseType::Postgres => self.sql.push_str(&format!("${}", self.bindings.len())),
-            DatabaseType::MySql => self.sql.push_str("?"),
-            DatabaseType::Sqlite => self.sql.push_str("?"),
+
         }
         self
     }
@@ -461,13 +443,7 @@ impl QueryBuilder {
                 self.push(" LIMIT ").push_bind(limit);
                 self.push(" OFFSET ").push_bind(offset);
             }
-            DatabaseType::MySql => {
-                self.push(" LIMIT ").push_bind(offset).push(",").push_bind(limit);
-            }
-            DatabaseType::Sqlite => {
-                self.push(" LIMIT ").push_bind(limit);
-                self.push(" OFFSET ").push_bind(offset);
-            }
+
         }
         self
     }
@@ -496,7 +472,7 @@ pub async fn create_pool(config: &DatabaseConfig) -> Result<Pool> {
 }
 ```
 
-### 2. **Read Replicas (PostgreSQL/MySQL)**
+### 2. **Read Replicas**
 
 ```toml
 [database]
@@ -578,43 +554,7 @@ let orders_with_items = sqlx::query_as::<_, OrderWithItems>(
 
 ## Testing Strategy
 
-### 1. **In-Memory SQLite for Tests**
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    async fn setup_test_db() -> SqlitePool {
-        let pool = SqlitePool::connect(":memory:").await.unwrap();
-        
-        // Run migrations
-        sqlx::migrate!("./migrations")
-            .run(&pool)
-            .await
-            .unwrap();
-            
-        pool
-    }
-    
-    #[tokio::test]
-    async fn test_create_order() {
-        let pool = setup_test_db().await;
-        let repo = SqliteOrderRepository::new(pool);
-        
-        let order = Order {
-            id: Uuid::new_v4(),
-            order_number: "ORD-001".to_string(),
-            // ...
-        };
-        
-        let created = repo.create(order).await.unwrap();
-        assert_eq!(created.order_number, "ORD-001");
-    }
-}
-```
-
-### 2. **Integration Tests with Docker**
+### 1. **Integration Tests with Docker**
 
 ```rust
 #[cfg(test)]

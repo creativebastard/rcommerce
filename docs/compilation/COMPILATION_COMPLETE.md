@@ -185,7 +185,7 @@ The R Commerce codebase is now in a **compilable, testable state**. Core ecommer
  **Customers** - Registration, profiles  
  **Payments** - Mock gateway ready  
  **Inventory** - Stock tracking  
- **Database** - PostgreSQL + SQLite support  
+ **Database** - PostgreSQL support  
 
 The foundation is solid. Development can now proceed incrementally with a working baseline.
 

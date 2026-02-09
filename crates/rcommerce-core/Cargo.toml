@@ -27,7 +27,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 
 # Database types
-sqlx = { workspace = true, features = ["postgres", "sqlite", "runtime-tokio-native-tls"] }
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio-native-tls"] }
 
 # Validation
 validator = { workspace = true }

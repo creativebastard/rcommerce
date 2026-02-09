@@ -77,7 +77,7 @@ While headless requires frontend development, it reduces:
 - Comprehensive webhooks for external integration
 
 ### 4. **Database Agnostic**
-- ORM abstraction supporting PostgreSQL, MySQL, SQLite initially
+- ORM abstraction supporting PostgreSQL
 - Migration system for schema management
 - Performance optimized queries for each dialect
 
@@ -112,7 +112,7 @@ While headless requires frontend development, it reduces:
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
 │              Database/External Services                      │
-│  PostgreSQL/MySQL/SQLite, Payment Gateways, Shipping APIs  │
+│  PostgreSQL, Payment Gateways, Shipping APIs               │
 └─────────────────────────────────────────────────────────────┘
 ```
 

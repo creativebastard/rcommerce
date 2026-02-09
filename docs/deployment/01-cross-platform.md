@@ -39,9 +39,7 @@ R commerce is designed to run on multiple operating systems including **FreeBSD*
 # Rust 1.70+ (Install from https://rustup.rs)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# PostgreSQL 13+ or MySQL 8+ or SQLite 3+ (development)
-# For PostgreSQL: 
-# For MySQL:
+# PostgreSQL 13+
 
 # Optional but recommended
 # - pkg-config
@@ -55,7 +53,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # Install system packages
 pkg install -y \
   postgresql15-client \
-  sqlite3 \
   pkgconf \
   openssl \
   ca_root_nss
@@ -77,12 +74,7 @@ apt-get install -y \
   libssl-dev \
   postgresql-client \
   libpq-dev \
-  sqlite3 \
-  libsqlite3-dev
 
-# For MySQL support
-apt-get install -y \
-  libmysqlclient-dev
 ```
 
 **Linux (CentOS/RHEL/Fedora):**
@@ -92,12 +84,7 @@ yum groupinstall -y "Development Tools"
 yum install -y \
   openssl-devel \
   postgresql-devel \
-  sqlite-devel \
   pkgconfig
-
-# For MySQL support
-yum install -y \
-  mysql-devel
 ```
 
 **macOS:**
@@ -111,11 +98,7 @@ xcode-select --install
 # Install dependencies
 brew install \
   postgresql@15 \
-  sqlite \
   pkg-config
-
-# For MySQL support
-brew install mysql-client
 ```
 
 ### Build Steps (All Platforms)
@@ -563,7 +546,6 @@ RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
     libpq5 \
-    libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -r rcommerce && useradd -r -g rcommerce rcommerce

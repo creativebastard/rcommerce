@@ -92,24 +92,6 @@ connection_timeout = "30s"
 ssl_mode = "prefer"  # 选项："disable"、"prefer"、"require"
 ```
 
-### MySQL
-
-```toml
-[database]
-type = "mysql"
-host = "localhost"
-port = 3306
-username = "rcommerce"
-password = "secure_password"
-database = "rcommerce_prod"
-
-# 连接池
-pool_size = 20
-max_lifetime = "30min"
-idle_timeout = "10min"
-connection_timeout = "30s"
-```
-
 ## 缓存配置
 
 ### Redis 缓存

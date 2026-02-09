@@ -55,9 +55,13 @@ port = 3030
 workers = 4
 
 [database]
-type = "sqlite"
-url = "/tmp/rcommerce_test.db"
-max_connections = 10
+db_type = "Postgres"
+host = "localhost"
+port = 5432
+database = "rcommerce_test"
+username = "rcommerce"
+password = "password"
+pool_size = 10
 
 [cache]
 enabled = true
@@ -86,7 +90,7 @@ echo ""
 test_component "Configuration" "Load TOML config" "cat /tmp/test_config.toml | grep -q 'port = 3030'"
 
 # Test 2: Database Setup
-test_component "Database" "SQLite database creation" "touch /tmp/rcommerce_test.db && test -f /tmp/rcommerce_test.db"
+test_component "Database" "PostgreSQL configuration" "cat /tmp/test_config.toml | grep -q 'db_type = \"Postgres\"'"
 
 # Test 3: Rate Limiting Configuration
 test_component "Rate Limiting" "Config parsing" "cat /tmp/test_config.toml | grep -q 'requests_per_minute = 100'"

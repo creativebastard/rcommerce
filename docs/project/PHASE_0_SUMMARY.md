@@ -63,7 +63,7 @@ Total: 25+ source files, 10,000+ lines of production code
 #### 2. **Configuration System** 
 -  Multi-format support (TOML, environment variables)
 -  Server config (host, port, workers, TLS)
--  Database config (PostgreSQL, MySQL, SQLite)
+-  Database config (PostgreSQL)
 -  Redis for caching
 -  JWT authentication
 -  Storage backends (Local, S3, GCS, Azure)
@@ -150,7 +150,7 @@ Total: 25+ source files, 10,000+ lines of production code
 - **Plugin System**: Extensible architecture
 - **Repository Pattern**: Clean data access layer
 - **Configuration Management**: Multi-source config
-- **Multi-Database Support**: PostgreSQL, MySQL, SQLite
+- **Database Support**: PostgreSQL
 
 ### ** Dependencies & Features**
 
@@ -168,8 +168,7 @@ Total: 25+ source files, 10,000+ lines of production code
 
 #### Database Features
 - PostgreSQL with connection pooling
-- MySQL support (ready to implement)
-- SQLite support (ready to implement)
+
 - SQLx compile-time query checking
 - Migration system
 - Transaction support

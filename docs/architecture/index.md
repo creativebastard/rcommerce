@@ -28,7 +28,7 @@ R Commerce is built with a modular, API-first architecture designed for performa
 1. **Modularity** - Plugin-based architecture
 2. **Configuration as Code** - TOML/JSON configuration
 3. **API Completeness** - 100% functionality via APIs
-4. **Database Agnostic** - PostgreSQL, MySQL, SQLite support
+4. **Database** - PostgreSQL support
 5. **Observability** - Built-in logging and metrics
 
 ## Related Documentation

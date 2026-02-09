@@ -68,7 +68,7 @@ RCOMMERCE_SERVER_RATE_LIMIT_PER_MINUTE=5000
 
 ```toml
 [database]
-type = "postgres"          # Database type: "postgres", "mysql", "sqlite"
+type = "postgres"          # Database type: "postgres"
 
 # Connection settings
 host = "localhost"
@@ -83,7 +83,7 @@ max_lifetime = "30min"     # Maximum lifetime of a connection
 idle_timeout = "10min"     # Idle timeout before closing connection
 connection_timeout = "30s" # Timeout for new connection
 
-# SSL/TLS settings (PostgreSQL/MySQL)
+# SSL/TLS settings (PostgreSQL)
 ssl_mode = "prefer"        # Options: "disable", "prefer", "require"
 ssl_cert = "/path/to/client-cert.pem"    # Optional
 ssl_key = "/path/to/client-key.pem"      # Optional
@@ -99,49 +99,7 @@ schema = "public"
 application_name = "rcommerce"
 ```
 
-### MySQL Configuration
 
-```toml
-[database]
-type = "mysql"
-
-# Connection settings
-host = "localhost"
-port = 3306
-username = "rcommerce"
-password = "secure_password"
-database = "rcommerce_prod"
-
-# Connection pooling (same as PostgreSQL)
-pool_size = 20
-max_lifetime = "30min"
-idle_timeout = "10min"
-connection_timeout = "30s"
-
-# MySQL specific
-ssl_mode = "preferred"     # "disabled", "preferred", "required"
-charset = "utf8mb4"
-collation = "utf8mb4_unicode_ci"
-
-# Connection URI
-# url = "mysql://user:pass@host:3306/database"
-```
-
-### SQLite Configuration
-
-```toml
-[database]
-type = "sqlite"
-
-# File path (relative to working directory or absolute)
-path = "./rcommerce.db"
-
-# SQLite-specific options
-foreign_keys = true        # Enforce foreign key constraints
-busy_timeout = "5s"        # Lock timeout
-journal_mode = "WAL"       # Write-Ahead Logging for better concurrency
-synchronous = "NORMAL"     # Sync mode: "OFF", "NORMAL", "FULL"
-cache_size = "2000"        # Page cache size in pages
 page_size = "4096"         # Page size in bytes
 
 temp_store = "MEMORY"      # Temp store: "MEMORY", "FILE"

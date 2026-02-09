@@ -5,7 +5,7 @@ This guide walks you through setting up a local development environment for R Co
 ## Prerequisites
 
 - **Rust 1.70+** (install from [rustup.rs](https://rustup.rs/))
-- **PostgreSQL 13+** or **MySQL 8+** or **SQLite 3+**
+- **PostgreSQL 13+**
 - **Redis 6+** (optional, for caching)
 - **Git**
 
@@ -32,10 +32,6 @@ psql -U postgres -c "CREATE DATABASE rcommerce_dev;"
 psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
 ```
-
-#### Option B: SQLite (Easiest for development)
-
-No setup required - SQLite will create a file automatically.
 
 ### 3. Configure Environment
 
@@ -85,13 +81,6 @@ port = 5432
 database = "rcommerce_dev"
 username = "rcommerce_dev"
 password = "devpass"
-```
-
-**SQLite:**
-```toml
-[database]
-db_type = "Sqlite"
-sqlite_path = "./rcommerce_dev.db"
 ```
 
 ### Optional: Redis Caching

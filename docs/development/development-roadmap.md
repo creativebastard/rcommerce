@@ -46,7 +46,7 @@ cargo r --bin rcommerce # Starts server
 - Basic product catalog
 - Order creation and management
 - Stripe payment integration
-- SQLite + PostgreSQL support
+- PostgreSQL support
 - REST API for core operations
 
 **Week 3: Product Catalog**
@@ -84,7 +84,7 @@ cargo r --bin rcommerce # Starts server
 - C) Order management system
 - C) Stripe payment integration
 - C) REST API (v1)
-- C) PostgreSQL + SQLite support
+- C) PostgreSQL support
 
 **Milestone:** `v0.1.0` - Basic Ecommerce MVP
 ```bash
@@ -221,14 +221,12 @@ cargo r --bin rcommerce # Starts server
 - Dianxiaomi ERP integration
 - Airwallex payment integration
 - Plugin system design
-- MySQL support
 - GraphQL API (basic)
 
-**Week 15: Database Expansion**
-- MySQL support added
-- Database-specific query optimizations
-- Performance testing across DBs
-- Migration testing
+**Week 15: Database Optimization**
+- PostgreSQL query optimizations
+- Performance testing
+- Migration improvements
 
 **Week 16: Shipping Provider Framework**
 - Abstract shipping provider trait
@@ -249,7 +247,7 @@ cargo r --bin rcommerce # Starts server
 - API versioning preparation
 
 **Deliverables:**
-- C) MySQL database support
+
 - C) Shipping provider factory architecture
 - C) Dianxiaomi ERP integration
 - C) PayPal payment integration
@@ -258,7 +256,7 @@ cargo r --bin rcommerce # Starts server
 **Milestone:** `v0.4.0` - Multi-Provider
 ```bash
 # New capabilities:
-- MySQL as alternative to PostgreSQL
+
 - Dianxiaomi integration for Chinese market
 - Multiple payment providers
 - Pluggable provider architecture

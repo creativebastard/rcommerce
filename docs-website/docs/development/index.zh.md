@@ -27,7 +27,7 @@ cd rcommerce
 # Rust（最新稳定版）
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# PostgreSQL（或 MySQL/SQLite）
+# PostgreSQL
 # macOS
 brew install postgresql
 

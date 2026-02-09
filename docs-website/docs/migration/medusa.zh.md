@@ -669,7 +669,7 @@ maintain_medusa_compatibility = false
 - **WooCommerce API 兼容性**：对现有集成有用
 - **店小秘集成**：中国特定功能
 - **高级欺诈检测**：内置系统
-- **多数据库支持**：PostgreSQL、MySQL、SQLite
+- **PostgreSQL 驱动**：基于 PostgreSQL 构建，确保可靠性和性能
 - **跨平台部署**：FreeBSD 支持
 
 由于 Medusa.js 和 R Commerce 之间的架构相似性，此迁移是最直接的。

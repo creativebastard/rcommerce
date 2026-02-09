@@ -266,30 +266,16 @@ pub struct DatabaseConfig {
     #[serde(default)]
     pub ssl_mode: SslMode,
     
-    #[serde(default = "default_sqlite_path")]
-    pub sqlite_path: String,
+
 }
 
 impl DatabaseConfig {
     /// Build database connection URL
     pub fn url(&self) -> String {
-        match self.db_type {
-            DatabaseType::Postgres => {
-                format!(
-                    "postgres://{}:{}@{}:{}/{}",
-                    self.username, self.password, self.host, self.port, self.database
-                )
-            }
-            DatabaseType::Mysql => {
-                format!(
-                    "mysql://{}:{}@{}:{}/{}",
-                    self.username, self.password, self.host, self.port, self.database
-                )
-            }
-            DatabaseType::Sqlite => {
-                format!("sqlite://{}", self.sqlite_path)
-            }
-        }
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database
+        )
     }
 }
 
@@ -304,7 +290,7 @@ impl Default for DatabaseConfig {
             password: "password".to_string(),
             pool_size: default_pool_size(),
             ssl_mode: SslMode::default(),
-            sqlite_path: default_sqlite_path(),
+
         }
     }
 }
@@ -312,8 +298,6 @@ impl Default for DatabaseConfig {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DatabaseType {
     Postgres,
-    Mysql,
-    Sqlite,
 }
 
 fn default_db_type() -> DatabaseType {
@@ -328,9 +312,7 @@ fn default_pool_size() -> u32 {
     20
 }
 
-fn default_sqlite_path() -> String {
-    "./rcommerce.db".to_string()
-}
+
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum SslMode {

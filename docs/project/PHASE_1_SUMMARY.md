@@ -58,7 +58,7 @@
 - Complete PostgreSQL migration (001_initial_schema.sql)
 - 20+ tables for products, customers, orders, payments
 - Indexes and triggers for performance
-- Ready for MySQL/SQLite support
+
 
 ### ** Code Statistics**
 

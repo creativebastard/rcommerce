@@ -92,74 +92,50 @@ async fn setup_database(mut config: Config) -> Result<Config, String> {
     println!("\n{}", "🗄️  Database Configuration".bold().green());
     println!("{}", "--------------------------".green());
 
-    let db_types = vec!["PostgreSQL", "MySQL", "SQLite"];
-    let db_idx = Select::new()
-        .with_prompt("Database type")
-        .items(&db_types)
-        .default(0)
+    // PostgreSQL is the only supported database
+    config.database.db_type = DatabaseType::Postgres;
+
+    let host: String = Input::new()
+        .with_prompt("Database host")
+        .default("localhost".to_string())
         .interact()
-        .map_err(|e| format!("Selection error: {}", e))?;
+        .map_err(|e| format!("Input error: {}", e))?;
 
-    config.database.db_type = match db_idx {
-        0 => DatabaseType::Postgres,
-        1 => DatabaseType::Mysql,
-        2 => DatabaseType::Sqlite,
-        _ => DatabaseType::Postgres,
-    };
+    let port: u16 = Input::new()
+        .with_prompt("Database port")
+        .default(5432)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
 
-    if config.database.db_type == DatabaseType::Sqlite {
-        // SQLite configuration
-        let db_path: String = Input::new()
-            .with_prompt("Database file path")
-            .default("./data/rcommerce.db".to_string())
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
-        
-        config.database.sqlite_path = db_path;
-    } else {
-        // PostgreSQL/MySQL configuration
-        let host: String = Input::new()
-            .with_prompt("Database host")
-            .default("localhost".to_string())
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+    let database: String = Input::new()
+        .with_prompt("Database name")
+        .default("rcommerce".to_string())
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
 
-        let port: u16 = Input::new()
-            .with_prompt("Database port")
-            .default(if db_idx == 0 { 5432 } else { 3306 })
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+    let username: String = Input::new()
+        .with_prompt("Database username")
+        .default("rcommerce".to_string())
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
 
-        let database: String = Input::new()
-            .with_prompt("Database name")
-            .default("rcommerce".to_string())
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+    let password: String = Password::new()
+        .with_prompt("Database password")
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
 
-        let username: String = Input::new()
-            .with_prompt("Database username")
-            .default("rcommerce".to_string())
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
+    let pool_size: u32 = Input::new()
+        .with_prompt("Connection pool size")
+        .default(20)
+        .interact()
+        .map_err(|e| format!("Input error: {}", e))?;
 
-        let password: String = Password::new()
-            .with_prompt("Database password")
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
-
-        let pool_size: u32 = Input::new()
-            .with_prompt("Connection pool size")
-            .default(20)
-            .interact()
-            .map_err(|e| format!("Input error: {}", e))?;
-
-        config.database.host = host;
-        config.database.port = port;
-        config.database.database = database;
-        config.database.username = username;
-        config.database.password = password;
-        config.database.pool_size = pool_size;
-    }
+    config.database.host = host;
+    config.database.port = port;
+    config.database.database = database;
+    config.database.username = username;
+    config.database.password = password;
+    config.database.pool_size = pool_size;
 
     println!("\n{}", "✓ Database configured".green());
 

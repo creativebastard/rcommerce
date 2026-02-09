@@ -111,17 +111,6 @@ psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
 ```
 
-**MySQL：**
-
-```bash
-mysql -u root -p <<EOF
-CREATE DATABASE rcommerce_dev;
-CREATE USER 'rcommerce_dev'@'localhost' IDENTIFIED BY 'devpass';
-GRANT ALL PRIVILEGES ON rcommerce_dev.* TO 'rcommerce_dev'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-```
-
 ### 3. 运行迁移
 
 ```bash
