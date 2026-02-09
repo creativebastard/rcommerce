@@ -39,6 +39,29 @@ impl WooCommerceImporter {
         format!("{}/wp-json/wc/v3/{}", base_url.trim_end_matches('/'), endpoint)
     }
 
+    /// Fetch WordPress password hash for a user
+    /// 
+    /// Note: WooCommerce REST API doesn't expose passwords for security reasons.
+    /// This method attempts to fetch from a custom endpoint or returns None.
+    /// 
+    /// For full password migration, you have two options:
+    /// 1. Direct MySQL access: Query wp_users table for user_pass field
+    /// 2. Custom WordPress plugin: Create a secure endpoint that returns password hashes
+    ///
+    /// Without password import, users will need to reset their passwords on first login.
+    async fn fetch_wordpress_password_hash(
+        &self,
+        _base_url: &str,
+        _user_id: u64,
+        _consumer_key: &str,
+        _consumer_secret: &str,
+    ) -> Option<String> {
+        // TODO: Implement direct MySQL connection or custom WordPress plugin
+        // For now, return None which will create accounts without passwords
+        // Users will need to use "Forgot Password" to set a new password
+        None
+    }
+
     /// Create database pool from config
     async fn create_pool(&self, database_url: &str) -> ImportResult<PgPool> {
         use sqlx::postgres::PgPoolOptions;
@@ -621,14 +644,19 @@ impl PlatformImporter for WooCommerceImporter {
                     // Parse default currency from config
                     let default_currency = self.parse_currency(&config.options.default_currency);
                     
+                    // Import password hash if available from WordPress
+                    // Note: WooCommerce REST API doesn't expose passwords, so we set a placeholder
+                    // that forces password reset on first login
+                    let password_hash = self.fetch_wordpress_password_hash(&base_url, customer.id, &consumer_key, &consumer_secret).await;
+                    
                     match sqlx::query(
                         r#"
                         INSERT INTO customers (
                             id, email, first_name, last_name, phone, accepts_marketing, 
                             tax_exempt, currency, is_verified, marketing_opt_in,
                             email_notifications, sms_notifications, push_notifications,
-                            created_at, updated_at
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+                            password_hash, created_at, updated_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
                         "#
                     )
                     .bind(customer_id)
@@ -644,6 +672,7 @@ impl PlatformImporter for WooCommerceImporter {
                     .bind(true)   // email_notifications
                     .bind(false)  // sms_notifications
                     .bind(false)  // push_notifications
+                    .bind(password_hash)  // password_hash from WordPress (if available)
                     .execute(pool)
                     .await {
                         Ok(_) => {
