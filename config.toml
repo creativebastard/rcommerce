@@ -1,0 +1,191 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+worker_threads = 0
+graceful_shutdown_timeout_secs = 30
+
+[server.cors]
+enabled = true
+allowed_origins = ["*"]
+allowed_methods = [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+]
+allowed_headers = [
+    "Content-Type",
+    "Authorization",
+]
+allow_credentials = true
+max_age = 3600
+
+[server.limits]
+max_request_size_mb = 10
+rate_limit_per_minute = 1000
+rate_limit_burst = 200
+
+[database]
+db_type = "Postgres"
+host = "localhost"
+port = 5432
+database = "rcommerce"
+username = "rcommerce"
+password = "rcommerce"
+pool_size = 20
+ssl_mode = "Prefer"
+
+[logging]
+level = "info"
+format = "Json"
+
+[cache]
+cache_type = "Redis"
+max_size_mb = 100
+redis_url = "redis://localhost:6379"
+redis_pool_size = 10
+
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
+
+[security.jwt]
+secret = "1770601666mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+expiry_hours = 24
+
+[media]
+storage_type = "Local"
+local_path = "./uploads"
+local_base_url = "http://localhost:8080/uploads"
+
+[media.image_processing]
+enabled = true
+default_quality = 85
+
+[[media.image_processing.sizes]]
+name = "thumbnail"
+width = 150
+height = 150
+crop = true
+
+[[media.image_processing.sizes]]
+name = "small"
+width = 300
+height = 300
+crop = false
+
+[[media.image_processing.sizes]]
+name = "medium"
+width = 600
+height = 600
+crop = false
+
+[[media.image_processing.sizes]]
+name = "large"
+width = 1200
+height = 1200
+crop = false
+
+[notifications]
+enabled = false
+
+[notifications.email]
+smtp_tls = true
+
+[notifications.sms]
+
+[rate_limiting]
+enabled = true
+requests_per_minute = 60
+requests_per_hour = 1000
+requests_per_day = 10000
+max_concurrent_per_ip = 10
+api_key_limiting = true
+api_key_requests_per_minute = 1000
+blocklist = []
+allowlist = []
+ddos_protection = true
+expose_headers = true
+use_redis = false
+
+[features]
+debug_api = true
+metrics = true
+health_check = true
+experimental = false
+
+[import.default_options]
+batch_size = 100
+skip_existing = true
+continue_on_error = true
+
+[tls]
+enabled = false
+min_tls_version = "1.3"
+max_tls_version = "1.3"
+cipher_suites = []
+ocsp_stapling = true
+http_port = 80
+https_port = 443
+
+[dunning]
+enabled = true
+max_retries = 3
+retry_intervals_days = [
+    1,
+    3,
+    7,
+]
+grace_period_days = 14
+email_on_first_failure = true
+email_on_final_failure = true
+job_interval_minutes = 60
+
+[dunning.gateway_configs]
+
+[dunning.email_templates]
+first_failure = "dunning/first_failure"
+retry_failure = "dunning/retry_failure"
+final_notice = "dunning/final_notice"
+cancellation = "dunning/cancellation"
+recovered = "dunning/recovered"
+
+[payment]
+default_gateway = ""
+test_mode = false
+
+[payment.stripe]
+enabled = false
+
+[payment.wechatpay]
+enabled = false
+sandbox = false
+
+[payment.alipay]
+enabled = false
+sandbox = false
+
+[payment.airwallex]
+enabled = false
+demo = false
+
+[shipping]
+default_provider = ""
+test_mode = false
+
+[shipping.dhl]
+enabled = false
+sandbox = false
+
+[shipping.fedex]
+enabled = false
+sandbox = false
+
+[shipping.ups]
+enabled = false
+sandbox = false
+
+[shipping.usps]
+enabled = false
+sandbox = false
