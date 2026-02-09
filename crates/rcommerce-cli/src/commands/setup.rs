@@ -756,7 +756,7 @@ async fn setup_import(config: &Config) -> Result<bool, String> {
         .interact()
         .map_err(|e| format!("Input error: {}", e))?;
 
-    let api_key: String = Input::new()
+    let api_key: String = Password::new()
         .with_prompt("API Key / Consumer Key")
         .interact()
         .map_err(|e| format!("Input error: {}", e))?;
