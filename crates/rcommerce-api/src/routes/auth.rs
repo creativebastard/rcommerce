@@ -292,7 +292,6 @@ pub fn public_router() -> Router<AppState> {
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/refresh", post(refresh_token))
-        .route("/auth/password-reset/confirm", post(confirm_password_reset))
         .layer(middleware::from_fn(auth_rate_limit_middleware))
 }
 
@@ -300,6 +299,7 @@ pub fn public_router() -> Router<AppState> {
 /// These routes require service-to-service authentication
 pub fn protected_router() -> Router<AppState> {
     Router::new()
-        // Password reset request requires API key to prevent abuse
+        // Password reset routes require API key to prevent abuse
         .route("/auth/password-reset", post(request_password_reset))
+        .route("/auth/password-reset/confirm", post(confirm_password_reset))
 }
