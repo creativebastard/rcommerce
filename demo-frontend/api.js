@@ -79,6 +79,38 @@ const api = {
         return data;
     },
     
+    // Password Reset - Request reset token
+    async requestPasswordReset(email) {
+        const response = await fetch(`${API_BASE_URL}/auth/password-reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to request password reset');
+        }
+        
+        return response.json();
+    },
+    
+    // Password Reset - Confirm with token
+    async confirmPasswordReset(token, newPassword) {
+        const response = await fetch(`${API_BASE_URL}/auth/password-reset/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, password: newPassword })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to reset password');
+        }
+        
+        return response.json();
+    },
+    
     // Customer
     async fetchCustomerProfile() {
         const response = await this.authenticatedFetch(`${API_BASE_URL}/customers`);

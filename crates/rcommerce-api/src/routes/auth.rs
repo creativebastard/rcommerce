@@ -63,6 +63,26 @@ pub struct RefreshTokenResponse {
     pub expires_in: i64,
 }
 
+/// Password reset request
+#[derive(Debug, Deserialize)]
+pub struct PasswordResetRequest {
+    pub email: String,
+}
+
+/// Password reset confirm request
+#[derive(Debug, Deserialize)]
+pub struct PasswordResetConfirmRequest {
+    pub token: String,
+    pub password: String,
+}
+
+/// Password reset response
+#[derive(Debug, Serialize)]
+pub struct PasswordResetResponse {
+    pub message: String,
+    pub token: Option<String>, // Only for demo/testing
+}
+
 /// Login endpoint
 pub async fn login(
     State(state): State<AppState>,
@@ -195,11 +215,82 @@ pub async fn refresh_token(
     }))
 }
 
+/// Request password reset
+/// Generates a reset token and sends it via email (or returns for demo)
+pub async fn request_password_reset(
+    State(state): State<AppState>,
+    Json(payload): Json<PasswordResetRequest>,
+) -> Result<Json<PasswordResetResponse>, Error> {
+    // Find customer by email
+    let customer = state
+        .customer_service
+        .find_by_email(&payload.email)
+        .await?;
+
+    // Always return success even if email not found (security)
+    if customer.is_none() {
+        tracing::info!("Password reset requested for non-existent email: {}", payload.email);
+        return Ok(Json(PasswordResetResponse {
+            message: "If the email exists, a reset link has been sent".to_string(),
+            // In demo mode, return token directly
+            token: None,
+        }));
+    }
+
+    let customer = customer.unwrap();
+    
+    // Generate reset token (short-lived JWT)
+    let reset_token = state
+        .auth_service
+        .generate_password_reset_token(customer.id, &customer.email)?;
+
+    // TODO: Send email with reset link
+    tracing::info!("Password reset token for {}: {}", customer.email, reset_token);
+
+    Ok(Json(PasswordResetResponse {
+        message: "Password reset instructions sent".to_string(),
+        // In demo mode, return token directly for testing
+        token: Some(reset_token),
+    }))
+}
+
+/// Confirm password reset
+/// Validates token and updates password
+pub async fn confirm_password_reset(
+    State(state): State<AppState>,
+    Json(payload): Json<PasswordResetConfirmRequest>,
+) -> Result<Json<PasswordResetResponse>, Error> {
+    // Validate password strength
+    if payload.password.len() < 8 {
+        return Err(Error::validation("Password must be at least 8 characters"));
+    }
+
+    // Verify reset token
+    let claims = state.auth_service.verify_password_reset_token(&payload.token)?;
+
+    // Hash new password
+    let password_hash = state.auth_service.hash_password(&payload.password)?;
+
+    // Update customer password
+    state.customer_service
+        .update_password_hash(claims.sub, &password_hash)
+        .await?;
+
+    tracing::info!("Password reset successful for customer {}", claims.sub);
+
+    Ok(Json(PasswordResetResponse {
+        message: "Password reset successful. Please log in with your new password.".to_string(),
+        token: None,
+    }))
+}
+
 /// Router for auth routes with rate limiting
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/refresh", post(refresh_token))
+        .route("/auth/password-reset", post(request_password_reset))
+        .route("/auth/password-reset/confirm", post(confirm_password_reset))
         .layer(middleware::from_fn(auth_rate_limit_middleware))
 }

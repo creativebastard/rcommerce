@@ -250,6 +250,43 @@ impl AuthService {
         auth_header.strip_prefix("Bearer ")
     }
     
+    /// Generate password reset token (short-lived)
+    pub fn generate_password_reset_token(&self, customer_id: Uuid, email: &str) -> Result<String> {
+        // Reset tokens last 1 hour
+        let expiration = Utc::now()
+            .checked_add_signed(Duration::hours(1))
+            .expect("valid timestamp")
+            .timestamp();
+        
+        let claims = JwtClaims {
+            sub: customer_id,
+            email: email.to_string(),
+            token_type: TokenType::PasswordReset,
+            permissions: vec!["password_reset".to_string()],
+            exp: expiration,
+            iat: Utc::now().timestamp(),
+            iss: "rcommerce".to_string(),
+            aud: "rcommerce-api".to_string(),
+        };
+        
+        let header = Header::new(jsonwebtoken::Algorithm::HS256);
+        let encoding_key = EncodingKey::from_secret(self.config.security.jwt.secret.as_bytes());
+        
+        encode(&header, &claims, &encoding_key)
+            .map_err(|e| Error::internal(format!("Failed to generate password reset token: {}", e)))
+    }
+    
+    /// Verify password reset token
+    pub fn verify_password_reset_token(&self, token: &str) -> Result<JwtClaims> {
+        let claims = self.verify_token(token)?;
+        
+        if claims.token_type != TokenType::PasswordReset {
+            return Err(Error::unauthorized("Invalid token type"));
+        }
+        
+        Ok(claims)
+    }
+    
     fn generate_prefix(&self) -> String {
         use rand::Rng;
         let prefix_length = self.config.security.api_key_prefix_length;
@@ -297,6 +334,7 @@ pub struct JwtClaims {
 pub enum TokenType {
     Access,
     Refresh,
+    PasswordReset,
 }
 
 /// Authenticated user extracted from JWT
