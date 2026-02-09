@@ -22,8 +22,6 @@ pub struct DhlProvider {
     account_number: String,
     base_url: String,
     test_mode: bool,
-    access_token: Option<String>,
-    token_expires_at: Option<DateTime<Utc>>,
 }
 
 impl DhlProvider {
@@ -40,8 +38,6 @@ impl DhlProvider {
             account_number: account_number.into(),
             base_url: "https://api-eu.dhl.com".to_string(),
             test_mode: false,
-            access_token: None,
-            token_expires_at: None,
         }
     }
     
@@ -69,59 +65,6 @@ impl DhlProvider {
         vec![
             ("DHL-API-Key".to_string(), self.api_key.clone()),
         ]
-    }
-    
-    /// Check if token needs refresh
-    fn needs_token_refresh(&self) -> bool {
-        if self.access_token.is_none() {
-            return true;
-        }
-        if let Some(expires_at) = self.token_expires_at {
-            // Refresh if token expires in less than 5 minutes
-            return Utc::now() + chrono::Duration::minutes(5) > expires_at;
-        }
-        true
-    }
-    
-    /// Authenticate with DHL API (OAuth2 client credentials flow)
-    async fn authenticate(&mut self) -> Result<String> {
-        if !self.needs_token_refresh() {
-            return Ok(self.access_token.clone().unwrap());
-        }
-        
-        let auth_url = format!("{}/oauth/token", self.base_url);
-        
-        let params = [
-            ("grant_type", "client_credentials"),
-            ("client_id", &self.api_key),
-            ("client_secret", &self.api_secret),
-        ];
-        
-        let response = self.client
-            .post(&auth_url)
-            .form(&params)
-            .send()
-            .await
-            .map_err(|e| Error::network(format!("DHL auth request failed: {}", e)))?;
-        
-        if !response.status().is_success() {
-            let status = response.status();
-            let text = response.text().await.unwrap_or_default();
-            return Err(Error::network(format!(
-                "DHL authentication failed: {} - {}",
-                status, text
-            )));
-        }
-        
-        let token_response: DhlTokenResponse = response
-            .json()
-            .await
-            .map_err(|e| Error::network(format!("Failed to parse DHL auth response: {}", e)))?;
-        
-        self.access_token = Some(token_response.access_token.clone());
-        self.token_expires_at = Some(Utc::now() + chrono::Duration::seconds(token_response.expires_in));
-        
-        Ok(token_response.access_token)
     }
     
     /// Map DHL service code to human-readable name
@@ -741,13 +684,6 @@ struct Dimensions {
 }
 
 #[derive(Debug, Deserialize)]
-struct DhlTokenResponse {
-    access_token: String,
-    expires_in: i64,
-    token_type: String,
-}
-
-#[derive(Debug, Deserialize)]
 struct DhlRateResponseWrapper {
     products: Vec<DhlRateResponse>,
 }
@@ -757,6 +693,7 @@ struct DhlRateResponse {
     #[serde(rename = "productCode")]
     product_code: String,
     #[serde(rename = "productName")]
+    #[allow(dead_code)]
     product_name: String,
     #[serde(rename = "totalNetCharge")]
     total_net_charge: String,
@@ -814,6 +751,7 @@ struct DhlShipmentResponse {
 #[derive(Debug, Deserialize)]
 struct DhlDocument {
     #[serde(rename = "typeCode")]
+    #[allow(dead_code)]
     type_code: String,
     url: String,
 }
@@ -826,7 +764,9 @@ struct DhlTrackingResponse {
 #[derive(Debug, Deserialize)]
 struct DhlShipmentTracking {
     #[serde(rename = "shipmentTrackingNumber")]
+    #[allow(dead_code)]
     shipment_tracking_number: String,
+    #[allow(dead_code)]
     status: String,
     events: Vec<DhlTrackingEvent>,
     #[serde(rename = "estimatedTimeOfDelivery")]

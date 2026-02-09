@@ -717,6 +717,7 @@ impl UpsProvider {
 struct UpsTokenResponse {
     access_token: String,
     expires_in: i64,
+    #[allow(dead_code)]
     token_type: String,
 }
 

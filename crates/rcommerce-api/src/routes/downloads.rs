@@ -13,17 +13,10 @@ use axum::{
     http::{header, StatusCode},
     body::Body,
 };
-use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::state::AppState;
 use rcommerce_core::Error;
-
-/// Query parameters for download requests
-#[derive(Debug, Deserialize)]
-pub struct DownloadQuery {
-    token: String,
-}
 
 /// List downloads for an order
 /// 
