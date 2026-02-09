@@ -84,19 +84,22 @@ impl AuthService {
     fn verify_phpass(&self, password: &str, hash: &str) -> Result<bool> {
         // PHPass hash format: $P$<iteration_count_char><salt><hash>
         // or $H$<iteration_count_char><salt><hash>
-        if hash.len() != 34 {
+        if hash.len() < 12 {
             return Ok(false);
         }
         
         let itoa64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         
-        // Get iteration count
-        let count_log2 = itoa64.find(hash.chars().nth(3).unwrap_or('\0'))
-            .ok_or_else(|| Error::internal("Invalid PHPass hash"))?;
+        // Get iteration count character (at position 3)
+        let iter_char = hash.chars().nth(3).unwrap_or('\0');
+        let count_log2 = match itoa64.find(iter_char) {
+            Some(pos) => pos,
+            None => return Ok(false),
+        };
         let count = 1usize << count_log2;
         
-        // Get salt (8 characters)
-        let salt = &hash[4..12];
+        // Get salt (8 characters starting at position 4)
+        let salt = &hash[4..12.min(hash.len())];
         
         // Compute hash
         let mut computed_hash = format!("{}{}", salt, password);
@@ -107,7 +110,9 @@ impl AuthService {
         // Encode to PHPass format
         let encoded = self.encode_phpass(&computed_hash);
         
-        Ok(hash[12..] == encoded)
+        // Compare with stored hash (from position 12 onwards)
+        let stored_hash_part = if hash.len() > 12 { &hash[12..] } else { "" };
+        Ok(stored_hash_part == encoded)
     }
     
     /// Encode bytes to PHPass format
