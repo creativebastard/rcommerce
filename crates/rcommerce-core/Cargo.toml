@@ -100,7 +100,10 @@ jwt-simple = { workspace = true }
 
 # Email sending
 lettre = { workspace = true }
+argon2 = "0.5"
+password-hash = "0.5"
 bcrypt = "0.15"
+md5 = "0.7"
 
 # Time utilities
 time = { workspace = true }

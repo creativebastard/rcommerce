@@ -248,3 +248,18 @@ impl CustomerRepositoryTrait for PostgresCustomerRepository {
         Ok(result.rows_affected() > 0)
     }
 }
+
+impl PostgresCustomerRepository {
+    /// Update password hash (for password rehashing after migration)
+    pub async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<()> {
+        sqlx::query(
+            "UPDATE customers SET password_hash = $1, updated_at = NOW() WHERE id = $2"
+        )
+        .bind(password_hash)
+        .bind(id)
+        .execute(self.db.pool())
+        .await?;
+        
+        Ok(())
+    }
+}

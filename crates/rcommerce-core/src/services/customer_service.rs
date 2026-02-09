@@ -65,6 +65,11 @@ impl CustomerService {
         self.repository.find_by_email(email).await
     }
     
+    /// Update password hash (for password rehashing after migration)
+    pub async fn update_password_hash(&self, id: Uuid, password_hash: &str) -> Result<()> {
+        self.repository.update_password_hash(id, password_hash).await
+    }
+    
     /// Get customer by ID
     pub async fn find_by_id(&self, id: Uuid) -> Result<Option<Customer>> {
         self.repository.find_by_id(id).await

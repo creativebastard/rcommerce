@@ -81,12 +81,23 @@ pub async fn login(
         .as_ref()
         .ok_or_else(|| Error::unauthorized("Invalid email or password"))?;
 
-    let valid = state
+    let (valid, needs_rehash) = state
         .auth_service
         .verify_password(&payload.password, password_hash)?;
 
     if !valid {
         return Err(Error::unauthorized("Invalid email or password"));
+    }
+
+    // Rehash password if it was using legacy format (PHPass or bcrypt)
+    if needs_rehash {
+        let new_hash = state.auth_service.hash_password(&payload.password)?;
+        if let Err(e) = state.customer_service.update_password_hash(customer.id, &new_hash).await {
+            tracing::warn!("Failed to rehash password for customer {}: {}", customer.id, e);
+            // Don't fail login if rehash fails, just log the warning
+        } else {
+            tracing::info!("Password rehashed with Argon2id for customer {}", customer.id);
+        }
     }
 
     // Generate tokens with role-based permissions

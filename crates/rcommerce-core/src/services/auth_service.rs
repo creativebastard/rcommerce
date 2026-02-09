@@ -1,12 +1,19 @@
 use std::sync::Arc;
 use uuid::Uuid;
-use sha2::{Sha256, Digest};
-use bcrypt::{hash, verify, DEFAULT_COST};
+use sha2::{Sha256, Digest as Sha2Digest};
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::password_hash::SaltString;
+use password_hash::rand_core::OsRng;
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
 use serde::{Serialize, Deserialize};
 use chrono::{Utc, Duration};
 
 use crate::{Result, Error, Config};
+
+/// Argon2id hasher instance
+fn argon2() -> Argon2<'static> {
+    Argon2::default()
+}
 
 #[derive(Clone)]
 pub struct AuthService {
@@ -18,16 +25,101 @@ impl AuthService {
         Self { config: Arc::new(config) }
     }
     
-    /// Hash a password using bcrypt
+    /// Hash a password using Argon2id (modern standard)
     pub fn hash_password(&self, password: &str) -> Result<String> {
-        hash(password, DEFAULT_COST)
+        let salt = SaltString::generate(&mut OsRng);
+        argon2()
+            .hash_password(password.as_bytes(), &salt)
+            .map(|h| h.to_string())
             .map_err(|e| Error::internal(format!("Failed to hash password: {}", e)))
     }
     
     /// Verify a password against a hash
-    pub fn verify_password(&self, password: &str, hash: &str) -> Result<bool> {
+    /// Supports Argon2id (native), bcrypt (legacy), and PHPass (WordPress/WooCommerce migrated)
+    /// Returns (is_valid, needs_rehash) tuple
+    pub fn verify_password(&self, password: &str, hash: &str) -> Result<(bool, bool)> {
+        // Check if this is a PHPass hash (WordPress/WooCommerce)
+        // PHPass hashes start with $P$ or $H$
+        if hash.starts_with("$P$") || hash.starts_with("$H$") {
+            let valid = self.verify_phpass(password, hash)?;
+            return Ok((valid, valid)); // Needs rehash with Argon2id if valid
+        }
+        
+        // Check if this is a bcrypt hash (legacy R Commerce)
+        if hash.starts_with("$2a$") || hash.starts_with("$2b$") || hash.starts_with("$2y$") {
+            let valid = self.verify_bcrypt(password, hash)?;
+            return Ok((valid, valid)); // Needs rehash with Argon2id if valid
+        }
+        
+        // Standard Argon2id verification
+        let parsed_hash = PasswordHash::new(hash)
+            .map_err(|e| Error::internal(format!("Invalid password hash: {}", e)))?;
+        
+        let valid = argon2()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok();
+        
+        Ok((valid, false))
+    }
+    
+    /// Verify bcrypt password (legacy support)
+    fn verify_bcrypt(&self, password: &str, hash: &str) -> Result<bool> {
+        use bcrypt::verify;
         verify(password, hash)
-            .map_err(|e| Error::internal(format!("Failed to verify password: {}", e)))
+            .map_err(|e| Error::internal(format!("Failed to verify bcrypt password: {}", e)))
+    }
+    
+    /// Verify PHPass password (WordPress/WooCommerce compatibility)
+    /// PHPass uses MD5-based iterated hashing
+    fn verify_phpass(&self, password: &str, hash: &str) -> Result<bool> {
+        // PHPass hash format: $P$<iteration_count_char><salt><hash>
+        // or $H$<iteration_count_char><salt><hash>
+        if hash.len() != 34 {
+            return Ok(false);
+        }
+        
+        let itoa64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        
+        // Get iteration count
+        let count_log2 = itoa64.find(hash.chars().nth(3).unwrap_or('\0'))
+            .ok_or_else(|| Error::internal("Invalid PHPass hash"))?;
+        let count = 1usize << count_log2;
+        
+        // Get salt (8 characters)
+        let salt = &hash[4..12];
+        
+        // Compute hash
+        let mut computed_hash = format!("{}{}", salt, password);
+        for _ in 0..count {
+            computed_hash = format!("{:x}", md5::compute(computed_hash.as_bytes()));
+        }
+        
+        // Encode to PHPass format
+        let encoded = self.encode_phpass(&computed_hash);
+        
+        Ok(hash[12..] == encoded)
+    }
+    
+    /// Encode bytes to PHPass format
+    fn encode_phpass(&self, input: &str) -> String {
+        let itoa64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        let input_bytes = hex::decode(input).unwrap_or_default();
+        let mut output = String::new();
+        
+        let mut i = 0;
+        while i < input_bytes.len() {
+            let value = input_bytes[i] as usize;
+            output.push(itoa64.chars().nth(value & 0x3f).unwrap());
+            
+            if i + 1 < input_bytes.len() {
+                let value = ((input_bytes[i] as usize) << 8 | input_bytes[i + 1] as usize) >> 6;
+                output.push(itoa64.chars().nth(value & 0x3f).unwrap());
+            }
+            
+            i += 2;
+        }
+        
+        output
     }
     
     /// Generate API key
