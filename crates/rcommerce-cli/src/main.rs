@@ -668,7 +668,7 @@ async fn main() -> Result<()> {
                                         o.id.to_string(),
                                         truncate(&o.customer_email, 18),
                                         o.status,
-                                        o.total_amount,
+                                        o.total,
                                         o.created_at.format("%Y-%m-%d")
                                     );
                                 }
@@ -1738,14 +1738,14 @@ struct OrderRecord {
     id: Uuid,
     customer_email: String,
     status: String,
-    total_amount: rust_decimal::Decimal,
+    total: rust_decimal::Decimal,
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// List all orders
 async fn list_orders(pool: &sqlx::PgPool) -> Result<Vec<OrderRecord>> {
     let orders = sqlx::query_as::<_, OrderRecord>(
-        "SELECT o.id, c.email as customer_email, o.status::text, o.total_amount, o.created_at 
+        "SELECT o.id, c.email as customer_email, o.status::text, o.total, o.created_at 
          FROM orders o 
          JOIN customers c ON o.customer_id = c.id 
          ORDER BY o.created_at DESC"
