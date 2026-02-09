@@ -12,7 +12,8 @@ pub mod dunning;
 pub mod downloads;
 
 pub use admin::router as admin_router;
-pub use auth::router as auth_router;
+pub use auth::public_router as auth_public_router;
+pub use auth::protected_router as auth_protected_router;
 pub use cart::router as cart_router;
 pub use coupon::router as coupon_router;
 pub use customer::router as customer_router;
@@ -52,7 +53,8 @@ fn api_v1_routes() -> Router<AppState> {
         .merge(product_router())
         .merge(customer_router())
         .merge(order_router())
-        .merge(auth_router())
+        .merge(auth_public_router())
+        .merge(auth_protected_router())
         .merge(cart_router())
         .merge(coupon_router())
         .merge(payment_router())
