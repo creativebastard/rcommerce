@@ -2,29 +2,11 @@
 
 ## 概述
 
-从 WooCommerce 迁移到 R Commerce 需要处理 WordPress 集成、插件数据和 WooCommerce 特定功能。本指南涵盖直接数据库迁移和基于 API 的迁移方法。
+从 WooCommerce 迁移到 R Commerce 需要处理 WordPress 集成、插件数据和 WooCommerce 特定功能。本指南涵盖基于 API 的迁移方法。
 
 ## 迁移前分析
 
 ### 审计 WooCommerce 店铺
-
-**从 WordPress 管理后台：**
-```sql
--- 获取产品数量
-SELECT COUNT(*) FROM wp_posts WHERE post_type = 'product' AND post_status = 'publish';
-
--- 获取客户数量  
-SELECT COUNT(DISTINCT user_id) FROM wp_wc_customer_lookup;
-
--- 获取订单数量
-SELECT COUNT(*) FROM wp_posts WHERE post_type = 'shop_order';
-
--- 获取插件信息
-SELECT option_name, option_value FROM wp_options WHERE option_name LIKE '%woocommerce%';
-
--- 获取激活的插件
-SELECT option_value FROM wp_options WHERE option_name = 'active_plugins';
-```
 
 **使用 WP-CLI：**
 ```bash
@@ -47,132 +29,28 @@ wp wc product list --user=1 --format=json > products.json
 wp plugin list --status=active --format=json
 ```
 
-## 导出策略
-
-### 选项 1：直接数据库导出
-
+**使用 WooCommerce REST API：**
 ```bash
-#!/bin/bash
-# export-woocommerce-db.sh
+# 获取店铺信息
+curl -u "consumer_key:consumer_secret" \
+  "https://your-store.com/wp-json/wc/v3/system_status"
 
-DB_NAME="wordpress"
-DB_USER="wp_user"
-DB_PASS="wp_password"
+# 获取产品数量（检查 X-WP-Total 响应头）
+curl -I -u "consumer_key:consumer_secret" \
+  "https://your-store.com/wp-json/wc/v3/products?per_page=1"
 
-# 创建导出目录
-mkdir -p woocommerce-export
+# 获取客户数量
+curl -I -u "consumer_key:consumer_secret" \
+  "https://your-store.com/wp-json/wc/v3/customers?per_page=1"
 
-# 导出产品
-echo "导出产品..."
-mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "
-SELECT 
-  p.ID,
-  p.post_title as name,
-  p.post_content as description,
-  p.post_excerpt as short_description,
-  p.post_status,
-  p.post_date,
-  pm.meta_value as sku,
-  pm_price.meta_value as price,
-  pm_regular_price.meta_value as regular_price,
-  pm_sale_price.meta_value as sale_price,
-  pm_stock.meta_value as stock_quantity,
-  pm_stock_status.meta_value as stock_status,
-  pm_weight.meta_value as weight,
-  pm_length.meta_value as length,
-  pm_width.meta_value as width,
-  pm_height.meta_value as height
-FROM wp_posts p
-LEFT JOIN wp_postmeta pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-LEFT JOIN wp_postmeta pm_price ON p.ID = pm_price.post_id AND pm_price.meta_key = '_price'
-LEFT JOIN wp_postmeta pm_regular_price ON p.ID = pm_regular_price.post_id AND pm_regular_price.meta_key = '_regular_price'
-LEFT JOIN wp_postmeta pm_sale_price ON p.ID = pm_sale_price.post_id AND pm_sale_price.meta_key = '_sale_price'
-LEFT JOIN wp_postmeta pm_stock ON p.ID = pm_stock.post_id AND pm_stock.meta_key = '_stock'
-LEFT JOIN wp_postmeta pm_stock_status ON p.ID = pm_stock_status.post_id AND pm_stock_status.meta_key = '_stock_status'
-LEFT JOIN wp_postmeta pm_weight ON p.ID = pm_weight.post_id AND pm_weight.meta_key = '_weight'
-LEFT JOIN wp_postmeta pm_length ON p.ID = pm_length.post_id AND pm_length.meta_key = '_length'
-LEFT JOIN wp_postmeta pm_width ON p.ID = pm_width.post_id AND pm_width.meta_key = '_width'
-LEFT JOIN wp_postmeta pm_height ON p.ID = pm_height.post_id AND pm_height.meta_key = '_height'
-WHERE p.post_type = 'product' 
-  AND p.post_status IN ('publish', 'draft')
-" > woocommerce-export/products.csv
-
-# 导出产品分类
-echo "导出分类..."
-mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "
-SELECT 
-  t.term_id,
-  t.name,
-  t.slug,
-  tt.parent,
-  tt.description,
-  tx.taxonomy
-FROM wp_terms t
-JOIN wp_term_taxonomy tx ON t.term_id = tx.term_id
-JOIN wp_term_relationships tr ON tx.term_taxonomy_id = tr.term_taxonomy_id
-JOIN wp_posts p ON tr.object_id = p.ID
-WHERE tx.taxonomy IN ('product_cat', 'product_tag')
-  AND p.post_type = 'product'
-GROUP BY t.term_id
-" > woocommerce-export/categories.csv
-
-# 导出客户
-echo "导出客户..."
-mysql -u $DB_USER -p$DB_PASS $DB_NAME -e "
-SELECT 
-  u.ID as user_id,
-  u.user_email as email,
-  u.user_registered as created_at,
-  m_first_name.meta_value as first_name,
-  m_last_name.meta_value as last_name,
-  m_billing_first_name.meta_value as billing_first_name,
-  m_billing_last_name.meta_value as billing_last_name,
-  m_billing_company.meta_value as billing_company,
-  m_billing_address_1.meta_value as billing_address_1,
-  m_billing_address_2.meta_value as billing_address_2,
-  m_billing_city.meta_value as billing_city,
-  m_billing_state.meta_value as billing_state,
-  m_billing_postcode.meta_value as billing_postcode,
-  m_billing_country.meta_value as billing_country,
-  m_billing_phone.meta_value as billing_phone,
-  m_shipping_first_name.meta_value as shipping_first_name,
-  m_shipping_last_name.meta_value as shipping_last_name,
-  m_shipping_company.meta_value as shipping_company,
-  m_shipping_address_1.meta_value as shipping_address_1,
-  m_shipping_address_2.meta_value as shipping_address_2,
-  m_shipping_city.meta_value as shipping_city,
-  m_shipping_state.meta_value as shipping_state,
-  m_shipping_postcode.meta_value as shipping_postcode,
-  m_shipping_country.meta_value as shipping_country
-FROM wp_users u
-LEFT JOIN wp_usermeta m_first_name ON u.ID = m_first_name.user_id AND m_first_name.meta_key = 'first_name'
-LEFT JOIN wp_usermeta m_last_name ON u.ID = m_last_name.user_id AND m_last_name.meta_key = 'last_name'
-LEFT JOIN wp_usermeta m_billing_first_name ON u.ID = m_billing_first_name.user_id AND m_billing_first_name.meta_key = 'billing_first_name'
-LEFT JOIN wp_usermeta m_billing_last_name ON u.ID = m_billing_last_name.user_id AND m_billing_last_name.meta_key = 'billing_last_name'
-LEFT JOIN wp_usermeta m_billing_company ON u.ID = m_billing_company.user_id AND m_billing_company.meta_key = 'billing_company'
-LEFT JOIN wp_usermeta m_billing_address_1 ON u.ID = m_billing_address_1.user_id AND m_billing_address_1.meta_key = 'billing_address_1'
-LEFT JOIN wp_usermeta m_billing_address_2 ON u.ID = m_billing_address_2.user_id AND m_billing_address_2.meta_key = 'billing_address_2'
-LEFT JOIN wp_usermeta m_billing_city ON u.ID = m_billing_city.user_id AND m_billing_city.meta_key = 'billing_city'
-LEFT JOIN wp_usermeta m_billing_state ON u.ID = m_billing_state.user_id AND m_billing_state.meta_key = 'billing_state'
-LEFT JOIN wp_usermeta m_billing_postcode ON u.ID = m_billing_postcode.user_id AND m_billing_postcode.meta_key = 'billing_postcode'
-LEFT JOIN wp_usermeta m_billing_country ON u.ID = m_billing_country.user_id AND m_billing_country.meta_key = 'billing_country'
-LEFT JOIN wp_usermeta m_billing_phone ON u.ID = m_billing_phone.user_id AND m_billing_phone.meta_key = 'billing_phone'
-LEFT JOIN wp_usermeta m_shipping_first_name ON u.ID = m_shipping_first_name.user_id AND m_shipping_first_name.meta_key = 'shipping_first_name'
-LEFT JOIN wp_usermeta m_shipping_last_name ON u.ID = m_shipping_last_name.user_id AND m_shipping_last_name.meta_key = 'shipping_last_name'
-LEFT JOIN wp_usermeta m_shipping_company ON u.ID = m_shipping_company.user_id AND m_shipping_company.meta_key = 'shipping_company'
-LEFT JOIN wp_usermeta m_shipping_address_1 ON u.ID = m_shipping_address_1.user_id AND m_shipping_address_1.meta_key = 'shipping_address_1'
-LEFT JOIN wp_usermeta m_shipping_address_2 ON u.ID = m_shipping_address_2.user_id AND m_shipping_address_2.meta_key = 'shipping_address_2'
-LEFT JOIN wp_usermeta m_shipping_city ON u.ID = m_shipping_city.user_id AND m_shipping_city.meta_key = 'shipping_city'
-LEFT JOIN wp_usermeta m_shipping_state ON u.ID = m_shipping_state.user_id AND m_shipping_state.meta_key = 'shipping_state'
-LEFT JOIN wp_usermeta m_shipping_postcode ON u.ID = m_shipping_postcode.user_id AND m_shipping_postcode.meta_key = 'shipping_postcode'
-LEFT JOIN wp_usermeta m_shipping_country ON u.ID = m_shipping_country.user_id AND m_shipping_country.meta_key = 'shipping_country'
-WHERE u.ID IN (SELECT user_id FROM wp_wc_customer_lookup)
-" > woocommerce-export/customers.csv
-
-echo "导出完成！"
+# 获取订单数量
+curl -I -u "consumer_key:consumer_secret" \
+  "https://your-store.com/wp-json/wc/v3/orders?per_page=1"
 ```
 
-### 选项 2：使用 WooCommerce REST API
+## 导出策略
+
+### 选项 1：使用 WooCommerce REST API（推荐）
 
 ```bash
 #!/bin/bash
@@ -210,8 +88,78 @@ while true; do
   sleep 1
 done
 
-echo "产品导出完成！"
+# 导出客户
+echo "导出客户..."
+page=1
+while true; do
+  echo "获取客户第 $page 页..."
+  response=$(curl -s -u "${CONSUMER_KEY}:${CONSUMER_SECRET}" \
+    "${SHOP_URL}/wp-json/wc/v3/customers?per_page=100&page=${page}")
+  
+  if [ "$(echo "$response" | jq 'length')" -eq 0 ]; then
+    break
+  fi
+  
+  echo "$response" >> woocommerce-export/customers-page-${page}.json
+  page=$((page + 1))
+  sleep 1
+done
+
+# 导出订单（可选）
+echo "导出订单..."
+page=1
+while true; do
+  echo "获取订单第 $page 页..."
+  response=$(curl -s -u "${CONSUMER_KEY}:${CONSUMER_SECRET}" \
+    "${SHOP_URL}/wp-json/wc/v3/orders?per_page=100&page=${page}")
+  
+  if [ "$(echo "$response" | jq 'length')" -eq 0 ]; then
+    break
+  fi
+  
+  echo "$response" >> woocommerce-export/orders-page-${page}.json
+  page=$((page + 1))
+  sleep 1
+done
+
+# 导出分类
+echo "导出分类..."
+curl -u "${CONSUMER_KEY}:${CONSUMER_SECRET}" \
+  "${SHOP_URL}/wp-json/wc/v3/products/categories?per_page=100" \
+  > woocommerce-export/categories.json
+
+echo "导出完成！"
 ```
+
+### 选项 2：使用 WP-CLI 导出
+
+```bash
+#!/bin/bash
+# export-woocommerce-wpcli.sh
+
+# 导出产品到 JSON
+wp wc product list --user=1 --format=json > woocommerce-export/products.json
+
+# 导出客户
+wp wc customer list --user=1 --format=json > woocommerce-export/customers.json
+
+# 导出订单
+wp wc order list --user=1 --format=json --status=any > woocommerce-export/orders.json
+
+# 导出产品分类
+wp wc product_cat list --user=1 --format=json > woocommerce-export/categories.json
+
+# 导出产品标签
+wp wc product_tag list --user=1 --format=json > woocommerce-export/tags.json
+```
+
+### 选项 3：通过 WooCommerce 后台 CSV 导出
+
+1. 前往 **WooCommerce > 产品**
+2. 点击**导出**按钮
+3. 选择要导出的列
+4. 选择"导出为 CSV"
+5. 对订单重复操作（WooCommerce > 订单 > 导出）
 
 ## 数据映射
 
@@ -422,7 +370,6 @@ class WooCommerceVariableProductMigrator {
 #!/usr/bin/env python3
 # migrate-woocommerce.py
 
-import mysql.connector
 import requests
 import json
 import os
@@ -432,8 +379,10 @@ from datetime import datetime
 from typing import List, Dict
 
 class WooCommerceMigrator:
-    def __init__(self, db_config, rcommerce_config):
-        self.db = mysql.connector.connect(**db_config)
+    def __init__(self, wc_config, rcommerce_config):
+        self.wc_url = wc_config['url']
+        self.wc_key = wc_config['consumer_key']
+        self.wc_secret = wc_config['consumer_secret']
         self.rcommerce_url = rcommerce_config['url']
         self.rcommerce_key = rcommerce_config['api_key']
         self.migration_log = []
@@ -466,286 +415,431 @@ class WooCommerceMigrator:
         except Exception as e:
             print(f"\n 迁移失败：{e}")
             sys.exit(1)
-        
-        finally:
-            self.db.close()
+    
+    def _wc_get(self, endpoint: str, params: dict = None) -> dict:
+        """向 WooCommerce API 发起认证 GET 请求"""
+        url = f"{self.wc_url}/wp-json/wc/v3/{endpoint}"
+        response = requests.get(url, auth=(self.wc_key, self.wc_secret), params=params)
+        response.raise_for_status()
+        return response.json()
     
     def migrate_categories(self):
         """将 WooCommerce 产品分类迁移到 R Commerce"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        query = """
-        SELECT 
-            t.term_id as id,
-            t.name,
-            t.slug,
-            tt.description,
-            tt.parent,
-            tx.taxonomy
-        FROM wp_terms t
-        JOIN wp_term_taxonomy tx ON t.term_id = tx.term_id
-        WHERE tx.taxonomy IN ('product_cat', 'product_tag')
-        """
-        
-        cursor.execute(query)
-        categories = cursor.fetchall()
-        
-        for category in categories:
-            try:
-                # 转换分类
-                category_data = {
-                    'name': category['name'],
-                    'slug': category['slug'],
-                    'description': category['description'],
-                    'meta_data': {
-                        'woocommerce': {
-                            'term_id': category['id'],
-                            'parent': category['parent'],
-                            'taxonomy': category['taxonomy']
+        page = 1
+        while True:
+            categories = self._wc_get('products/categories', {'per_page': 100, 'page': page})
+            if not categories:
+                break
+            
+            for category in categories:
+                try:
+                    category_data = {
+                        'name': category['name'],
+                        'slug': category['slug'],
+                        'description': category.get('description', ''),
+                        'meta_data': {
+                            'woocommerce': {
+                                'category_id': category['id'],
+                                'parent': category.get('parent', 0),
+                                'display': category.get('display', 'default'),
+                                'image': category.get('image', {})
+                            }
                         }
                     }
-                }
-                
-                # 在 R Commerce 中创建
-                response = requests.post(
-                    f"{self.rcommerce_url}/v1/categories",
-                    json=category_data,
-                    headers={'Authorization': f'Bearer {self.rcommerce_key}'}
-                )
-                
-                if response.status_code == 201:
-                    print(f" 已迁移分类：{category['name']}")
+                    
+                    # 在 R Commerce 中创建
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/categories",
+                        json=category_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移分类：{category['name']}")
+                        self.migration_log.append({
+                            'type': 'category',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': category['id'],
+                            'target_id': response.json()['data']['id'],
+                            'name': category['name']
+                        })
+                    else:
+                        print(f" 迁移分类 {category['name']} 失败：{response.text}")
+                        self.migration_log.append({
+                            'type': 'category',
+                            'operation': 'create',
+                            'status': 'failed',
+                            'source_id': category['id'],
+                            'name': category['name'],
+                            'error': response.text
+                        })
+                    
+                    # 速率限制
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移分类 {category['name']} 时出错：{e}")
                     self.migration_log.append({
                         'type': 'category',
                         'operation': 'create',
-                        'status': 'success',
-                        'source_id': category['id'],
-                        'target_id': response.json()['data']['id'],
-                        'name': category['name']
-                    })
-                else:
-                    print(f" 迁移分类 {category['name']} 失败：{response.text}")
-                    self.migration_log.append({
-                        'type': 'category',
-                        'operation': 'create',
-                        'status': 'failed',
+                        'status': 'error',
                         'source_id': category['id'],
                         'name': category['name'],
-                        'error': response.text
+                        'error': str(e)
                     })
-                
-                # 速率限制
-                time.sleep(0.5)
-                
-            except Exception as e:
-                print(f" 迁移分类 {category['name']} 时出错：{e}")
-                self.migration_log.append({
-                    'type': 'category',
-                    'operation': 'create',
-                    'status': 'error',
-                    'source_id': category['id'],
-                    'name': category['name'],
-                    'error': str(e)
-                })
+            
+            page += 1
     
     def migrate_products(self):
         """将 WooCommerce 产品迁移到 R Commerce"""
-        cursor = self.db.cursor(dictionary=True)
+        page = 1
+        while True:
+            products = self._wc_get('products', {'per_page': 100, 'page': page})
+            if not products:
+                break
+            
+            for product in products:
+                try:
+                    product_data = self.transform_product(product)
+                    
+                    # 在 R Commerce 中创建
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/products",
+                        json=product_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移产品：{product['name']}")
+                        self.migration_log.append({
+                            'type': 'product',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': product['id'],
+                            'target_id': response.json()['data']['id'],
+                            'name': product['name']
+                        })
+                    else:
+                        print(f" 迁移产品 {product['name']} 失败：{response.text}")
+                        self.migration_log.append({
+                            'type': 'product',
+                            'operation': 'create',
+                            'status': 'failed',
+                            'source_id': product['id'],
+                            'name': product['name'],
+                            'error': response.text
+                        })
+                    
+                    # 速率限制
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移产品 {product.get('name', 'unknown')} 时出错：{e}")
+                    self.migration_log.append({
+                        'type': 'product',
+                        'operation': 'create',
+                        'status': 'error',
+                        'source_id': product.get('id'),
+                        'name': product.get('name', 'unknown'),
+                        'error': str(e)
+                    })
+            
+            page += 1
+    
+    def transform_product(self, product: dict) -> dict:
+        """将 WooCommerce 产品转换为 R Commerce 格式"""
+        product_data = {
+            'name': product['name'],
+            'slug': product['slug'],
+            'description': product.get('description', ''),
+            'short_description': product.get('short_description', ''),
+            'sku': product.get('sku', ''),
+            'price': float(product.get('price', 0)),
+            'compare_at_price': float(product.get('regular_price', 0)) if product.get('sale_price') else None,
+            'inventory_quantity': product.get('stock_quantity', 0) or 0,
+            'inventory_policy': 'deny' if product.get('stock_status') == 'outofstock' else 'continue',
+            'weight': float(product.get('weight', 0)) if product.get('weight') else None,
+            'status': self.map_product_status(product['status']),
+            'tags': [tag['name'] for tag in product.get('tags', [])],
+            'images': [{'url': img['src'], 'alt': img.get('alt', '')} for img in product.get('images', [])],
+            'is_taxable': product.get('tax_status') != 'none',
+            'requires_shipping': not product.get('virtual', False),
+            'meta_data': {
+                'woocommerce': {
+                    'product_id': product['id'],
+                    'type': product.get('type', 'simple'),
+                    'tax_class': product.get('tax_class', ''),
+                    'stock_status': product.get('stock_status', ''),
+                    'manage_stock': product.get('manage_stock', False),
+                    'backorders': product.get('backorders', 'no'),
+                    'sold_individually': product.get('sold_individually', False)
+                }
+            }
+        }
         
-        # 获取所有产品
-        query = """
-        SELECT 
-            p.ID as id,
-            p.post_title as name,
-            p.post_content as description,
-            p.post_excerpt as short_description,
-            p.post_status,
-            p.post_date,
-            p.post_modified,
-            pm_sku.meta_value as sku,
-            pm_price.meta_value as price,
-            pm_regular_price.meta_value as regular_price,
-            pm_sale_price.meta_value as sale_price,
-            pm_stock.meta_value as stock_quantity,
-            pm_stock_status.meta_value as stock_status,
-            pm_weight.meta_value as weight,
-            pm_length.meta_value as length,
-            pm_width.meta_value as width,
-            pm_height.meta_value as height,
-            pm_virtual.meta_value as virtual,
-            pm_downloadable.meta_value as downloadable,
-            pm_tax_status.meta_value as tax_status,
-            pm_tax_class.meta_value as tax_class
-        FROM wp_posts p
-        LEFT JOIN wp_postmeta pm_sku ON p.ID = pm_sku.post_id AND pm_sku.meta_key = '_sku'
-        LEFT JOIN wp_postmeta pm_price ON p.ID = pm_price.post_id AND pm_price.meta_key = '_price'
-        LEFT JOIN wp_postmeta pm_regular_price ON p.ID = pm_regular_price.post_id AND pm_regular_price.meta_key = '_regular_price'
-        LEFT JOIN wp_postmeta pm_sale_price ON p.ID = pm_sale_price.post_id AND pm_sale_price.meta_key = '_sale_price'
-        LEFT JOIN wp_postmeta pm_stock ON p.ID = pm_stock.post_id AND pm_stock.meta_key = '_stock'
-        LEFT JOIN wp_postmeta pm_stock_status ON p.ID = pm_stock_status.post_id AND pm_stock_status.meta_key = '_stock_status'
-        LEFT JOIN wp_postmeta pm_weight ON p.ID = pm_weight.post_id AND pm_weight.meta_key = '_weight'
-        LEFT JOIN wp_postmeta pm_length ON p.ID = pm_length.post_id AND pm_length.meta_key = '_length'
-        LEFT JOIN wp_postmeta pm_width ON p.ID = pm_width.post_id AND pm_width.meta_key = '_width'
-        LEFT JOIN wp_postmeta pm_height ON p.ID = pm_height.post_id AND pm_height.meta_key = '_height'
-        LEFT JOIN wp_postmeta pm_virtual ON p.ID = pm_virtual.post_id AND pm_virtual.meta_key = '_virtual'
-        LEFT JOIN wp_postmeta pm_downloadable ON p.ID = pm_downloadable.post_id AND pm_downloadable.meta_key = '_downloadable'
-        LEFT JOIN wp_postmeta pm_tax_status ON p.ID = pm_tax_status.post_id AND pm_tax_status.meta_key = '_tax_status'
-        LEFT JOIN wp_postmeta pm_tax_class ON p.ID = pm_tax_class.post_id AND pm_tax_class.meta_key = '_tax_class'
-        WHERE p.post_type = 'product'
-        AND p.post_status IN ('publish', 'draft', 'private')
-        ORDER BY p.ID
-        """
+        # 处理可变产品
+        if product.get('type') == 'variable':
+            product_data['options'] = self.transform_attributes(product.get('attributes', []))
+            product_data['variants'] = self.migrate_variations(product['id'])
         
-        cursor.execute(query)
-        products = cursor.fetchall()
+        return product_data
+    
+    def transform_attributes(self, attributes: list) -> list:
+        """将 WooCommerce 属性转换为 R Commerce 选项"""
+        options = []
+        for attr in attributes:
+            if attr.get('variation', False):
+                options.append({
+                    'name': attr['name'],
+                    'position': attr.get('position', 0),
+                    'values': attr.get('options', [])
+                })
+        return options
+    
+    def migrate_variations(self, product_id: int) -> list:
+        """获取并转换产品变体"""
+        variations = self._wc_get(f'products/{product_id}/variations', {'per_page': 100})
+        variants = []
         
-        for product in products:
-            try:
-                # 获取产品分类/标签
-                categories = self.getProductCategories(product['id'])
-                tags = self.getProductTags(product['id'])
-                images = self.getProductImages(product['id'])
-                
-                # 转换产品数据
-                product_data = {
-                    'name': product['name'],
-                    'slug': self.generateSlug(product['name']),
-                    'description': product['description'] or '',
-                    'short_description': product['short_description'] or '',
-                    'sku': product['sku'],
-                    'price': float(product['price'] or 0),
-                    'compare_at_price': float(product['regular_price'] or 0) if product['sale_price'] else None,
-                    'inventory_quantity': int(product['stock_quantity'] or 0),
-                    'inventory_policy': 'deny' if product['stock_status'] == 'outofstock' else 'continue',
-                    'weight': float(product['weight'] or 0) if product['weight'] else None,
-                    'length': float(product['length'] or 0) if product['length'] else None,
-                    'width': float(product['width'] or 0) if product['width'] else None,
-                    'height': float(product['height'] or 0) if product['height'] else None,
-                    'status': self.mapProductStatus(product['post_status']),
-                    'category_id': categories[0]['id'] if categories else None,
-                    'tags': tags,
-                    'images': images,
-                    'is_taxable': product['tax_status'] != 'none',
-                    'requires_shipping': product['virtual'] != 'yes',
-                    'meta_data': {
-                        'woocommerce': {
-                            'product_id': product['id'],
-                            'post_date': product['post_date'],
-                            'post_modified': product['post_modified'],
-                            'tax_class': product['tax_class'],
-                            'stock_status': product['stock_status']
-                        }
+        for variation in variations:
+            variant = {
+                'sku': variation.get('sku', ''),
+                'price': float(variation.get('price', 0)),
+                'regular_price': float(variation.get('regular_price', 0)),
+                'sale_price': float(variation.get('sale_price', 0)) if variation.get('sale_price') else None,
+                'inventory_quantity': variation.get('stock_quantity', 0) or 0,
+                'inventory_policy': 'deny' if variation.get('stock_status') == 'outofstock' else 'continue',
+                'weight': float(variation.get('weight', 0)) if variation.get('weight') else None,
+                'options': {attr['name']: attr['option'] for attr in variation.get('attributes', [])},
+                'meta_data': {
+                    'woocommerce': {
+                        'variation_id': variation['id'],
+                        'virtual': variation.get('virtual', False),
+                        'downloadable': variation.get('downloadable', False)
                     }
                 }
-                
-                # 处理可变产品
-                if self.isVariableProduct(product['id']):
-                    product_data['variants'] = self.migrateVariations(product['id'])
-                    product_data['options'] = self.getProductAttributes(product['id'])
-                
-                # 在 R Commerce 中创建
-                response = requests.post(
-                    f"{self.rcommerce_url}/v1/products",
-                    json=product_data,
-                    headers={'Authorization': f'Bearer {self.rcommerce_key}'}
-                )
-                
-                if response.status_code == 201:
-                    print(f" 已迁移产品：{product['name']}")
-                    self.migration_log.append({
-                        'type': 'product',
-                        'operation': 'create',
-                        'status': 'success',
-                        'source_id': product['id'],
-                        'target_id': response.json()['data']['id'],
-                        'name': product['name']
-                    })
-                else:
-                    print(f" 迁移产品 {product['name']} 失败：{response.text}")
-                    self.migration_log.append({
-                        'type': 'product',
-                        'operation': 'create',
-                        'status': 'failed',
-                        'source_id': product['id'],
-                        'name': product['name'],
-                        'error': response.text
-                    })
-                
-                # 速率限制
-                time.sleep(0.5)
-                
-            except Exception as e:
-                print(f" 迁移产品 {product['name']} 时出错：{e}")
-                self.migration_log.append({
-                    'type': 'product',
-                    'operation': 'create',
-                    'status': 'error',
-                    'source_id': product['id'],
-                    'name': product['name'],
-                    'error': str(e)
-                })
+            }
+            variants.append(variant)
+        
+        return variants
     
-    def getProductCategories(self, productId):
-        """获取产品的分类"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-        SELECT t.term_id as id, t.name, t.slug
-        FROM wp_terms t
-        JOIN wp_term_taxonomy tx ON t.term_id = tx.term_id
-        JOIN wp_term_relationships tr ON tx.term_taxonomy_id = tr.term_taxonomy_id
-        WHERE tr.object_id = %s AND tx.taxonomy = 'product_cat'
-        """, (productId,))
-        return cursor.fetchall()
+    def migrate_customers(self):
+        """将 WooCommerce 客户迁移到 R Commerce"""
+        page = 1
+        while True:
+            customers = self._wc_get('customers', {'per_page': 100, 'page': page})
+            if not customers:
+                break
+            
+            for customer in customers:
+                try:
+                    customer_data = self.transform_customer(customer)
+                    
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/customers",
+                        json=customer_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移客户：{customer['email']}")
+                        self.migration_log.append({
+                            'type': 'customer',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': customer['id'],
+                            'target_id': response.json()['data']['id'],
+                            'email': customer['email']
+                        })
+                    else:
+                        print(f" 迁移客户 {customer['email']} 失败：{response.text}")
+                        self.migration_log.append({
+                            'type': 'customer',
+                            'operation': 'create',
+                            'status': 'failed',
+                            'source_id': customer['id'],
+                            'email': customer['email'],
+                            'error': response.text
+                        })
+                    
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移客户 {customer.get('email', 'unknown')} 时出错：{e}")
+            
+            page += 1
     
-    def getProductTags(self, productId):
-        """获取产品的标签"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-        SELECT t.name
-        FROM wp_terms t
-        JOIN wp_term_taxonomy tx ON t.term_id = tx.term_id
-        JOIN wp_term_relationships tr ON tx.term_taxonomy_id = tr.term_taxonomy_id
-        WHERE tr.object_id = %s AND tx.taxonomy = 'product_tag'
-        """, (productId,))
-        return [row['name'] for row in cursor.fetchall()]
+    def transform_customer(self, customer: dict) -> dict:
+        """将 WooCommerce 客户转换为 R Commerce 格式"""
+        billing = customer.get('billing', {})
+        shipping = customer.get('shipping', {})
+        
+        return {
+            'email': customer['email'],
+            'first_name': customer.get('first_name', ''),
+            'last_name': customer.get('last_name', ''),
+            'phone': billing.get('phone', ''),
+            'accepts_marketing': customer.get('is_paying_customer', False),
+            'billing_address': {
+                'first_name': billing.get('first_name', ''),
+                'last_name': billing.get('last_name', ''),
+                'company': billing.get('company', ''),
+                'address1': billing.get('address_1', ''),
+                'address2': billing.get('address_2', ''),
+                'city': billing.get('city', ''),
+                'state': billing.get('state', ''),
+                'postal_code': billing.get('postcode', ''),
+                'country': billing.get('country', ''),
+                'phone': billing.get('phone', '')
+            },
+            'shipping_address': {
+                'first_name': shipping.get('first_name', ''),
+                'last_name': shipping.get('last_name', ''),
+                'company': shipping.get('company', ''),
+                'address1': shipping.get('address_1', ''),
+                'address2': shipping.get('address_2', ''),
+                'city': shipping.get('city', ''),
+                'state': shipping.get('state', ''),
+                'postal_code': shipping.get('postcode', ''),
+                'country': shipping.get('country', '')
+            },
+            'meta_data': {
+                'woocommerce': {
+                    'customer_id': customer['id'],
+                    'username': customer.get('username', ''),
+                    'role': customer.get('role', ''),
+                    'is_paying_customer': customer.get('is_paying_customer', False)
+                }
+            }
+        }
     
-    def getProductImages(self, productId):
-        """获取产品的图片"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-        SELECT pm_image.meta_value as image_url, pm_alt.meta_value as alt_text
-        FROM wp_postmeta pm_image
-        LEFT JOIN wp_postmeta pm_alt ON pm_image.post_id = pm_alt.post_id AND pm_alt.meta_key = '_wp_attachment_image_alt'
-        WHERE pm_image.post_id IN (
-            SELECT pm.meta_value
-            FROM wp_postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = '_thumbnail_id'
-        )
-        """, (productId,))
-        return cursor.fetchall()
+    def migrate_orders(self):
+        """将 WooCommerce 订单迁移到 R Commerce"""
+        page = 1
+        while True:
+            orders = self._wc_get('orders', {'per_page': 100, 'page': page})
+            if not orders:
+                break
+            
+            for order in orders:
+                try:
+                    order_data = self.transform_order(order)
+                    
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/orders",
+                        json=order_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移订单：{order['id']}")
+                        self.migration_log.append({
+                            'type': 'order',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': order['id'],
+                            'target_id': response.json()['data']['id']
+                        })
+                    else:
+                        print(f" 迁移订单 {order['id']} 失败：{response.text}")
+                    
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移订单 {order.get('id', 'unknown')} 时出错：{e}")
+            
+            page += 1
     
-    def isVariableProduct(self, productId):
-        """检查产品是否为可变产品"""
-        cursor = self.db.cursor()
-        cursor.execute(
-            "SELECT COUNT(*) FROM wp_posts WHERE post_parent = %s AND post_type = 'product_variation'",
-            (productId,)
-        )
-        return cursor.fetchone()[0] > 0
+    def transform_order(self, order: dict) -> dict:
+        """将 WooCommerce 订单转换为 R Commerce 格式"""
+        return {
+            'order_number': str(order['id']),
+            'customer_email': order.get('billing', {}).get('email', ''),
+            'customer_first_name': order.get('billing', {}).get('first_name', ''),
+            'customer_last_name': order.get('billing', {}).get('last_name', ''),
+            'status': self.map_order_status(order['status']),
+            'subtotal': float(order.get('subtotal', 0)),
+            'tax_amount': float(order.get('total_tax', 0)),
+            'shipping_amount': float(order.get('shipping_total', 0)),
+            'discount_amount': float(order.get('discount_total', 0)),
+            'total': float(order.get('total', 0)),
+            'billing_address': {
+                'first_name': order.get('billing', {}).get('first_name', ''),
+                'last_name': order.get('billing', {}).get('last_name', ''),
+                'company': order.get('billing', {}).get('company', ''),
+                'address1': order.get('billing', {}).get('address_1', ''),
+                'address2': order.get('billing', {}).get('address_2', ''),
+                'city': order.get('billing', {}).get('city', ''),
+                'state': order.get('billing', {}).get('state', ''),
+                'postal_code': order.get('billing', {}).get('postcode', ''),
+                'country': order.get('billing', {}).get('country', ''),
+                'phone': order.get('billing', {}).get('phone', '')
+            },
+            'shipping_address': {
+                'first_name': order.get('shipping', {}).get('first_name', ''),
+                'last_name': order.get('shipping', {}).get('last_name', ''),
+                'company': order.get('shipping', {}).get('company', ''),
+                'address1': order.get('shipping', {}).get('address_1', ''),
+                'address2': order.get('shipping', {}).get('address_2', ''),
+                'city': order.get('shipping', {}).get('city', ''),
+                'state': order.get('shipping', {}).get('state', ''),
+                'postal_code': order.get('shipping', {}).get('postcode', ''),
+                'country': order.get('shipping', {}).get('country', '')
+            },
+            'line_items': [self.transform_line_item(item) for item in order.get('line_items', [])],
+            'meta_data': {
+                'woocommerce': {
+                    'order_id': order['id'],
+                    'order_key': order.get('order_key', ''),
+                    'payment_method': order.get('payment_method', ''),
+                    'payment_method_title': order.get('payment_method_title', ''),
+                    'transaction_id': order.get('transaction_id', ''),
+                    'date_created': order.get('date_created', ''),
+                    'date_modified': order.get('date_modified', '')
+                }
+            }
+        }
     
-    def mapProductStatus(self, wpStatus):
-        """将 WordPress 发布状态映射到 R Commerce 状态"""
+    def transform_line_item(self, item: dict) -> dict:
+        """转换订单行项目"""
+        return {
+            'product_id': str(item.get('product_id', '')),
+            'name': item.get('name', ''),
+            'sku': item.get('sku', ''),
+            'quantity': item.get('quantity', 0),
+            'unit_price': float(item.get('price', 0)),
+            'total': float(item.get('total', 0)),
+            'meta_data': {
+                'woocommerce': {
+                    'variation_id': item.get('variation_id'),
+                    'tax_class': item.get('tax_class', '')
+                }
+            }
+        }
+    
+    def map_product_status(self, wc_status: str) -> str:
+        """将 WooCommerce 产品状态映射到 R Commerce 状态"""
         status_map = {
             'publish': 'active',
             'draft': 'draft',
             'private': 'archived',
             'pending': 'draft'
         }
-        return status_map.get(wpStatus, 'draft')
+        return status_map.get(wc_status, 'draft')
     
-    def generateSlug(self, name):
-        """生成 URL 友好的 slug"""
-        return name.lower().replace(' ', '-')
+    def map_order_status(self, wc_status: str) -> str:
+        """将 WooCommerce 订单状态映射到 R Commerce 状态"""
+        status_map = {
+            'pending': 'pending',
+            'processing': 'processing',
+            'on-hold': 'on_hold',
+            'completed': 'completed',
+            'cancelled': 'cancelled',
+            'refunded': 'refunded',
+            'failed': 'failed'
+        }
+        return status_map.get(wc_status, 'pending')
     
     def save_migration_log(self):
         """保存迁移日志到文件"""
@@ -769,12 +863,10 @@ class WooCommerceMigrator:
 
 # 使用
 if __name__ == '__main__':
-    db_config = {
-        'host': os.environ.get('DB_HOST', 'localhost'),
-        'user': os.environ.get('DB_USER', 'wp_user'),
-        'password': os.environ.get('DB_PASS', 'wp_password'),
-        'database': os.environ.get('DB_NAME', 'wordpress'),
-        'charset': 'utf8mb4'
+    wc_config = {
+        'url': os.environ.get('WC_URL', 'https://your-store.com'),
+        'consumer_key': os.environ.get('WC_CONSUMER_KEY', 'your_consumer_key'),
+        'consumer_secret': os.environ.get('WC_CONSUMER_SECRET', 'your_consumer_secret')
     }
     
     rcommerce_config = {
@@ -782,31 +874,51 @@ if __name__ == '__main__':
         'api_key': os.environ.get('RCOMMERCE_API_KEY', 'your_api_key')
     }
     
-    migrator = WooCommerceMigrator(db_config, rcommerce_config)
+    migrator = WooCommerceMigrator(wc_config, rcommerce_config)
     migrator.migrate_all()
 ```
 
 ## 插件数据迁移
 
-WooCommerce 将扩展数据存储在各个位置：
+WooCommerce 将扩展数据存储在各个位置。通过 REST API 或 WP-CLI 访问这些数据：
 
-### 常见插件数据位置
+### 常见插件数据访问
 
-```sql
--- WooCommerce 订阅
-SELECT * FROM wp_woocommerce_susbcriptions WHERE status IN ('active', 'on-hold');
+**WooCommerce 订阅：**
+```bash
+# 使用 WP-CLI 导出订阅
+wp wc shop_subscription list --user=1 --format=json > subscriptions.json
+```
 
--- WooCommerce 预订
-SELECT * FROM wp_wc_bookings WHERE status IN ('paid', 'confirmed');
+**WooCommerce 预订：**
+```bash
+# 导出预订
+wp wc booking list --user=1 --format=json > bookings.json
+```
 
--- WooCommerce 会员
-SELECT * FROM wp_wc_memberships_user_memberships WHERE status = 'active';
+**WooCommerce 会员：**
+```bash
+# 导出会员
+wp wc user_membership list --user=1 --format=json > memberships.json
+```
 
--- Yoast SEO
-SELECT * FROM wp_postmeta WHERE meta_key LIKE '_yoast_%' AND post_id IN (SELECT ID FROM wp_posts WHERE post_type = 'product');
+**Yoast SEO：**
+```php
+<?php
+// 通过 WordPress 函数访问 Yoast SEO 数据
+$yoast_title = get_post_meta($product_id, '_yoast_wpseo_title', true);
+$yoast_description = get_post_meta($product_id, '_yoast_wpseo_metadesc', true);
+$yoast_focus_keyword = get_post_meta($product_id, '_yoast_wpseo_focuskw', true);
+```
 
--- Advanced Custom Fields
-SELECT * FROM wp_postmeta WHERE meta_key LIKE 'field_%' AND post_id IN (SELECT ID FROM wp_posts WHERE post_type = 'product');
+**Advanced Custom Fields：**
+```php
+<?php
+// 通过 WordPress 函数访问 ACF 字段
+if (function_exists('get_fields')) {
+    $acf_fields = get_fields($product_id);
+    // 处理 ACF 字段以进行迁移
+}
 ```
 
 ### 插件迁移策略
@@ -817,21 +929,14 @@ SELECT * FROM wp_postmeta WHERE meta_key LIKE 'field_%' AND post_id IN (SELECT I
 
 class WooCommercePluginDataMigrator {
   
-  public function migrateSubscriptionData($rcommerceProductId) {
-    global $wpdb;
-    
+  public function migrateSubscriptionData($rcommerceProductId, $woocommerceProductId) {
     // 检查 WooCommerce 订阅是否激活
     if (!class_exists('WC_Subscriptions')) {
       return null;
     }
     
-    $subscriptions = $wpdb->get_results("
-      SELECT s.*, p.post_parent as product_id
-      FROM {$wpdb->prefix}woocommerce_subscriptions s
-      JOIN {$wpdb->posts} p ON s.product_id = p.ID
-      WHERE p.post_parent = %d
-      AND s.status IN ('active', 'on-hold')
-    ", $rcommerceProductId);
+    // 通过 API 或 WP-CLI 导出获取此产品的订阅
+    $subscriptions = $this->getProductSubscriptions($woocommerceProductId);
     
     foreach ($subscriptions as $subscription) {
       // 为 R Commerce 转换订阅数据
@@ -862,14 +967,12 @@ class WooCommercePluginDataMigrator {
     }
   }
   
-  public function migrateBookingData($rcommerceProductId) {
+  public function migrateBookingData($rcommerceProductId, $woocommerceProductId) {
     if (!class_exists('WC_Bookings')) {
       return null;
     }
     
-    global $wpdb;
-    
-    $bookable_product = new WC_Product_Booking($rcommerceProductId);
+    $bookable_product = new WC_Product_Booking($woocommerceProductId);
     
     $booking_data = [
       'duration_type' => $bookable_product->get_duration_type(),
@@ -996,3 +1099,29 @@ add_action('wp_head', function() {
     <?php
 });
 ```
+
+## 迁移后步骤
+
+1. **验证数据完整性**
+   - 比较产品、客户、订单数量
+   - 验证关键字段映射
+   - 检查图片和媒体文件
+
+2. **测试关键路径**
+   - 产品浏览
+   - 变体选择
+   - 添加到购物车
+   - 结账流程
+   - 支付处理
+   - 订单确认
+
+3. **更新前端**
+   - 更改 API 端点
+   - 更新认证头
+   - 测试所有 API 调用
+   - 验证错误处理
+
+4. **更新 Webhooks**
+   - 重新配置支付提供商 Webhooks
+   - 更新物流提供商集成
+   - 测试通知系统

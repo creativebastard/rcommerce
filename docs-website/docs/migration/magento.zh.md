@@ -2,7 +2,7 @@
 
 ## 概述
 
-由于其 EAV（实体-属性-值）模型、多个店铺视图和广泛的扩展生态系统，Magento 拥有所有主要电商平台中最复杂的数据库结构。本指南涵盖从 Magento 2.x（开源版或商业版）迁移到 R Commerce。
+由于其 EAV（实体-属性-值）模型、多个店铺视图和广泛的扩展生态系统，Magento 拥有所有主要电商平台中最复杂的数据库结构。本指南涵盖使用基于 API 的方法从 Magento 2.x（开源版或商业版）迁移到 R Commerce。
 
 ## 迁移前分析
 
@@ -19,81 +19,43 @@ php bin/magento config:show
 
 # 列出所有模块
 php bin/magento module:status
+
+# 获取产品数量
+php bin/magento info:product-count
+
+# 获取客户数量（通过自定义命令或 API）
 ```
 
-**从 MySQL：**
+**使用 Magento REST API：**
 
-```sql
--- 连接到 Magento 数据库
-mysql -u magento -p magento_db
+```bash
+# 获取访问令牌
+ACCESS_TOKEN=$(curl -X POST "https://your-magento-store.com/rest/V1/integration/admin/token" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"password"}' | tr -d '"')
 
--- 按类型统计实体
--- 产品
-SELECT COUNT(*) AS product_count FROM catalog_product_entity WHERE type_id = 'simple';
-SELECT COUNT(*) AS configurable_count FROM catalog_product_entity WHERE type_id = 'configurable';
-SELECT COUNT(*) AS bundle_count FROM catalog_product_entity WHERE type_id = 'bundle';
-SELECT COUNT(*) AS grouped_count FROM catalog_product_entity WHERE type_id = 'grouped';
+# 获取产品数量
+curl -X GET "https://your-magento-store.com/rest/V1/products?searchCriteria[pageSize]=1" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq '.search_criteria.total_count'
 
--- 客户
-SELECT COUNT(*) AS customer_count FROM customer_entity;
-SELECT COUNT(DISTINCT email) AS unique_emails FROM customer_entity;
+# 获取客户数量
+curl -X GET "https://your-magento-store.com/rest/V1/customers/search?searchCriteria[pageSize]=1" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq '.search_criteria.total_count'
 
--- 订单
-SELECT COUNT(*) AS order_count FROM sales_order;
-SELECT COUNT(*) AS invoice_count FROM sales_invoice;
-SELECT COUNT(*) AS shipment_count FROM sales_shipment;
+# 获取订单数量
+curl -X GET "https://your-magento-store.com/rest/V1/orders?searchCriteria[pageSize]=1" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" | jq '.search_criteria.total_count'
 
--- 分类
-SELECT COUNT(*) AS category_count FROM catalog_category_entity;
-
--- 店铺视图
-SELECT COUNT(*) AS store_count FROM store;
-SELECT COUNT(*) AS website_count FROM store_website;
-
--- 属性
-SELECT COUNT(*) AS attribute_count FROM eav_attribute WHERE entity_type_id = 4; -- catalog_product
-
--- 扩展
-SELECT COUNT(*) FROM setup_module WHERE module LIKE 'Company_%' OR module LIKE 'Vendor_%';
-```
-
-**分析产品结构的复杂查询：**
-
-```sql
--- 分析可配置产品复杂度
-SELECT 
-  cpe.sku,
-  COUNT(cpe_child.entity_id) AS child_count,
-  COUNT(DISTINCT ea.attribute_code) AS attribute_count
-FROM catalog_product_entity cpe
-JOIN catalog_product_super_link cpsl ON cpe.entity_id = cpsl.parent_id
-JOIN catalog_product_entity cpe_child ON cpsl.product_id = cpe_child.entity_id
-JOIN catalog_product_entity_int cpei ON cpe_child.entity_id = cpei.entity_id
-JOIN eav_attribute ea ON cpei.attribute_id = ea.attribute_id
-WHERE cpe.type_id = 'configurable'
-GROUP BY cpe.entity_id
-ORDER BY child_count DESC
-LIMIT 20;
-
--- 分析属性值分布
-SELECT 
-  ea.attribute_code,
-  ea.frontend_label,
-  COUNT(DISTINCT cpei.value) AS unique_values,
-  COUNT(cpei.value) AS total_values
-FROM eav_attribute ea
-JOIN catalog_product_entity_int cpei ON ea.attribute_id = cpei.attribute_id
-WHERE ea.entity_type_id = 4
-GROUP BY ea.attribute_id
-ORDER BY unique_values DESC
-LIMIT 20;
+# 获取店铺信息
+curl -X GET "https://your-magento-store.com/rest/V1/store/storeConfigs" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ## Magento 数据结构理解
 
 ### EAV 模型概述
 
-Magento 的 EAV 模型使查询变得复杂：
+Magento 的 EAV 模型使数据访问变得复杂。使用 REST API 时，这种复杂性被抽象化：
 
 ```
 catalog_product_entity (主表)
@@ -103,17 +65,12 @@ catalog_product_entity (主表)
   ├── attribute_set_id
   └── [少数其他字段]
 
-catalog_product_entity_varchar (用于 varchar 属性)
-  ├── value_id
-  ├── entity_id (外键到主表)
-  ├── attribute_id (外键到 eav_attribute)
-  ├── store_id
-  └── value
-
-catalog_product_entity_int (用于 integer 属性)
-catalog_product_entity_decimal (用于 decimal 属性)
-catalog_product_entity_text (用于 text 属性)
-catalog_product_entity_datetime (用于 datetime 属性)
+EAV 属性表（通过 API 访问）：
+  - catalog_product_entity_varchar (用于 varchar 属性)
+  - catalog_product_entity_int (用于 integer 属性)
+  - catalog_product_entity_decimal (用于 decimal 属性)
+  - catalog_product_entity_text (用于 text 属性)
+  - catalog_product_entity_datetime (用于 datetime 属性)
 
 eav_attribute (定义所有属性)
   ├── attribute_id
@@ -124,130 +81,19 @@ eav_attribute (定义所有属性)
   └── [许多其他列]
 ```
 
-### 在 Magento 中查询产品
-
-```sql
--- 获取单个产品的所有数据需要连接多个表
-SET @entity_id = 1234;
-
-SELECT 
-  e.entity_id,
-  e.sku,
-  e.type_id,
-  e.sku AS name,
-  
-  -- 获取 name (varchar 属性)
-  (SELECT pv.value 
-   FROM catalog_product_entity_varchar pv 
-   WHERE pv.entity_id = e.entity_id 
-     AND pv.attribute_id = (SELECT attribute_id FROM eav_attribute WHERE attribute_code = 'name' AND entity_type_id = 4)
-     AND pv.store_id = 0
-  ) AS name,
-  
-  -- 获取 price (decimal 属性)
-  (SELECT pd.value 
-   FROM catalog_product_entity_decimal pd 
-   WHERE pd.entity_id = e.entity_id 
-     AND pd.attribute_id = (SELECT attribute_id FROM eav_attribute WHERE attribute_code = 'price' AND entity_type_id = 4)
-     AND pd.store_id = 0
-  ) AS price,
-  
-  -- 获取 description (text 属性)
-  (SELECT pt.value 
-   FROM catalog_product_entity_text pt 
-   WHERE pt.entity_id = e.entity_id 
-     AND pt.attribute_id = (SELECT attribute_id FROM eav_attribute WHERE attribute_code = 'description' AND entity_type_id = 4)
-     AND pt.store_id = 0
-  ) AS description
-
-FROM catalog_product_entity e
-WHERE e.entity_id = @entity_id;
-```
-
 ### 理解属性集
 
-Magento 将属性组织成"属性集"：
+Magento 将属性组织成"属性集"。这些可以通过 API 检索：
 
-```sql
--- 列出所有属性集
-SELECT 
-  eas.attribute_set_id,
-  eas.attribute_set_name,
-  eet.entity_type_code
-FROM eav_attribute_set eas
-JOIN eav_entity_type eet ON eas.entity_type_id = eet.entity_type_id
-WHERE eet.entity_type_code = 'catalog_product';
-
--- 默认属性集：
--- 4: Default
--- 9: Bag
--- 10: Bottom (用于裤子)
--- 11: Gear
--- 12: Sprite (用于 T 恤)
--- 13: Top (用于衬衫)
+```bash
+# 获取属性集
+curl -X GET "https://your-magento-store.com/rest/V1/products/attribute-sets/sets/list?searchCriteria[pageSize]=100" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ## 导出策略
 
-### 方法 1：Magento 数据迁移工具方法
-
-官方 Magento 方法使用迁移脚本：
-
-```bash
-# 安装 Magento 数据迁移工具
-composer require magento/data-migration-tool:2.4.x
-
-# 配置迁移
-php bin/magento migrate:settings --reset vendor/magento/data-migration-tool/etc/opensource-to-opensource/1.9.4.5/config.xml
-```
-
-### 方法 2：带 EAV 处理的直接数据库导出
-
-```sql
--- 处理 EAV 的综合产品导出查询
--- 由于 Magento 的结构，这非常复杂
-
-SET @sql = NULL;
-
-SELECT
-  GROUP_CONCAT(DISTINCT
-    CONCAT(
-      'MAX(IF(ea.attribute_code = ''',
-      ea.attribute_code,
-      ''', pv.value, NULL)) AS ',
-      ea.attribute_code
-    )
-  ) INTO @sql
-FROM eav_attribute ea
-WHERE ea.entity_type_id = 4
-  AND ea.attribute_code IN (
-    'name', 'price', 'description', 'short_description',
-    'sku', 'weight', 'status', 'visibility', 'tax_class_id',
-    'meta_title', 'meta_description', 'url_key'
-  );
-
-SET @sql = CONCAT(
-'SELECT 
-  e.entity_id,
-  e.sku,
-  e.type_id,
-  e.attribute_set_id,
-  ', @sql, '
-FROM catalog_product_entity e
-LEFT JOIN eav_attribute ea ON ea.entity_type_id = 4
-LEFT JOIN catalog_product_entity_varchar pv ON e.entity_id = pv.entity_id 
-  AND ea.attribute_id = pv.attribute_id 
-  AND pv.store_id = 0
-WHERE e.type_id = ''simple''
-GROUP BY e.entity_id'
-);
-
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-```
-
-### 方法 3：Magento API 导出
+### 方法 1：Magento REST API 导出（推荐）
 
 ```bash
 #!/bin/bash
@@ -260,23 +106,15 @@ ACCESS_TOKEN="YOUR_INTEGRATION_ACCESS_TOKEN"
 mkdir -p magento-export
 
 # 使用 Magento REST API 获取产品
-curl -X GET "$MAGENTO_URL/rest/V1/products" \
-  -H "Authorization: Bearer $ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"searchCriteria":{"currentPage":1,"pageSize":100}}' \
-  > magento-export/products-page-1.json
-
-# 大型目录的分页
+echo "导出产品..."
 page=1
 while true; do
-  echo "获取第 $page 页..."
+  echo "获取产品第 $page 页..."
   
-  response=$(curl -s -X GET "$MAGENTO_URL/rest/V1/products" \
+  response=$(curl -s -X GET "$MAGENTO_URL/rest/V1/products?searchCriteria[currentPage]=$page&searchCriteria[pageSize]=100" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"searchCriteria\":{\"currentPage\":$page,\"pageSize\":100}}")
+    -H "Content-Type: application/json")
   
-  total_count=$(echo $response | jq '.total_count')
   items_count=$(echo $response | jq '.items | length')
   
   if [ "$items_count" -eq 0 ]; then
@@ -289,7 +127,77 @@ while true; do
   # Magento API 速率限制
   sleep 2
 done
+
+# 导出分类
+echo "导出分类..."
+curl -X GET "$MAGENTO_URL/rest/V1/categories" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" > magento-export/categories.json
+
+# 导出客户
+echo "导出客户..."
+page=1
+while true; do
+  echo "获取客户第 $page 页..."
+  
+  response=$(curl -s -X GET "$MAGENTO_URL/rest/V1/customers/search?searchCriteria[currentPage]=$page&searchCriteria[pageSize]=100" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json")
+  
+  items_count=$(echo $response | jq '.items | length')
+  
+  if [ "$items_count" -eq 0 ]; then
+    break
+  fi
+  
+  echo $response > magento-export/customers-page-$page.json
+  page=$((page + 1))
+  sleep 2
+done
+
+# 导出订单
+echo "导出订单..."
+page=1
+while true; do
+  echo "获取订单第 $page 页..."
+  
+  response=$(curl -s -X GET "$MAGENTO_URL/rest/V1/orders?searchCriteria[currentPage]=$page&searchCriteria[pageSize]=100" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json")
+  
+  items_count=$(echo $response | jq '.items | length')
+  
+  if [ "$items_count" -eq 0 ]; then
+    break
+  fi
+  
+  echo $response > magento-export/orders-page-$page.json
+  page=$((page + 1))
+  sleep 2
+done
+
+echo "导出完成！"
 ```
+
+### 方法 2：Magento 数据迁移工具方法
+
+官方 Magento 方法使用迁移脚本：
+
+```bash
+# 安装 Magento 数据迁移工具
+composer require magento/data-migration-tool:2.4.x
+
+# 配置迁移
+php bin/magento migrate:settings --reset vendor/magento/data-migration-tool/etc/opensource-to-opensource/1.9.4.5/config.xml
+```
+
+### 方法 3：通过 Magento 后台 CSV 导出
+
+1. 前往 **系统 > 数据传输 > 导出**
+2. 选择实体类型（产品、客户、订单）
+3. 选择导出格式（CSV）
+4. 根据需要配置字段过滤器
+5. 点击**继续**
 
 ## 高级 Python 迁移脚本
 
@@ -297,119 +205,83 @@ done
 #!/usr/bin/env python3
 # migrate-magento.py
 
-import mysql.connector
 import requests
 import json
 import os
 import sys
 import time
 from typing import List, Dict, Optional
-import xml.etree.ElementTree as ET
+from datetime import datetime
 
-class MagentoEAVHelper:
-    """处理 Magento EAV 结构的辅助类"""
+class MagentoAPIHelper:
+    """处理 Magento REST API 交互的辅助类"""
     
-    def __init__(self, db_connection):
-        self.db = db_connection
-        self.attributes = {}
-        self._load_attributes()
-    
-    def _load_attributes(self):
-        """缓存所有产品属性"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                attribute_id,
-                attribute_code,
-                backend_type,
-                frontend_label,
-                frontend_input
-            FROM eav_attribute 
-            WHERE entity_type_id = 4
-        """)
-        
-        for row in cursor:
-            self.attributes[row['attribute_code']] = row
-            self.attributes[row['attribute_id']] = row
-        
-        cursor.close()
-    
-    def get_product_attribute(self, product_id: int, attribute_code: str, store_id: int = 0):
-        """获取单个产品属性值"""
-        if attribute_code not in self.attributes:
-            return None
-        
-        attr = self.attributes[attribute_code]
-        backend_type = attr['backend_type']
-        table_map = {
-            'varchar': 'catalog_product_entity_varchar',
-            'int': 'catalog_product_entity_int',
-            'decimal': 'catalog_product_entity_decimal',
-            'text': 'catalog_product_entity_text',
-            'datetime': 'catalog_product_entity_datetime'
+    def __init__(self, base_url: str, access_token: str):
+        self.base_url = base_url.rstrip('/')
+        self.access_token = access_token
+        self.headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
         }
-        
-        if backend_type not in table_map:
-            return None
-        
-        table = table_map[backend_type]
-        
-        cursor = self.db.cursor()
-        cursor.execute(f"""
-            SELECT value FROM {table}
-            WHERE entity_id = %s 
-              AND attribute_id = %s 
-              AND store_id = %s
-        """, (product_id, attr['attribute_id'], store_id))
-        
-        result = cursor.fetchone()
-        cursor.close()
-        
-        return result[0] if result else None
     
-    def get_all_product_attributes(self, product_id: int, store_id: int = 0):
-        """获取产品的所有属性"""
-        attributes = {}
+    def get(self, endpoint: str, params: dict = None) -> dict:
+        """向 Magento API 发起 GET 请求"""
+        url = f"{self.base_url}/rest/V1/{endpoint}"
+        response = requests.get(url, headers=self.headers, params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_all_pages(self, endpoint: str, page_size: int = 100) -> List[dict]:
+        """获取分页端点的所有页面"""
+        all_items = []
+        page = 1
         
-        # 查询所有属性表
-        tables = [
-            'catalog_product_entity_varchar',
-            'catalog_product_entity_int',
-            'catalog_product_entity_decimal',
-            'catalog_product_entity_text',
-            'catalog_product_entity_datetime'
-        ]
-        
-        for table in tables:
-            cursor = self.db.cursor(dictionary=True)
-            cursor.execute(f"""
-                SELECT attribute_id, value FROM {table}
-                WHERE entity_id = %s AND store_id = %s
-            """, (product_id, store_id))
+        while True:
+            params = {
+                'searchCriteria[currentPage]': page,
+                'searchCriteria[pageSize]': page_size
+            }
             
-            for row in cursor:
-                if row['attribute_id'] in self.attributes:
-                    attr_code = self.attributes[row['attribute_id']]['attribute_code']
-                    attributes[attr_code] = row['value']
-            
-            cursor.close()
+            try:
+                response = self.get(endpoint, params)
+                items = response.get('items', [])
+                
+                if not items:
+                    break
+                
+                all_items.extend(items)
+                print(f"  获取第 {page} 页，得到 {len(items)} 个项目")
+                
+                # 检查是否已获取所有项目
+                total_count = response.get('search_criteria', {}).get('total_count', 0)
+                if len(all_items) >= total_count:
+                    break
+                
+                page += 1
+                time.sleep(1)  # 速率限制
+                
+            except Exception as e:
+                print(f"获取第 {page} 页时出错：{e}")
+                break
         
-        return attributes
+        return all_items
 
 class MagentoMigrator:
-    def __init__(self, db_config, rcommerce_config):
-        self.db = mysql.connector.connect(**db_config)
-        self.eav_helper = MagentoEAVHelper(self.db)
+    def __init__(self, magento_config: dict, rcommerce_config: dict):
+        self.magento = MagentoAPIHelper(
+            magento_config['url'],
+            magento_config['access_token']
+        )
         self.rcommerce_url = rcommerce_config['url']
         self.rcommerce_key = rcommerce_config['api_key']
         self.migration_log = []
         self.store_mapping = {}
-        self.attribute_set_mapping = {}
+        self.attribute_mapping = {}
     
     def migrate_all(self):
         """执行完整的 Magento 到 R Commerce 迁移"""
         print("开始 Magento 到 R Commerce 迁移...")
-        print(f"数据库：{self.db.server_host}")
+        print(f"Magento：{self.magento.base_url}")
         print(f"R Commerce：{self.rcommerce_url}")
         
         try:
@@ -461,143 +333,75 @@ class MagentoMigrator:
             import traceback
             traceback.print_exc()
             sys.exit(1)
-        
-        finally:
-            self.db.close()
     
     def analyze_magento_structure(self):
         """分析 Magento 店铺结构"""
         print("分析 Magento 结构...")
         
-        cursor = self.db.cursor(dictionary=True)
-        
-        # 按类型统计产品
-        cursor.execute("""
-            SELECT type_id, COUNT(*) as count
-            FROM catalog_product_entity
-            GROUP BY type_id
-        """)
-        
-        product_types = cursor.fetchall()
-        print("发现的产品类型：")
-        for pt in product_types:
-            print(f"  - {pt['type_id']}：{pt['count']} 个产品")
-        
-        # 统计店铺
-        cursor.execute("SELECT COUNT(*) as count FROM store")
-        store_count = cursor.fetchone()['count']
-        print(f"店铺数量：{store_count}")
-        
-        # 统计客户组
-        cursor.execute("SELECT COUNT(*) as count FROM customer_group")
-        customer_group_count = cursor.fetchone()['count']
-        print(f"客户组数量：{customer_group_count}")
-        
-        # 统计属性
-        cursor.execute("""
-            SELECT backend_type, COUNT(*) as count
-            FROM eav_attribute
-            WHERE entity_type_id = 4
-            GROUP BY backend_type
-        """)
-        attributes = cursor.fetchall()
-        print("产品属性：")
-        for attr in attributes:
-            print(f"  - {attr['backend_type']}：{attr['count']} 个属性")
-        
-        cursor.close()
+        try:
+            # 按类型获取产品数量
+            product_types = {}
+            products = self.magento.get_all_pages('products', page_size=1)
+            total_products = len(products)
+            print(f"找到的产品总数：{total_products}")
+            
+            # 获取店铺信息
+            stores = self.magento.get('store/storeConfigs')
+            print(f"店铺配置：{len(stores)}")
+            
+            # 获取属性集
+            attr_sets = self.magento.get('products/attribute-sets/sets/list?searchCriteria[pageSize]=100')
+            print(f"属性集：{len(attr_sets.get('items', []))}")
+            
+        except Exception as e:
+            print(f"警告：无法分析结构：{e}")
     
     def migrate_store_configuration(self):
         """将店铺/网站配置迁移为元数据"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        # 获取所有店铺
-        cursor.execute("""
-            SELECT 
-                s.store_id,
-                s.name as store_name,
-                s.code as store_code,
-                s.website_id,
-                w.name as website_name,
-                w.code as website_code,
-                g.name as group_name
-            FROM store s
-            JOIN store_website w ON s.website_id = w.website_id
-            JOIN store_group g ON s.group_id = g.group_id
-        """)
-        
-        stores = cursor.fetchall()
-        
-        for store in stores:
-            # 映射店铺配置
-            store_config = {
-                'store_id': store['store_id'],
-                'store_name': store['store_name'],
-                'store_code': store['store_code'],
-                'website_id': store['website_id'],
-                'website_name': store['website_name'],
-                'website_code': store['website_code'],
-                'group_name': store['group_name']
-            }
+        try:
+            stores = self.magento.get('store/storeConfigs')
             
-            # 在 R Commerce 中，将此存储在系统级别
-            self.migration_log.append({
-                'type': 'store',
-                'operation': 'map',
-                'status': 'success',
-                'source_id': store['store_id'],
-                'config': store_config
-            })
-            
-            print(f" 已映射店铺：{store['store_name']} ({store['store_code']})")
-        
-        cursor.close()
+            for store in stores:
+                store_config = {
+                    'store_id': store.get('id'),
+                    'store_code': store.get('code'),
+                    'website_id': store.get('website_id'),
+                    'website_name': store.get('website_name'),
+                    'base_url': store.get('base_url'),
+                    'base_currency': store.get('base_currency_code'),
+                    'timezone': store.get('timezone')
+                }
+                
+                self.migration_log.append({
+                    'type': 'store',
+                    'operation': 'map',
+                    'status': 'success',
+                    'source_id': store.get('id'),
+                    'config': store_config
+                })
+                
+                print(f" 已映射店铺：{store.get('code')}")
+                
+        except Exception as e:
+            print(f"迁移店铺配置时出错：{e}")
     
     def migrate_categories(self):
         """迁移 Magento 分类"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        # Magento 在嵌套集模型中存储分类
-        cursor.execute("""
-            SELECT 
-                entity_id as category_id,
-                parent_id,
-                level,
-                path,
-                position
-            FROM catalog_category_entity
-            ORDER BY level, position
-        """)
-        
-        categories = cursor.fetchall()
-        
-        # 从 EAV 获取分类名称
-        for category in categories:
-            name = self.eav_helper.get_product_attribute(
-                category['category_id'], 
-                'name', 
-                entity_type='catalog_category'
-            )
+        try:
+            categories_data = self.magento.get('categories')
             
-            description = self.eav_helper.get_product_attribute(
-                category['category_id'], 
-                'description', 
-                entity_type='catalog_category'
-            )
-            
-            if name:
+            def process_category(category, parent_id=None):
                 try:
                     category_data = {
-                        'name': name,
-                        'slug': self.generateSlug(name),
-                        'description': description or '',
+                        'name': category['name'],
+                        'slug': self.generate_slug(category['name']),
+                        'description': '',  # 如有自定义属性将填充
                         'meta_data': {
                             'magento': {
-                                'category_id': category['category_id'],
-                                'parent_id': category['parent_id'],
-                                'level': category['level'],
-                                'path': category['path'],
-                                'position': category['position']
+                                'category_id': category['id'],
+                                'parent_id': parent_id,
+                                'path': category.get('path', ''),
+                                'level': category.get('level', 0)
                             }
                         }
                     }
@@ -610,504 +414,509 @@ class MagentoMigrator:
                     )
                     
                     if response.status_code == 201:
-                        print(f" 已迁移分类：{name}")
+                        print(f" 已迁移分类：{category['name']}")
                         self.migration_log.append({
                             'type': 'category',
                             'operation': 'create',
                             'status': 'success',
-                            'source_id': category['category_id'],
+                            'source_id': category['id'],
                             'target_id': response.json()['data']['id'],
-                            'name': name
+                            'name': category['name']
                         })
                     else:
-                        print(f" 迁移分类 {name} 失败：{response.text}")
+                        print(f" 迁移分类 {category['name']} 失败：{response.text}")
                         self.migration_log.append({
                             'type': 'category',
                             'operation': 'create',
                             'status': 'failed',
-                            'source_id': category['category_id'],
-                            'name': name,
+                            'source_id': category['id'],
+                            'name': category['name'],
                             'error': response.text
                         })
                     
-                    # 速率限制
                     time.sleep(0.5)
                     
+                    # 处理子分类
+                    for child in category.get('children_data', []):
+                        process_category(child, category['id'])
+                        
                 except Exception as e:
-                    print(f" 迁移分类 {name} 时出错：{e}")
-        
-        cursor.close()
+                    print(f" 迁移分类 {category.get('name')} 时出错：{e}")
+            
+            # 从根分类的子分类开始
+            for category in categories_data.get('children_data', []):
+                process_category(category)
+                
+        except Exception as e:
+            print(f"分类迁移时出错：{e}")
     
     def migrate_attributes(self):
-        """将 Magento 属性迁移为产品元字段"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        # 获取所有产品属性
-        cursor.execute("""
-            SELECT 
-                attribute_id,
-                attribute_code,
-                frontend_label,
-                backend_type,
-                frontend_input,
-                is_required,
-                is_user_defined
-            FROM eav_attribute
-            WHERE entity_type_id = 4
-              AND is_user_defined = 1
-            ORDER BY attribute_id
-        """)
-        
-        attributes = cursor.fetchall()
-        
-        for attribute in attributes:
-            try:
-                # 我们将这些存储为元数据模式定义
-                attribute_definition = {
-                    'attribute_id': attribute['attribute_id'],
-                    'attribute_code': attribute['attribute_code'],
-                    'frontend_label': attribute['frontend_label'],
-                    'backend_type': attribute['backend_type'],
-                    'frontend_input': attribute['frontend_input'],
-                    'is_required': attribute['is_required'],
-                    'is_user_defined': attribute['is_user_defined']
-                }
-                
-                # 存储在迁移日志中供参考
-                self.migration_log.append({
-                    'type': 'attribute',
-                    'operation': 'map',
-                    'status': 'success',
-                    'attribute_code': attribute['attribute_code'],
-                    'definition': attribute_definition
-                })
-                
-                print(f" 已映射属性：{attribute['attribute_code']}")
-                
-            except Exception as e:
-                print(f" 映射属性 {attribute['attribute_code']} 时出错：{e}")
-        
-        cursor.close()
+        """将 Magento 属性迁移为产品元字段模式"""
+        try:
+            attributes = self.magento.get_all_pages('products/attributes', page_size=100)
+            
+            for attr in attributes:
+                try:
+                    attribute_definition = {
+                        'attribute_id': attr['attribute_id'],
+                        'attribute_code': attr['attribute_code'],
+                        'frontend_label': attr.get('default_frontend_label', ''),
+                        'frontend_input': attr.get('frontend_input', ''),
+                        'is_required': attr.get('is_required', False),
+                        'is_user_defined': attr.get('is_user_defined', False)
+                    }
+                    
+                    self.migration_log.append({
+                        'type': 'attribute',
+                        'operation': 'map',
+                        'status': 'success',
+                        'attribute_code': attr['attribute_code'],
+                        'definition': attribute_definition
+                    })
+                    
+                    self.attribute_mapping[attr['attribute_code']] = attribute_definition
+                    print(f" 已映射属性：{attr['attribute_code']}")
+                    
+                except Exception as e:
+                    print(f" 映射属性时出错：{e}")
+                    
+        except Exception as e:
+            print(f"属性迁移时出错：{e}")
     
     def migrate_products(self, product_type: str):
         """迁移特定类型的产品"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT 
-                e.entity_id,
-                e.sku,
-                e.type_id,
-                e.attribute_set_id
-            FROM catalog_product_entity e
-            WHERE e.type_id = %s
-            ORDER BY e.entity_id
-        """, (product_type,))
-        
-        products = cursor.fetchall()
-        
-        for product in products:
-            try:
-                # 获取此产品的所有属性
-                attributes = self.eav_helper.get_all_product_attributes(product['entity_id'])
-                
-                # 根据产品类型转换
-                if product_type == 'simple':
-                    product_data = self.transform_simple_product(product, attributes)
-                elif product_type == 'configurable':
-                    product_data = self.transform_configurable_product(product, attributes)
-                elif product_type == 'bundle':
-                    product_data = self.transform_bundle_product(product, attributes)
-                elif product_type == 'grouped':
-                    product_data = self.transform_grouped_product(product, attributes)
-                else:
-                    print(f"⊘ 跳过不支持的类型：{product_type}")
-                    continue
-                
-                # 在 R Commerce 中创建
-                response = requests.post(
-                    f"{self.rcommerce_url}/v1/products",
-                    json=product_data,
-                    headers={'Authorization': f'Bearer {self.rcommerce_key}'}
-                )
-                
-                if response.status_code == 201:
-                    print(f" 已迁移 {product_type} 产品：{attributes.get('name', product['sku'])}")
-                    self.migration_log.append({
-                        'type': 'product',
-                        'product_type': product_type,
-                        'operation': 'create',
-                        'status': 'success',
-                        'source_id': product['entity_id'],
-                        'sku': product['sku'],
-                        'target_id': response.json()['data']['id'],
-                        'name': attributes.get('name', product['sku'])
-                    })
-                else:
-                    print(f" 迁移 {product_type} 产品 {product['sku']} 失败：{response.text}")
-                    self.migration_log.append({
-                        'type': 'product',
-                        'product_type': product_type,
-                        'operation': 'create',
-                        'status': 'failed',
-                        'source_id': product['entity_id'],
-                        'sku': product['sku'],
-                        'name': attributes.get('name', product['sku']),
-                        'error': response.text
-                    })
-                
-                # 速率限制
-                time.sleep(0.5)
-                
-            except Exception as e:
-                print(f" 迁移 {product_type} 产品 {product['sku']} 时出错：{e}")
-        
-        cursor.close()
+        try:
+            # 获取所有产品并按类型过滤
+            all_products = self.magento.get_all_pages('products', page_size=100)
+            products = [p for p in all_products if p.get('type_id') == product_type]
+            
+            print(f"找到 {len(products)} 个 {product_type} 产品")
+            
+            for product in products:
+                try:
+                    # 获取完整产品详情
+                    product_detail = self.magento.get(f"products/{product['sku']}")
+                    
+                    # 根据产品类型转换
+                    if product_type == 'simple':
+                        product_data = self.transform_simple_product(product_detail)
+                    elif product_type == 'configurable':
+                        product_data = self.transform_configurable_product(product_detail)
+                    elif product_type == 'bundle':
+                        product_data = self.transform_bundle_product(product_detail)
+                    elif product_type == 'grouped':
+                        product_data = self.transform_grouped_product(product_detail)
+                    else:
+                        print(f" 跳过不支持的类型：{product_type}")
+                        continue
+                    
+                    # 在 R Commerce 中创建
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/products",
+                        json=product_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移 {product_type} 产品：{product.get('name', product['sku'])}")
+                        self.migration_log.append({
+                            'type': 'product',
+                            'product_type': product_type,
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': product.get('id'),
+                            'sku': product['sku'],
+                            'target_id': response.json()['data']['id'],
+                            'name': product.get('name', product['sku'])
+                        })
+                    else:
+                        print(f" 迁移 {product_type} 产品 {product['sku']} 失败：{response.text}")
+                        self.migration_log.append({
+                            'type': 'product',
+                            'product_type': product_type,
+                            'operation': 'create',
+                            'status': 'failed',
+                            'source_id': product.get('id'),
+                            'sku': product['sku'],
+                            'name': product.get('name', product['sku']),
+                            'error': response.text
+                        })
+                    
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移 {product_type} 产品 {product.get('sku', 'unknown')} 时出错：{e}")
+                    
+        except Exception as e:
+            print(f"{product_type} 产品迁移时出错：{e}")
     
-    def transform_simple_product(self, product: Dict, attributes: Dict) -> Dict:
-        """转换简单产品"""
+    def transform_simple_product(self, product: dict) -> dict:
+        """从 Magento API 响应转换简单产品"""
+        custom_attrs = {attr['attribute_code']: attr['value'] 
+                       for attr in product.get('custom_attributes', [])}
+        
         return {
-            'name': attributes.get('name', f"Product {product['sku']}"),
-            'slug': attributes.get('url_key') or self.generate_slug(attributes.get('name', '')),
-            'description': attributes.get('description', ''),
-            'short_description': attributes.get('short_description', ''),
+            'name': product.get('name', f"Product {product['sku']}"),
+            'slug': custom_attrs.get('url_key') or self.generate_slug(product.get('name', '')),
+            'description': custom_attrs.get('description', ''),
+            'short_description': custom_attrs.get('short_description', ''),
             'sku': product['sku'],
-            'price': float(attributes.get('price', 0) or 0),
-            'compare_at_price': float(attributes.get('msrp', 0) or 0) if attributes.get('msrp') else None,
-            'cost': float(attributes.get('cost', 0) or 0) if attributes.get('cost') else None,
-            'inventory_quantity': int(attributes.get('qty', 0) or 0),
-            'inventory_policy': 'deny' if attributes.get('is_in_stock') == '0' else 'continue',
-            'weight': float(attributes.get('weight', 0) or 0) if attributes.get('weight') else None,
-            'status': 'active' if attributes.get('status') == '1' else 'draft',
-            'is_taxable': attributes.get('tax_class_id') != '0',
-            'requires_shipping': attributes.get('weight') and float(attributes.get('weight', 0)) > 0,
+            'price': float(custom_attrs.get('price', 0) or 0),
+            'compare_at_price': float(custom_attrs.get('msrp', 0) or 0) if custom_attrs.get('msrp') else None,
+            'cost': float(custom_attrs.get('cost', 0) or 0) if custom_attrs.get('cost') else None,
+            'inventory_quantity': int(custom_attrs.get('qty', 0) or 0),
+            'inventory_policy': 'deny' if custom_attrs.get('is_in_stock') == '0' else 'continue',
+            'weight': float(custom_attrs.get('weight', 0) or 0) if custom_attrs.get('weight') else None,
+            'status': 'active' if product.get('status') == 1 else 'draft',
+            'is_taxable': custom_attrs.get('tax_class_id') != '0',
+            'requires_shipping': bool(custom_attrs.get('weight') and float(custom_attrs.get('weight', 0)) > 0),
+            'images': [{'url': media['file'], 'position': media.get('position', 0)} 
+                      for media in product.get('media_gallery_entries', [])],
             'meta_data': {
                 'magento': {
-                    'entity_id': product['entity_id'],
-                    'type_id': product['type_id'],
-                    'attribute_set_id': product['attribute_set_id'],
-                    'visibility': attributes.get('visibility'),
-                    'tax_class_id': attributes.get('tax_class_id'),
-                    'is_salable': attributes.get('is_salable'),
-                    'stock_status': attributes.get('stock_status')
-                },
-                'original_attributes': attributes
+                    'entity_id': product.get('id'),
+                    'type_id': product.get('type_id'),
+                    'attribute_set_id': product.get('attribute_set_id'),
+                    'visibility': custom_attrs.get('visibility'),
+                    'tax_class_id': custom_attrs.get('tax_class_id'),
+                    'custom_attributes': custom_attrs
+                }
             }
         }
     
-    def transform_configurable_product(self, product: Dict, attributes: Dict) -> Dict:
+    def transform_configurable_product(self, product: dict) -> dict:
         """转换可配置产品及其变体"""
-        # 获取可配置产品信息
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                cpsa.product_super_attribute_id,
-                cpsa.attribute_id,
-                ea.attribute_code
-            FROM catalog_product_super_attribute cpsa
-            JOIN eav_attribute ea ON cpsa.attribute_id = ea.attribute_id
-            WHERE cpsa.product_id = %s
-        """, (product['entity_id'],))
-        
-        configurable_attributes = cursor.fetchall()
-        cursor.close()
-        
-        # 获取与此可配置产品关联的所有简单产品
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                cpsl.product_id as child_id,
-                cpsl.parent_id
-            FROM catalog_product_super_link cpsl
-            WHERE cpsl.parent_id = %s
-        """, (product['entity_id'],))
-        
-        child_products = cursor.fetchall()
-        cursor.close()
-        
-        # 将可配置产品转换为主产品
-        main_product = self.transform_simple_product(product, attributes)
+        main_product = self.transform_simple_product(product)
         main_product['options'] = []
         main_product['variants'] = []
         
-        # 添加可配置选项
-        for config_attr in configurable_attributes:
-            # 获取属性选项
-            cursor = self.db.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT 
-                  eaov.option_id,
-                  eaov.value
-                FROM eav_attribute_option eao
-                JOIN eav_attribute_option_value eaov ON eao.option_id = eaov.option_id
-                WHERE eao.attribute_id = %s
-                  AND eaov.store_id = 0
-            """, (config_attr['attribute_id'],))
+        # 获取可配置产品选项
+        try:
+            for option in product.get('extension_attributes', {}).get('configurable_product_options', []):
+                option_values = [str(v['value_index']) for v in option.get('values', [])]
+                main_product['options'].append({
+                    'name': option.get('label', ''),
+                    'position': option.get('position', 0),
+                    'values': option_values
+                })
             
-            options = cursor.fetchall()
-            cursor.close()
-            
-            main_product['options'].append({
-                'name': config_attr['attribute_code'],
-                'position': 0,
-                'values': [opt['value'] for opt in options]
-            })
-        
-        # 将子产品转换为变体
-        for child in child_products:
-            child_attributes = self.eav_helper.get_all_product_attributes(child['child_id'])
-            variant = self.transform_simple_product(
-                {'entity_id': child['child_id'], 'sku': child_attributes.get('sku'), 'type_id': 'simple'},
-                child_attributes
-            )
-            
-            # 覆盖父值
-            variant['product_id'] = product['entity_id']  # 父产品 ID
-            variant['options'] = {}
-            
-            # 提取变体选项值
-            for config_attr in configurable_attributes:
-                attr_code = config_attr['attribute_code']
-                if attr_code in child_attributes:
-                    variant['options'][attr_code] = child_attributes[attr_code]
-            
-            main_product['variants'].append(variant)
+            # 获取子产品（变体）
+            child_skus = product.get('extension_attributes', {}).get('configurable_product_links', [])
+            for child_sku in child_skus:
+                try:
+                    child_product = self.magento.get(f"products/{child_sku}")
+                    variant = self.transform_simple_product(child_product)
+                    variant['options'] = {}
+                    
+                    # 从自定义属性中提取变体选项值
+                    for attr in child_product.get('custom_attributes', []):
+                        if attr['attribute_code'] in [opt['name'] for opt in main_product['options']]:
+                            variant['options'][attr['attribute_code']] = attr['value']
+                    
+                    main_product['variants'].append(variant)
+                    time.sleep(0.2)
+                except Exception as e:
+                    print(f"  获取变体 {child_sku} 时出错：{e}")
+                    
+        except Exception as e:
+            print(f" 处理可配置选项时出错：{e}")
         
         return main_product
     
-    def transform_bundle_product(self, product: Dict, attributes: Dict) -> Dict:
-        """转换捆绑产品（R Commerce 原生不支持捆绑，映射到特殊产品类型）"""
-        # Magento 中的捆绑产品很复杂 - 我们将它们创建为常规产品
-        # 捆绑信息存储在 meta_data 中供未来捆绑实现
+    def transform_bundle_product(self, product: dict) -> dict:
+        """转换捆绑产品"""
+        main_product = self.transform_simple_product(product)
         
-        main_product = self.transform_simple_product(product, attributes)
-        
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                bpo.option_id,
-                bpo.parent_id,
-                bpo.required,
-                bpo.type,
-                bpo.position,
-                bps.selection_id,
-                bps.product_id as child_product_id,
-                bps.selection_price_type,
-                bps.selection_price_value,
-                bps.selection_qty,
-                bps.selection_can_change_qty,
-                bps.position as selection_position
-            FROM catalog_product_bundle_option bpo
-            LEFT JOIN catalog_product_bundle_selection bps ON bpo.option_id = bps.option_id
-            WHERE bpo.parent_id = %s
-        """, (product['entity_id'],))
-        
-        bundle_options = cursor.fetchall()
-        cursor.close()
-        
-        # 在 meta_data 中存储捆绑信息
+        # 捆绑选项存储在 meta_data 中
+        bundle_options = product.get('extension_attributes', {}).get('bundle_product_options', [])
         main_product['meta_data']['magento']['bundle_options'] = bundle_options
         main_product['meta_data']['product_type_note'] = '捆绑产品 - 选项存储在 meta_data 中'
         
         return main_product
     
-    def transform_grouped_product(self, product: Dict, attributes: Dict) -> Dict:
-        """转换分组产品（简单产品的容器）"""
-        main_product = self.transform_simple_product(product, attributes)
+    def transform_grouped_product(self, product: dict) -> dict:
+        """转换分组产品"""
+        main_product = self.transform_simple_product(product)
         
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT linked_product_id
-            FROM catalog_product_link
-            WHERE product_id = %s AND link_type_id = 3
-        """, (product['entity_id'],))
-        
-        grouped_products = cursor.fetchall()
-        cursor.close()
-        
-        main_product['meta_data']['magento']['grouped_children'] = [p['linked_product_id'] for p in grouped_products]
+        # 分组产品链接
+        grouped_links = product.get('extension_attributes', {}).get('grouped_product_links', [])
+        main_product['meta_data']['magento']['grouped_children'] = grouped_links
         main_product['meta_data']['product_type_note'] = '分组产品 - 子产品存储在 meta_data 中'
         
         return main_product
+    
+    def migrate_customers(self):
+        """迁移 Magento 客户"""
+        try:
+            customers = self.magento.get_all_pages('customers/search', page_size=100)
+            
+            for customer in customers:
+                try:
+                    customer_data = self.transform_customer(customer)
+                    
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/customers",
+                        json=customer_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移客户：{customer['email']}")
+                        self.migration_log.append({
+                            'type': 'customer',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': customer['id'],
+                            'target_id': response.json()['data']['id'],
+                            'email': customer['email']
+                        })
+                    else:
+                        print(f" 迁移客户 {customer['email']} 失败：{response.text}")
+                        self.migration_log.append({
+                            'type': 'customer',
+                            'operation': 'create',
+                            'status': 'failed',
+                            'source_id': customer['id'],
+                            'email': customer['email'],
+                            'error': response.text
+                        })
+                    
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移客户 {customer.get('email', 'unknown')} 时出错：{e}")
+                    
+        except Exception as e:
+            print(f"客户迁移时出错：{e}")
+    
+    def transform_customer(self, customer: dict) -> dict:
+        """转换 Magento 客户"""
+        addresses = customer.get('addresses', [])
+        default_billing = next((a for a in addresses if a.get('default_billing')), addresses[0] if addresses else {})
+        default_shipping = next((a for a in addresses if a.get('default_shipping')), addresses[0] if addresses else {})
+        
+        return {
+            'email': customer['email'],
+            'first_name': customer.get('firstname', ''),
+            'last_name': customer.get('lastname', ''),
+            'phone': default_billing.get('telephone', ''),
+            'accepts_marketing': customer.get('extension_attributes', {}).get('is_subscribed', False),
+            'billing_address': {
+                'first_name': default_billing.get('firstname', ''),
+                'last_name': default_billing.get('lastname', ''),
+                'company': default_billing.get('company', ''),
+                'address1': ' '.join(default_billing.get('street', [])[:1]),
+                'address2': ' '.join(default_billing.get('street', [])[1:]),
+                'city': default_billing.get('city', ''),
+                'state': default_billing.get('region', {}).get('region', ''),
+                'postal_code': default_billing.get('postcode', ''),
+                'country': default_billing.get('country_id', ''),
+                'phone': default_billing.get('telephone', '')
+            },
+            'shipping_address': {
+                'first_name': default_shipping.get('firstname', ''),
+                'last_name': default_shipping.get('lastname', ''),
+                'company': default_shipping.get('company', ''),
+                'address1': ' '.join(default_shipping.get('street', [])[:1]),
+                'address2': ' '.join(default_shipping.get('street', [])[1:]),
+                'city': default_shipping.get('city', ''),
+                'state': default_shipping.get('region', {}).get('region', ''),
+                'postal_code': default_shipping.get('postcode', ''),
+                'country': default_shipping.get('country_id', ''),
+                'phone': default_shipping.get('telephone', '')
+            },
+            'meta_data': {
+                'magento': {
+                    'customer_id': customer['id'],
+                    'group_id': customer.get('group_id'),
+                    'store_id': customer.get('store_id'),
+                    'website_id': customer.get('website_id')
+                }
+            }
+        }
+    
+    def migrate_orders(self):
+        """迁移 Magento 订单"""
+        try:
+            orders = self.magento.get_all_pages('orders', page_size=50)  # 订单使用较小的批次
+            
+            for order in orders:
+                try:
+                    order_data = self.transform_order(order)
+                    
+                    response = requests.post(
+                        f"{self.rcommerce_url}/v1/orders",
+                        json=order_data,
+                        headers={'Authorization': f'Bearer {self.rcommerce_key}'}
+                    )
+                    
+                    if response.status_code == 201:
+                        print(f" 已迁移订单：{order.get('increment_id', order['entity_id'])}")
+                        self.migration_log.append({
+                            'type': 'order',
+                            'operation': 'create',
+                            'status': 'success',
+                            'source_id': order['entity_id'],
+                            'target_id': response.json()['data']['id'],
+                            'order_number': order.get('increment_id')
+                        })
+                    else:
+                        print(f" 迁移订单 {order.get('increment_id')} 失败：{response.text}")
+                    
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" 迁移订单 {order.get('increment_id', 'unknown')} 时出错：{e}")
+                    
+        except Exception as e:
+            print(f"订单迁移时出错：{e}")
+    
+    def transform_order(self, order: dict) -> dict:
+        """转换 Magento 订单"""
+        return {
+            'order_number': order.get('increment_id', str(order['entity_id'])),
+            'customer_email': order.get('customer_email', ''),
+            'customer_first_name': order.get('customer_firstname', ''),
+            'customer_last_name': order.get('customer_lastname', ''),
+            'subtotal': float(order.get('subtotal', 0) or 0),
+            'tax_amount': float(order.get('tax_amount', 0) or 0),
+            'shipping_amount': float(order.get('shipping_amount', 0) or 0),
+            'discount_amount': float(order.get('discount_amount', 0) or 0),
+            'total': float(order.get('grand_total', 0) or 0),
+            'status': self.map_order_status(order.get('status', 'pending')),
+            'billing_address': self.transform_order_address(order.get('billing_address', {})),
+            'shipping_address': self.transform_order_address(order.get('extension_attributes', {}).get('shipping_assignments', [{}])[0].get('shipping', {}).get('address', {})),
+            'line_items': [self.transform_order_item(item) for item in order.get('items', [])],
+            'meta_data': {
+                'magento': {
+                    'order_id': order['entity_id'],
+                    'store_id': order.get('store_id'),
+                    'state': order.get('state'),
+                    'shipping_method': order.get('shipping_method'),
+                    'shipping_description': order.get('shipping_description'),
+                    'coupon_code': order.get('coupon_code')
+                }
+            }
+        }
+    
+    def transform_order_address(self, address: dict) -> dict:
+        """转换订单地址"""
+        return {
+            'first_name': address.get('firstname', ''),
+            'last_name': address.get('lastname', ''),
+            'company': address.get('company', ''),
+            'address1': ' '.join(address.get('street', [])[:1]),
+            'address2': ' '.join(address.get('street', [])[1:]),
+            'city': address.get('city', ''),
+            'state': address.get('region', ''),
+            'postal_code': address.get('postcode', ''),
+            'country': address.get('country_id', ''),
+            'phone': address.get('telephone', '')
+        }
+    
+    def transform_order_item(self, item: dict) -> dict:
+        """转换订单项目"""
+        return {
+            'product_id': f"magento_{item.get('product_id')}",
+            'name': item.get('name', ''),
+            'sku': item.get('sku', ''),
+            'quantity': float(item.get('qty_ordered', 0) or 0),
+            'unit_price': float(item.get('price', 0) or 0),
+            'tax_amount': float(item.get('tax_amount', 0) or 0),
+            'discount_amount': float(item.get('discount_amount', 0) or 0),
+            'total': float(item.get('row_total', 0) or 0),
+            'meta_data': {
+                'magento': {
+                    'item_id': item.get('item_id'),
+                    'product_type': item.get('product_type'),
+                    'original_price': item.get('original_price')
+                }
+            }
+        }
+    
+    def map_order_status(self, magento_status: str) -> str:
+        """将 Magento 订单状态映射到 R Commerce 状态"""
+        status_map = {
+            'pending': 'pending',
+            'processing': 'processing',
+            'complete': 'completed',
+            'closed': 'completed',
+            'canceled': 'cancelled',
+            'holded': 'on_hold',
+            'payment_review': 'on_hold',
+            'fraud': 'fraud_review'
+        }
+        return status_map.get(magento_status, 'pending')
     
     def generate_slug(self, name: str) -> str:
         """生成 URL 友好的 slug"""
         import re
         return re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
     
-    def getProductGallery(self, product_id: int):
-        """获取产品图库图片"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                gallery.value_id,
-                gallery.value as image_path,
-                gallery.media_type,
-                gallery.position,
-                gallery.disabled,
-                gallery.label
-            FROM catalog_product_entity_media_gallery gallery
-            JOIN catalog_product_entity_media_gallery_value_to_entity entity_link 
-                ON gallery.value_id = entity_link.value_id
-            WHERE entity_link.entity_id = %s
-            ORDER BY gallery.position
-        """, (product_id,))
-        
-        gallery = cursor.fetchall()
-        cursor.close()
-        
-        return gallery
-    
-    def migrate_customers(self):
-        """迁移 Magento 客户"""
-        cursor = self.db.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT 
-                e.entity_id,
-                e.email,
-                e.created_at,
-                e.group_id,
-                cg.customer_group_code
-            FROM customer_entity e
-            JOIN customer_group cg ON e.group_id = cg.customer_group_id
-            ORDER BY e.entity_id
-        """)
-        
-        customers = cursor.fetchall()
-        
-        for customer in customers:
-            try:
-                # 获取客户属性（firstname、lastname 等）
-                attributes = self.eav_helper.get_all_product_attributes(customer['entity_id'], entity_type='customer')
-                
-                # 获取客户地址
-                addresses = self.get_customer_addresses(customer['entity_id'])
-                
-                customer_data = {
-                    'email': customer['email'],
-                    'first_name': attributes.get('firstname', ''),
-                    'last_name': attributes.get('lastname', ''),
-                    'phone': attributes.get('phone', None),
-                    'accepts_marketing': attributes.get('is_subscribed', False),
-                    'meta_data': {
-                        'magento': {
-                            'entity_id': customer['entity_id'],
-                            'group_id': customer['group_id'],
-                            'customer_group_code': customer['customer_group_code'],
-                            'created_at': customer['created_at'],
-                            'original_attributes': attributes
-                        }
-                    }
-                }
-                
-                # 在 R Commerce 中创建客户
-                response = requests.post(
-                    f"{self.rcommerce_url}/v1/customers",
-                    json=customer_data,
-                    headers={'Authorization': f'Bearer {self.rcommerce_key}'}
-                )
-                
-                if response.status_code == 201:
-                    print(f" 已迁移客户：{customer['email']}")
-                    self.migration_log.append({
-                        'type': 'customer',
-                        'operation': 'create',
-                        'status': 'success',
-                        'source_id': customer['entity_id'],
-                        'target_id': response.json()['data']['id'],
-                        'email': customer['email']
-                    })
-                else:
-                    print(f" 迁移客户 {customer['email']} 失败：{response.text}")
-                    self.migration_log.append({
-                        'type': 'customer',
-                        'operation': 'create',
-                        'status': 'failed',
-                        'source_id': customer['entity_id'],
-                        'email': customer['email'],
-                        'error': response.text
-                    })
-                
-                # 速率限制
-                time.sleep(0.5)
-                
-            except Exception as e:
-                print(f" 迁移客户 {customer['email']} 时出错：{e}")
-        
-        cursor.close()
-    
-    def get_customer_addresses(self, customer_id: int):
-        """获取客户地址"""
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 
-                entity_id as address_id,
-                parent_id as customer_id,
-                created_at,
-                updated_at
-            FROM customer_address_entity
-            WHERE parent_id = %s
-        """, (customer_id,))
-        
-        addresses = cursor.fetchall()
-        result = []
-        
-        for addr in addresses:
-            # 获取地址属性
-            addr_attributes = self.eav_helper.get_all_product_attributes(addr['address_id'], entity_type='customer_address')
-            
-            result.append({
-                'first_name': addr_attributes.get('firstname', ''),
-                'last_name': addr_attributes.get('lastname', ''),
-                'company': addr_attributes.get('company', ''),
-                'street1': addr_attributes.get('street', ''),
-                'city': addr_attributes.get('city', ''),
-                'state': addr_attributes.get('region', ''),
-                'postal_code': addr_attributes.get('postcode', ''),
-                'country': addr_attributes.get('country_id', ''),
-                'phone': addr_attributes.get('telephone', ''),
-                'is_default': addr_attributes.get('default_shipping', False) or addr_attributes.get('default_billing', False)
-            })
-        
-        cursor.close()
-        return result
-    
     def save_migration_log(self):
-        """保存迁移日志"""
+        """保存完整迁移日志"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f'magento_migration_log_{timestamp}.json'
+        
+        summary = {
+            'products': {'success': 0, 'failed': 0},
+            'categories': {'success': 0, 'failed': 0},
+            'customers': {'success': 0, 'failed': 0},
+            'orders': {'success': 0, 'failed': 0}
+        }
+        
+        for log_entry in self.migration_log:
+            item_type = log_entry['type']
+            status = log_entry['status']
+            
+            if item_type in summary:
+                if status == 'success':
+                    summary[item_type]['success'] += 1
+                else:
+                    summary[item_type]['failed'] += 1
         
         with open(filename, 'w') as f:
             json.dump({
                 'timestamp': timestamp,
-                'migration_log': self.migration_log
-            }, f, indent=2, default=str)
+                'summary': summary,
+                'details': self.migration_log
+            }, f, indent=2)
         
-        print(f"\n迁移日志已保存到：{filename}")
+        print(f"迁移日志已保存到 {filename}")
+        print(f"摘要：{json.dumps(summary, indent=2)}")
     
     def print_summary(self):
         """打印迁移摘要"""
-        total_products = len([l for l in self.migration_log if l['type'] == 'product'])
-        successful_products = len([l for l in self.migration_log if l['type'] == 'product' and l['status'] == 'success'])
-        failed_products = len([l for l in self.migration_log if l['type'] == 'product' and l['status'] == 'failed'])
+        summary = {
+            'products': {'success': 0, 'failed': 0},
+            'categories': {'success': 0, 'failed': 0},
+            'customers': {'success': 0, 'failed': 0},
+            'orders': {'success': 0, 'failed': 0}
+        }
         
-        total_customers = len([l for l in self.migration_log if l['type'] == 'customer'])
-        successful_customers = len([l for l in self.migration_log if l['type'] == 'customer' and l['status'] == 'success'])
-        failed_customers = len([l for l in self.migration_log if l['type'] == 'customer' and l['status'] == 'failed'])
+        for log_entry in self.migration_log:
+            item_type = log_entry['type']
+            status = log_entry['status']
+            
+            if item_type in summary:
+                if status == 'success':
+                    summary[item_type]['success'] += 1
+                else:
+                    summary[item_type]['failed'] += 1
         
-        print("\n=== 迁移摘要 ===")
-        print(f"产品：{successful_products}/{total_products} 成功，{failed_products} 失败")
-        print(f"客户：{successful_customers}/{total_customers} 成功，{failed_customers} 失败")
+        print("\n" + "="*50)
+        print("迁移摘要")
+        print("="*50)
+        for item_type, counts in summary.items():
+            total = counts['success'] + counts['failed']
+            print(f"{item_type.capitalize()}：{counts['success']}/{total} 成功")
+        print("="*50)
 
 # 使用
 if __name__ == '__main__':
-    db_config = {
-        'host': os.environ.get('MAGENTO_DB_HOST', 'localhost'),
-        'user': os.environ.get('MAGENTO_DB_USER', 'magento'),
-        'password': os.environ.get('MAGENTO_DB_PASS', 'password'),
-        'database': os.environ.get('MAGENTO_DB_NAME', 'magento'),
-        'charset': 'utf8mb4'
+    magento_config = {
+        'url': os.environ.get('MAGENTO_URL', 'https://your-magento-store.com'),
+        'access_token': os.environ.get('MAGENTO_ACCESS_TOKEN', 'your_access_token')
     }
     
     rcommerce_config = {
@@ -1115,8 +924,44 @@ if __name__ == '__main__':
         'api_key': os.environ.get('RCOMMERCE_API_KEY', 'your_api_key')
     }
     
-    migrator = MagentoMigrator(db_config, rcommerce_config)
+    migrator = MagentoMigrator(magento_config, rcommerce_config)
     migrator.migrate_all()
+```
+
+## 处理企业版功能
+
+如果从 Magento Commerce（企业版）迁移：
+
+### 客户细分
+
+```bash
+# 通过 API 导出客户细分
+curl -X GET "https://your-magento-store.com/rest/V1/customerSegments" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+### CMS 块和页面
+
+```bash
+# 导出 CMS 块
+curl -X GET "https://your-magento-store.com/rest/V1/cmsBlock/search?searchCriteria[pageSize]=100" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# 导出 CMS 页面
+curl -X GET "https://your-magento-store.com/rest/V1/cmsPage/search?searchCriteria[pageSize]=100" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+### 高级库存 (MSI)
+
+```bash
+# 获取库存源
+curl -X GET "https://your-magento-store.com/rest/V1/inventory/sources" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# 获取带源的库存项目
+curl -X GET "https://your-magento-store.com/rest/V1/inventory/source-items?searchCriteria[pageSize]=100" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 ## 迁移后步骤
