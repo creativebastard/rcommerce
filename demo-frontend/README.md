@@ -31,11 +31,23 @@ Then open http://localhost:3000
 
 ## Configuration
 
-Edit `app.js` to change the API endpoint:
+Edit `api.js` to configure the API endpoint and API key:
 
 ```javascript
 const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_KEY = 'ak_yourprefix.yoursecret';  // Get from R Commerce CLI
 ```
+
+### Getting an API Key
+
+1. Start your R Commerce server
+2. Create an API key using the CLI:
+   ```bash
+   rcommerce api-key create --name "Demo Frontend" --scopes "products:read,orders:write,carts:write"
+   ```
+3. Copy the generated key to `api.js`
+
+**Note:** API keys are for service-to-service authentication. Customer authentication (login/register) uses JWT tokens.
 
 ## Demo Products
 

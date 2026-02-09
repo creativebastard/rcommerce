@@ -3,6 +3,10 @@
 
 const API_BASE_URL = 'http://localhost:8080/api/v1';
 
+// Configuration - Set your API key here for demo purposes
+// In production, this should be set securely via environment or build process
+const API_KEY = '';  // Format: 'ak_prefix.secret'
+
 // Storage keys
 const AUTH_TOKEN_KEY = 'rc_token';
 const REFRESH_TOKEN_KEY = 'rc_refresh_token';
@@ -94,11 +98,14 @@ const api = {
         return customer;
     },
     
-    // Products
+    // Products (require API key)
     async getProducts() {
-        const response = await fetch(`${API_BASE_URL}/products`);
+        const response = await this.apiKeyFetch(`${API_BASE_URL}/products`);
         
         if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('API key required. Please configure API_KEY in api.js');
+            }
             throw new Error('Failed to fetch products');
         }
         
@@ -107,9 +114,12 @@ const api = {
     },
     
     async getProduct(id) {
-        const response = await fetch(`${API_BASE_URL}/products/${id}`);
+        const response = await this.apiKeyFetch(`${API_BASE_URL}/products/${id}`);
         
         if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('API key required. Please configure API_KEY in api.js');
+            }
             throw new Error('Failed to fetch product');
         }
         
@@ -368,6 +378,16 @@ const api = {
             ...options.headers,
             'Authorization': `Bearer ${token}`
         };
+        
+        return fetch(url, { ...options, headers });
+    },
+    
+    async apiKeyFetch(url, options = {}) {
+        // Use API key if configured, otherwise try without (will fail with 401)
+        const headers = { ...options.headers };
+        if (API_KEY) {
+            headers['Authorization'] = `Bearer ${API_KEY}`;
+        }
         
         return fetch(url, { ...options, headers });
     },
