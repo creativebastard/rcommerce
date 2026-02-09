@@ -38,6 +38,11 @@ impl AuthService {
     /// Supports Argon2id (native), bcrypt (legacy), and PHPass (WordPress/WooCommerce migrated)
     /// Returns (is_valid, needs_rehash) tuple
     pub fn verify_password(&self, password: &str, hash: &str) -> Result<(bool, bool)> {
+        // Handle empty hash
+        if hash.is_empty() {
+            return Ok((false, false));
+        }
+        
         // Check if this is a PHPass hash (WordPress/WooCommerce)
         // PHPass hashes start with $P$ or $H$
         if hash.starts_with("$P$") || hash.starts_with("$H$") {
@@ -52,8 +57,13 @@ impl AuthService {
         }
         
         // Standard Argon2id verification
-        let parsed_hash = PasswordHash::new(hash)
-            .map_err(|e| Error::internal(format!("Invalid password hash: {}", e)))?;
+        let parsed_hash = match PasswordHash::new(hash) {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("Invalid password hash format: {}", e);
+                return Ok((false, false));
+            }
+        };
         
         let valid = argon2()
             .verify_password(password.as_bytes(), &parsed_hash)
