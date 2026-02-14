@@ -69,6 +69,111 @@ Import settings include:
 - Default currency for imported records
 - Whether to update existing records
 
+## Interactive Shell
+
+The `shell` command launches an interactive REPL (Read-Eval-Print Loop) for managing your R Commerce installation:
+
+```bash
+rcommerce shell -c config.toml
+```
+
+This provides a command-line interface for listing products, orders, customers, and more without leaving your terminal.
+
+### Shell Commands
+
+Once inside the shell, you can use the following commands:
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `help`, `h`, `?` | Show available commands | `help` |
+| `exit`, `quit`, `q` | Exit the shell | `exit` |
+| `clear`, `cls` | Clear the screen | `clear` |
+| `dashboard`, `dash`, `d` | Show dashboard overview | `dashboard` |
+| `status`, `st` | Show database status | `status` |
+| `list <entity> [limit]` | List entities | `list products 10` |
+| `get <entity> <id>` | Get entity details | `get product abc-123` |
+| `create <entity>` | Create new entity | `create product` |
+| `delete <entity> <id>` | Delete an entity | `delete customer xyz-789` |
+| `search <entity> <query>` | Search for entities | `search products laptop` |
+
+**Entity shortcuts:**
+- `p` → product(s)
+- `o` → order(s)
+- `c` → customer(s)
+- `k`, `keys` → api-keys
+
+### Shell Examples
+
+```
+$ rcommerce shell -c config.toml
+
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║           🛒 R Commerce Interactive Shell                     ║
+║                                                               ║
+║     Type 'help' for available commands or 'exit' to quit      ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+rcommerce> dashboard
+
+📊 Dashboard
+
+Key Metrics:
+  Products:            150
+  Orders:              42
+  Customers:           28
+  Total Revenue:       $12,450.00
+
+Recent Orders:
+  ID                                    Customer              Status       Total        Created
+  ----------------------------------------------------------------------------------------------------
+  550e8400-e29b-41d4-a716-446655440000  john@example.com      completed    $299.99      2024-01-31
+  550e8400-e29b-41d4-a716-446655440001  jane@example.com      pending      $149.50      2024-01-30
+
+rcommerce> list products 5
+
+Products (showing 5)
+  ID                                    Title                          Price      Currency   Status
+  ----------------------------------------------------------------------------------------------------
+  550e8400-e29b-41d4-a716-446655440000  Premium T-Shirt                29.99      USD        ✓ Active
+  550e8400-e29b-41d4-a716-446655440001  Wireless Headphones            149.99     USD        ✓ Active
+
+rcommerce> search products laptop
+
+Products matching 'laptop' (3)
+  ID                                    Title                          Price      Currency   Status
+  ----------------------------------------------------------------------------------------------------
+  550e8400-e29b-41d4-a716-446655440002  Gaming Laptop Pro              1299.99    USD        ✓ Active
+
+rcommerce> exit
+
+Bye: Goodbye! 👋
+```
+
+### Interactive Creation in Shell
+
+The shell supports interactive creation of products and customers:
+
+```
+rcommerce> create product
+
+📦 Create New Product
+Product title: Premium T-Shirt
+URL slug [premium-t-shirt]: premium-t-shirt
+Product type:
+  > Simple
+    Variable
+    Digital
+    Bundle
+Price: 29.99
+...
+
+✓ Product created successfully!
+  ID:    550e8400-e29b-41d4-a716-446655440000
+  Title: Premium T-Shirt
+```
+
 ## Commands
 
 ### Server

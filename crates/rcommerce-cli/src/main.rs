@@ -9,6 +9,7 @@ use rcommerce_core::models::{ProductType, Currency};
 
 mod commands {
     pub mod setup;
+    pub mod shell;
 }
 
 /// Security checks for CLI operations
@@ -152,6 +153,9 @@ pub enum Commands {
         #[arg(short, long, help = "Output configuration file path")]
         output: Option<PathBuf>,
     },
+    
+    /// Interactive shell for managing your R Commerce installation
+    Shell,
 }
 
 #[derive(Subcommand, Debug)]
@@ -1506,6 +1510,20 @@ async fn main() -> Result<()> {
         Commands::Setup { output } => {
             if let Err(e) = commands::setup::run_setup(output).await {
                 eprintln!("{}", format!("❌ Setup failed: {}", e).red().bold());
+                std::process::exit(1);
+            }
+        }
+        
+        Commands::Shell => {
+            if let Err(e) = security::check_not_root() {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+            
+            let pool = create_pool(&config).await?;
+            
+            if let Err(e) = commands::shell::run_shell(pool).await {
+                eprintln!("{}", format!("❌ Shell error: {}", e).red().bold());
                 std::process::exit(1);
             }
         }
