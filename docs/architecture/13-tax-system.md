@@ -1,8 +1,36 @@
 # Tax System Architecture
 
+## Status: ✅ IMPLEMENTED
+
+The tax system has been fully implemented in R Commerce as of February 2026.
+
+## Quick Start
+
+```rust
+use rcommerce_core::{
+    TaxService, DefaultTaxService, TaxContext, TaxAddress, TaxableItem,
+    TransactionType, CustomerTaxInfo, VatId,
+};
+
+// Create tax service
+let tax_service = DefaultTaxService::new(pool);
+
+// Calculate tax
+let context = TaxContext {
+    customer: CustomerTaxInfo::default(),
+    shipping_address: TaxAddress::new("DE").with_region("BY"),
+    billing_address: TaxAddress::new("DE"),
+    currency: Currency::EUR,
+    transaction_type: TransactionType::B2C,
+};
+
+let calculation = tax_service.calculate_tax(&items, &context).await?;
+println!("Total tax: {}", calculation.total_tax);
+```
+
 ## Executive Summary
 
-R Commerce currently has **basic tax infrastructure** but lacks comprehensive support for modern e-commerce tax requirements. This document outlines the current state, requirements for 2026, and recommended architecture for a full-featured tax system.
+R Commerce now has **comprehensive tax infrastructure** supporting global e-commerce requirements including EU VAT with OSS, US sales tax with economic nexus tracking, and VAT/GST for major markets.
 
 ## Current State
 

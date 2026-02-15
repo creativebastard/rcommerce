@@ -18,6 +18,7 @@ pub mod performance;
 pub mod import;
 pub mod shipping;
 pub mod media;
+pub mod tax;
 
 // Re-export commonly used types
 pub use error::{Error, Result};
@@ -77,6 +78,18 @@ pub use shipping::providers::{EasyPostProvider, ShipStationProvider};
 
 // Media exports
 pub use media::{FileUploadService, FileMetadata, StorageBackend};
+
+// Tax module exports
+pub use tax::{
+    TaxService, DefaultTaxService, TaxCalculator, TaxCalculation, TaxContext, TaxAddress,
+    TaxZone, TaxCategory, TaxRate, TaxExemption, TaxTransaction, TaxableItem,
+    VatId, VatValidationResult, ViesValidator, OssScheme, OssReport,
+    TransactionType, CustomerTaxInfo, TaxBreakdown, LineItemTax,
+    CreateTaxZoneRequest, CreateTaxCategoryRequest, CreateTaxRateRequest,
+    TaxRateQuery, TaxZoneQuery, TaxRateWithDetails, TaxZoneInfo, TaxCategoryInfo,
+    CalculateTaxRequest, TaxCalculationResponse, ValidateVatIdRequest, VatValidationResponse,
+    GenerateOssReportRequest, CreateTaxExemptionRequest,
+};
 
 /// Current version of rcommerce
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

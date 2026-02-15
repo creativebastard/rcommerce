@@ -45,6 +45,9 @@ pub struct Config {
     
     #[serde(default)]
     pub shipping: ShippingConfig,
+    
+    #[serde(default)]
+    pub tax: TaxConfig,
 }
 
 impl Config {
@@ -1638,4 +1641,93 @@ mod tests {
         let header_preload = hsts_preload.header_value();
         assert!(header_preload.contains("preload"));
     }
+}
+
+// Tax configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaxConfig {
+    /// Tax provider: 'builtin', 'avalara', 'taxjar'
+    #[serde(default = "default_tax_provider")]
+    pub provider: String,
+    
+    /// Enable OSS (One Stop Shop) reporting
+    #[serde(default)]
+    pub enable_oss: bool,
+    
+    /// EU member state for OSS registration (e.g., 'DE', 'FR')
+    #[serde(default)]
+    pub oss_member_state: Option<String>,
+    
+    /// Default tax behavior
+    #[serde(default)]
+    pub default_tax_included: bool,
+    
+    /// Default tax zone code
+    #[serde(default)]
+    pub default_tax_zone: Option<String>,
+    
+    /// Validate VAT IDs using VIES
+    #[serde(default = "default_validate_vat")]
+    pub validate_vat_ids: bool,
+    
+    /// VAT validation cache duration in days
+    #[serde(default = "default_vat_cache_days")]
+    pub vat_cache_days: i64,
+    
+    /// Avalara configuration
+    #[serde(default)]
+    pub avalara: Option<AvalaraConfig>,
+    
+    /// TaxJar configuration
+    #[serde(default)]
+    pub taxjar: Option<TaxJarConfig>,
+}
+
+impl Default for TaxConfig {
+    fn default() -> Self {
+        Self {
+            provider: default_tax_provider(),
+            enable_oss: false,
+            oss_member_state: None,
+            default_tax_included: false,
+            default_tax_zone: None,
+            validate_vat_ids: default_validate_vat(),
+            vat_cache_days: default_vat_cache_days(),
+            avalara: None,
+            taxjar: None,
+        }
+    }
+}
+
+fn default_tax_provider() -> String {
+    "builtin".to_string()
+}
+
+fn default_validate_vat() -> bool {
+    true
+}
+
+fn default_vat_cache_days() -> i64 {
+    30
+}
+
+/// Avalara AvaTax configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AvalaraConfig {
+    pub api_key: Option<String>,
+    pub account_id: Option<String>,
+    #[serde(default = "default_avalara_env")]
+    pub environment: String, // 'sandbox' or 'production'
+}
+
+fn default_avalara_env() -> String {
+    "sandbox".to_string()
+}
+
+/// TaxJar configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaxJarConfig {
+    pub api_token: Option<String>,
+    #[serde(default)]
+    pub sandbox: bool,
 }

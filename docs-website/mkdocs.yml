@@ -95,6 +95,7 @@ plugins:
             Inventory: 库存
             Fulfillment: 履行
             Statistics: 统计
+            Tax: 税务
             Admin: 管理
             Webhooks: Webhooks
             GraphQL: GraphQL
@@ -282,6 +283,7 @@ nav:
     - Inventory: api-reference/inventory.md
     - Notifications: api-reference/notifications.md
     - Statistics: api-reference/statistics.md
+    - Tax: api-reference/tax.md
     - Webhooks: api-reference/webhooks.md
     - GraphQL: api-reference/graphql.md
   
