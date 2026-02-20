@@ -172,8 +172,8 @@ impl TaxProvider for AvalaraProvider {
             postal_code: result.address.postal_code,
             street: result.address.line1,
             is_valid: result.resolution_quality == "Intersection" || result.resolution_quality == "Exact",
-            latitude: result.coordinates.map(|c| c.latitude),
-            longitude: result.coordinates.map(|c| c.longitude),
+            latitude: result.coordinates.as_ref().map(|c| c.latitude),
+            longitude: result.coordinates.as_ref().map(|c| c.longitude),
         })
     }
 
