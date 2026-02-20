@@ -5,14 +5,15 @@
 pub mod traits;
 pub mod postgres;
 
-// Cart, Coupon, API Key, and Statistics repositories
+// Cart, Coupon, API Key, Statistics, and Order repositories
 pub mod cart_repository;
 pub mod coupon_repository;
 pub mod api_key_repository;
 pub mod subscription_repository;
 pub mod statistics_repository;
+pub mod order_repository;
 
-// Re-export cart, coupon, api_key, subscription, and statistics traits
+// Re-export cart, coupon, api_key, subscription, statistics, and order traits
 pub use cart_repository::{CartRepository, PgCartRepository};
 pub use coupon_repository::{CouponRepository, PgCouponRepository};
 pub use api_key_repository::{ApiKeyRepository, ApiKeyRecord, CreateApiKeyRequest, PostgresApiKeyRepository};
@@ -23,6 +24,7 @@ pub use statistics_repository::{
     DashboardMetrics, RevenueDataPoint, PeriodComparison, TrendComparison, TrendDirection,
     StatusCount,
 };
+pub use order_repository::{OrderRepository, PostgresOrderRepository, OrderFilter};
 
 // PostgreSQL exports
 pub use postgres::{
