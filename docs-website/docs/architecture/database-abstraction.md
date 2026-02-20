@@ -19,6 +19,114 @@ pub trait ProductRepository: Send + Sync {
 }
 ```
 
+## Available Repositories
+
+R Commerce provides the following repositories for database operations:
+
+| Repository | Purpose | Key Methods |
+|------------|---------|-------------|
+| `ProductRepository` | Product catalog management | `find_by_slug`, `update_inventory`, `list_with_filter` |
+| `CustomerRepository` | Customer account management | `find_by_email`, `update_password`, `add_address` |
+| `OrderRepository` | Order lifecycle management | `find_by_order_number`, `update_status`, `list_with_items` |
+| `CartRepository` | Shopping cart operations | `find_by_customer`, `add_item`, `apply_coupon` |
+| `CouponRepository` | Discount code management | `validate_code`, `increment_usage`, `find_active` |
+| `SubscriptionRepository` | Subscription billing | `find_active_by_customer`, `renew`, `cancel` |
+| `ApiKeyRepository` | API key management | `validate_key`, `revoke_key`, `list_by_customer` |
+| `InventoryRepository` | Stock tracking & reservations | `get_inventory_level`, `create_reservation`, `adjust_stock` |
+| `FulfillmentRepository` | Order fulfillment (shipping) | `create`, `update_tracking`, `mark_shipped`, `mark_delivered` |
+| `NotificationRepository` | Notification delivery tracking | `create`, `get_pending`, `mark_delivered`, `get_retryable` |
+| `CategoryRepository` | Product category management | `get_tree`, `assign_product`, `get_children` |
+| `TagRepository` | Product tag management | `get_or_create`, `bulk_assign_to_product`, `get_popular` |
+| `StatisticsRepository` | Analytics & reporting | `get_sales_summary`, `get_dashboard_metrics` |
+
+### Repository Examples
+
+#### Inventory Repository
+
+```rust
+#[async_trait]
+pub trait InventoryRepository: Send + Sync {
+    /// Get inventory level for a product
+    async fn get_inventory_level(
+        &self,
+        product_id: Uuid,
+        location_id: Option<Uuid>,
+    ) -> Result<Option<InventoryLevel>>;
+    
+    /// Update inventory level
+    async fn update_inventory_level(&self, level: &InventoryLevel) -> Result<InventoryLevel>;
+    
+    /// Create inventory reservation for an order
+    async fn create_reservation(&self, reservation: &StockReservation) -> Result<StockReservation>;
+    
+    /// Release a reservation
+    async fn release_reservation(&self, id: Uuid) -> Result<StockReservation>;
+    
+    /// Adjust stock quantity
+    async fn adjust_stock(
+        &self,
+        product_id: Uuid,
+        location_id: Uuid,
+        adjustment: i32,
+        reason: &str,
+    ) -> Result<InventoryLevel>;
+}
+```
+
+#### Category Repository
+
+```rust
+#[async_trait]
+pub trait CategoryRepository: Send + Sync {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<ProductCategory>>;
+    async fn get_by_slug(&self, slug: &str) -> Result<Option<ProductCategory>>;
+    async fn create(&self, category: &ProductCategory) -> Result<ProductCategory>;
+    async fn update(&self, category: &ProductCategory) -> Result<ProductCategory>;
+    async fn delete(&self, id: Uuid) -> Result<bool>;
+    
+    /// Get hierarchical category tree
+    async fn get_tree(&self, root_id: Option<Uuid>) -> Result<Vec<CategoryTreeNode>>;
+    
+    /// Get child categories
+    async fn get_children(&self, parent_id: Uuid) -> Result<Vec<ProductCategory>>;
+    
+    /// Assign product to category
+    async fn assign_product(&self, product_id: Uuid, category_id: Uuid) -> Result<()>;
+    
+    /// Get products in category
+    async fn get_products(&self, category_id: Uuid, limit: i64, offset: i64) -> Result<Vec<Product>>;
+}
+```
+
+#### Notification Repository
+
+```rust
+#[async_trait]
+pub trait NotificationRepository: Send + Sync {
+    async fn create(&self, notification: &Notification) -> Result<Notification>;
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Notification>>;
+    async fn update_status(&self, id: Uuid, status: DeliveryStatus) -> Result<Notification>;
+    
+    /// Get pending notifications ready to be sent
+    async fn get_pending(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// Get scheduled notifications that are due
+    async fn get_due(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// Get failed notifications that should be retried
+    async fn get_retryable(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// Mark notification as delivered
+    async fn mark_delivered(&self, id: Uuid) -> Result<Notification>;
+    
+    /// Mark notification as failed
+    async fn mark_failed(&self, id: Uuid, error: &str) -> Result<Notification>;
+    
+    /// Clean up old delivered notifications
+    async fn cleanup_old(&self, before: DateTime<Utc>) -> Result<u64>;
+}
+```
+
 ## Technology Stack
 
 ### SQLx

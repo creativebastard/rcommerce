@@ -19,6 +19,114 @@ pub trait ProductRepository: Send + Sync {
 }
 ```
 
+## 可用仓库
+
+R Commerce 提供以下仓库用于数据库操作：
+
+| 仓库 | 用途 | 关键方法 |
+|------|------|----------|
+| `ProductRepository` | 产品目录管理 | `find_by_slug`, `update_inventory`, `list_with_filter` |
+| `CustomerRepository` | 客户账户管理 | `find_by_email`, `update_password`, `add_address` |
+| `OrderRepository` | 订单生命周期管理 | `find_by_order_number`, `update_status`, `list_with_items` |
+| `CartRepository` | 购物车操作 | `find_by_customer`, `add_item`, `apply_coupon` |
+| `CouponRepository` | 折扣码管理 | `validate_code`, `increment_usage`, `find_active` |
+| `SubscriptionRepository` | 订阅计费 | `find_active_by_customer`, `renew`, `cancel` |
+| `ApiKeyRepository` | API 密钥管理 | `validate_key`, `revoke_key`, `list_by_customer` |
+| `InventoryRepository` | 库存跟踪与预留 | `get_inventory_level`, `create_reservation`, `adjust_stock` |
+| `FulfillmentRepository` | 订单履行（发货） | `create`, `update_tracking`, `mark_shipped`, `mark_delivered` |
+| `NotificationRepository` | 通知传递跟踪 | `create`, `get_pending`, `mark_delivered`, `get_retryable` |
+| `CategoryRepository` | 产品分类管理 | `get_tree`, `assign_product`, `get_children` |
+| `TagRepository` | 产品标签管理 | `get_or_create`, `bulk_assign_to_product`, `get_popular` |
+| `StatisticsRepository` | 分析与报告 | `get_sales_summary`, `get_dashboard_metrics` |
+
+### 仓库示例
+
+#### 库存仓库
+
+```rust
+#[async_trait]
+pub trait InventoryRepository: Send + Sync {
+    /// 获取产品库存水平
+    async fn get_inventory_level(
+        &self,
+        product_id: Uuid,
+        location_id: Option<Uuid>,
+    ) -> Result<Option<InventoryLevel>>;
+    
+    /// 更新库存水平
+    async fn update_inventory_level(&self, level: &InventoryLevel) -> Result<InventoryLevel>;
+    
+    /// 为订单创建库存预留
+    async fn create_reservation(&self, reservation: &StockReservation) -> Result<StockReservation>;
+    
+    /// 释放预留
+    async fn release_reservation(&self, id: Uuid) -> Result<StockReservation>;
+    
+    /// 调整库存数量
+    async fn adjust_stock(
+        &self,
+        product_id: Uuid,
+        location_id: Uuid,
+        adjustment: i32,
+        reason: &str,
+    ) -> Result<InventoryLevel>;
+}
+```
+
+#### 分类仓库
+
+```rust
+#[async_trait]
+pub trait CategoryRepository: Send + Sync {
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<ProductCategory>>;
+    async fn get_by_slug(&self, slug: &str) -> Result<Option<ProductCategory>>;
+    async fn create(&self, category: &ProductCategory) -> Result<ProductCategory>;
+    async fn update(&self, category: &ProductCategory) -> Result<ProductCategory>;
+    async fn delete(&self, id: Uuid) -> Result<bool>;
+    
+    /// 获取分层分类树
+    async fn get_tree(&self, root_id: Option<Uuid>) -> Result<Vec<CategoryTreeNode>>;
+    
+    /// 获取子分类
+    async fn get_children(&self, parent_id: Uuid) -> Result<Vec<ProductCategory>>;
+    
+    /// 将产品分配到分类
+    async fn assign_product(&self, product_id: Uuid, category_id: Uuid) -> Result<()>;
+    
+    /// 获取分类中的产品
+    async fn get_products(&self, category_id: Uuid, limit: i64, offset: i64) -> Result<Vec<Product>>;
+}
+```
+
+#### 通知仓库
+
+```rust
+#[async_trait]
+pub trait NotificationRepository: Send + Sync {
+    async fn create(&self, notification: &Notification) -> Result<Notification>;
+    async fn get_by_id(&self, id: Uuid) -> Result<Option<Notification>>;
+    async fn update_status(&self, id: Uuid, status: DeliveryStatus) -> Result<Notification>;
+    
+    /// 获取待发送的通知
+    async fn get_pending(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// 获取到期的定时通知
+    async fn get_due(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// 获取应重试的失败通知
+    async fn get_retryable(&self, limit: i64) -> Result<Vec<Notification>>;
+    
+    /// 标记通知为已送达
+    async fn mark_delivered(&self, id: Uuid) -> Result<Notification>;
+    
+    /// 标记通知为失败
+    async fn mark_failed(&self, id: Uuid, error: &str) -> Result<Notification>;
+    
+    /// 清理旧的已送达通知
+    async fn cleanup_old(&self, before: DateTime<Utc>) -> Result<u64>;
+}
+```
+
 ## 技术栈
 
 ### SQLx
