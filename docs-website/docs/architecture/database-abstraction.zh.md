@@ -220,10 +220,51 @@ rcommerce db reset -c config.toml
 迁移文件存储在：
 ```
 crates/rcommerce-core/migrations/
-├── 001_initial_schema.sql
-├── 002_add_api_keys.sql
-└── ...
+├── 001_complete_schema.sql      # 核心表（产品、订单、客户）
+├── 002_tax_system.sql           # 税务计算表
+└── 003_inventory_notifications_fulfillment.sql  # 库存、通知、Webhook
 ```
+
+### 核心数据表
+
+#### 电商核心
+- `products` - 产品目录
+- `product_variants` - 产品变体（尺寸、颜色）
+- `product_categories` - 分层分类
+- `product_tags` - 产品标签
+- `customers` - 客户账户
+- `orders` - 订单主表
+- `order_items` - 订单行项目
+- `carts` - 购物车
+- `cart_items` - 购物车项目
+- `coupons` - 折扣码
+
+#### 库存管理
+- `inventory_locations` - 仓库和店铺
+- `inventory_levels` - 每个位置的库存数量
+- `stock_reservations` - 订单预留库存
+- `stock_movements` - 库存变更审计跟踪
+
+#### 支付与订阅
+- `payments` - 支付交易
+- `refunds` - 退款记录
+- `subscriptions` - 订阅计费
+- `subscription_invoices` - 订阅发票
+- `payment_retry_attempts` - 失败支付重试
+- `dunning_emails` - 催款活动邮件
+
+#### 通知与 Webhook
+- `notifications` - 邮件/SMS/推送队列
+- `notification_templates` - 可重用模板
+- `webhooks` - 出站 Webhook 配置
+- `webhook_deliveries` - Webhook 投递日志
+- `customer_notification_preferences` - 订阅设置
+
+#### 配送
+- `fulfillments` - 发货记录
+- `fulfillment_items` - 每个发货的项目
+- `shipping_carrier_configs` - 承运商 API 设置
+- `shipping_rates_cache` - 缓存的运费报价
 
 ## 错误处理
 

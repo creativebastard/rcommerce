@@ -311,9 +311,63 @@ POST   /v1/webhooks/:gateway       # Receive webhooks from payment providers
 
 **Supported Payment Gateways:**
 - Stripe (Full support)
-- Airwallex (Basic support)
+- Airwallex (Full support - Demo/Production ready)
 - WeChat Pay (Basic support)
 - Alipay (Basic support)
+
+### Webhook Management ✅ Fully Implemented
+
+Manage outgoing webhooks for event notifications to external systems.
+
+```
+GET    /v1/webhooks                 # List all webhooks
+POST   /v1/webhooks                 # Create new webhook
+GET    /v1/webhooks/:id             # Get webhook details
+PUT    /v1/webhooks/:id             # Update webhook
+DELETE /v1/webhooks/:id             # Delete webhook
+POST   /v1/webhooks/:id/test        # Test webhook delivery
+GET    /v1/webhooks/:id/deliveries  # Get delivery history
+```
+
+**Webhook Events:**
+- `order.created` - New order placed
+- `order.paid` - Order payment received
+- `order.shipped` - Order fulfillment started
+- `order.delivered` - Order delivered
+- `order.cancelled` - Order cancelled
+- `customer.created` - New customer registered
+- `payment.succeeded` - Payment successful
+- `payment.failed` - Payment failed
+- `subscription.created` - New subscription
+- `subscription.renewed` - Subscription renewed
+- `subscription.cancelled` - Subscription cancelled
+
+**Security:**
+- HMAC-SHA256 signature verification
+- Secret key generated automatically
+- Test mode for development
+
+**Example Webhook Payload:**
+```json
+{
+  "event": "order.paid",
+  "timestamp": "2024-01-23T14:13:35Z",
+  "data": {
+    "order_id": "ord_123456",
+    "order_number": "ORD-2024-001",
+    "customer_id": "cus_789",
+    "total": "99.99",
+    "currency": "USD"
+  }
+}
+```
+
+**Headers:**
+```
+Content-Type: application/json
+X-Webhook-Signature: sha256=abc123...
+X-Webhook-Test: true (for test deliveries)
+```
 
 ### Payments (v2 - Future Enhancement)
 

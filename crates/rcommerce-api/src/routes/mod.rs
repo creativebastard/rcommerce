@@ -10,6 +10,7 @@ pub mod subscription;
 pub mod statistics;
 pub mod dunning;
 pub mod downloads;
+pub mod webhook;
 
 pub use admin::router as admin_router;
 pub use auth::public_router as auth_public_router;
@@ -24,6 +25,7 @@ pub use subscription::router as subscription_router;
 pub use statistics::router as statistics_router;
 pub use dunning::router as dunning_router;
 pub use downloads::router as downloads_router;
+pub use webhook::router as webhook_router;
 
 use crate::state::AppState;
 use axum::{routing::get, Router};
@@ -63,6 +65,7 @@ fn api_v1_routes() -> Router<AppState> {
         .merge(statistics_router())
         .merge(dunning_router())
         .merge(downloads_router())
+        .merge(webhook_router())
 }
 
 /// Health check endpoint

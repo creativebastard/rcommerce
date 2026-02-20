@@ -95,6 +95,7 @@ sha2 = "0.10"
 hex = "0.4"
 base64 = "0.21"
 rand = "0.8"
+hmac = "0.12"
 
 # Templating
 tera = "1.19"

@@ -715,40 +715,100 @@ rcommerce migrate status
 rcommerce migrate generate --from-entities
 ```
 
-### Migration File Structure
+### Migration Files
 
-```rust
-// migrations/001_create_orders_table.rs
-use rcommerce::db::Migration;
+R Commerce uses SQL migrations with automatic versioning:
 
-pub struct Migration;
-
-impl Migration for Migration {
-    fn version(&self) -> &str { "001" }
-    
-    fn up(&self, conn: &mut dyn DatabaseConnection) -> Result<()> {
-        conn.execute(include_str!("001_create_orders_table.up.sql"))
-    }
-    
-    fn down(&self, conn: &mut dyn DatabaseConnection) -> Result<()> {
-        conn.execute(include_str!("001_create_orders_table.down.sql"))
-    }
-}
+```
+crates/rcommerce-core/migrations/
+├── 001_complete_schema.sql      # Core tables (products, orders, customers)
+├── 002_tax_system.sql           # Tax calculation tables
+└── 003_inventory_notifications_fulfillment.sql  # Inventory, notifications, webhooks
 ```
 
+### Core Tables
+
+#### Commerce Core
+- `products` - Product catalog
+- `product_variants` - Product variations (size, color)
+- `product_categories` - Hierarchical categories
+- `product_tags` - Product labels
+- `customers` - Customer accounts
+- `orders` - Order headers
+- `order_items` - Order line items
+- `carts` - Shopping carts
+- `cart_items` - Cart line items
+- `coupons` - Discount codes
+
+#### Inventory Management
+- `inventory_locations` - Warehouses and stores
+- `inventory_levels` - Stock quantities per location
+- `stock_reservations` - Reserved stock for orders
+- `stock_movements` - Stock change audit trail
+
+#### Payment & Subscriptions
+- `payments` - Payment transactions
+- `refunds` - Refund records
+- `subscriptions` - Subscription billing
+- `subscription_invoices` - Subscription invoices
+- `payment_retry_attempts` - Failed payment retries
+- `dunning_emails` - Dunning campaign emails
+
+#### Notifications & Webhooks
+- `notifications` - Email/SMS/push queue
+- `notification_templates` - Reusable templates
+- `webhooks` - Outgoing webhook configuration
+- `webhook_deliveries` - Webhook delivery log
+- `customer_notification_preferences` - Opt-in settings
+
+#### Shipping
+- `fulfillments` - Shipment records
+- `fulfillment_items` - Items in each shipment
+- `shipping_carrier_configs` - Carrier API settings
+- `shipping_rates_cache` - Cached shipping quotes
+
+### Migration Example
+
 ```sql
--- 001_create_orders_table.up.sql
-CREATE TABLE orders (
+-- 003_inventory_notifications_fulfillment.sql
+-- Inventory locations
+CREATE TABLE IF NOT EXISTS inventory_locations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_number VARCHAR(32) UNIQUE NOT NULL,
-    -- ... other fields
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    address JSONB,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_orders_order_number ON orders(order_number);
+-- Notifications queue
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    channel notification_channel NOT NULL,
+    recipient VARCHAR(255) NOT NULL,
+    subject VARCHAR(500) NOT NULL,
+    body TEXT NOT NULL,
+    status delivery_status NOT NULL DEFAULT 'pending',
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 3,
+    scheduled_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 001_create_orders_table.down.sql
-DROP INDEX IF EXISTS idx_orders_order_number;
-DROP TABLE IF EXISTS orders;
+-- Webhooks
+CREATE TABLE IF NOT EXISTS webhooks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    secret VARCHAR(255) NOT NULL,
+    events VARCHAR(100)[] NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    last_triggered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 ```
 
 ---

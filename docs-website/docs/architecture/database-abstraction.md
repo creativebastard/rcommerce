@@ -220,10 +220,51 @@ rcommerce db reset -c config.toml
 Migration files are stored in:
 ```
 crates/rcommerce-core/migrations/
-├── 001_initial_schema.sql
-├── 002_add_api_keys.sql
-└── ...
+├── 001_complete_schema.sql      # Core tables (products, orders, customers)
+├── 002_tax_system.sql           # Tax calculation tables
+└── 003_inventory_notifications_fulfillment.sql  # Inventory, notifications, webhooks
 ```
+
+### Core Tables
+
+#### Commerce Core
+- `products` - Product catalog
+- `product_variants` - Product variations (size, color)
+- `product_categories` - Hierarchical categories
+- `product_tags` - Product labels
+- `customers` - Customer accounts
+- `orders` - Order headers
+- `order_items` - Order line items
+- `carts` - Shopping carts
+- `cart_items` - Cart line items
+- `coupons` - Discount codes
+
+#### Inventory Management
+- `inventory_locations` - Warehouses and stores
+- `inventory_levels` - Stock quantities per location
+- `stock_reservations` - Reserved stock for orders
+- `stock_movements` - Stock change audit trail
+
+#### Payment & Subscriptions
+- `payments` - Payment transactions
+- `refunds` - Refund records
+- `subscriptions` - Subscription billing
+- `subscription_invoices` - Subscription invoices
+- `payment_retry_attempts` - Failed payment retries
+- `dunning_emails` - Dunning campaign emails
+
+#### Notifications & Webhooks
+- `notifications` - Email/SMS/push queue
+- `notification_templates` - Reusable templates
+- `webhooks` - Outgoing webhook configuration
+- `webhook_deliveries` - Webhook delivery log
+- `customer_notification_preferences` - Opt-in settings
+
+#### Shipping
+- `fulfillments` - Shipment records
+- `fulfillment_items` - Items in each shipment
+- `shipping_carrier_configs` - Carrier API settings
+- `shipping_rates_cache` - Cached shipping quotes
 
 ## Error Handling
 
