@@ -1,21 +1,27 @@
 //! Cart Service
 //!
-//! Handles all cart-related business logic including bundle product expansion.
+//! Handles all cart-related business logic including bundle product expansion,
+//! tax calculation, and checkout preparation.
 
 use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use rust_decimal::Decimal;
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::{
     Error, Result,
     models::{
         Cart, CartItem, CartWithItems, CartIdentifier, AddToCartInput, 
-        UpdateCartItemInput, ApplyCouponInput,
+        UpdateCartItemInput, ApplyCouponInput, Currency, Address,
     },
     repository::{CartRepository, CouponRepository, Database},
     services::{CouponService, BundleService},
+    tax::{
+        TaxService, TaxContext, TaxAddress, TaxableItem, CustomerTaxInfo,
+        TransactionType, TaxCalculation, VatId,
+    },
 };
 
 /// Cart service for managing shopping carts
@@ -23,6 +29,7 @@ pub struct CartService {
     cart_repo: Arc<dyn CartRepository>,
     coupon_repo: Arc<dyn CouponRepository>,
     coupon_service: Arc<CouponService>,
+    tax_service: Option<Arc<dyn TaxService>>,
     bundle_service: Option<Arc<BundleService>>,
     db: Option<Database>,
 }
@@ -38,9 +45,19 @@ impl CartService {
             cart_repo,
             coupon_repo,
             coupon_service,
+            tax_service: None,
             bundle_service: None,
             db: None,
         }
+    }
+
+    /// Create a new cart service with tax support
+    pub fn with_tax_service(
+        mut self,
+        tax_service: Arc<dyn TaxService>,
+    ) -> Self {
+        self.tax_service = Some(tax_service);
+        self
     }
 
     /// Create a new cart service with bundle support
@@ -136,6 +153,42 @@ impl CartService {
         let items = self.cart_repo.get_items(cart_id).await?;
 
         Ok(CartWithItems { cart, items })
+    }
+
+    /// Get cart with calculated totals including tax
+    pub async fn get_cart_with_totals(
+        &self,
+        cart_id: Uuid,
+        shipping_address: Option<&Address>,
+        vat_id: Option<&str>,
+    ) -> Result<CartWithTotals> {
+        let cart_with_items = self.get_cart_with_items(cart_id).await?;
+        let cart = cart_with_items.cart;
+        let items = cart_with_items.items;
+
+        // Calculate tax if address provided and tax service available
+        let (tax_total, tax_breakdown) = if let (Some(address), Some(tax_service)) = (shipping_address, &self.tax_service) {
+            match self.calculate_cart_tax(&cart, &items, address, vat_id).await {
+                Ok((tax, breakdown)) => (tax, Some(breakdown)),
+                Err(e) => {
+                    warn!("Failed to calculate cart tax: {}", e);
+                    (Decimal::ZERO, None)
+                }
+            }
+        } else {
+            (Decimal::ZERO, None)
+        };
+
+        // Calculate totals
+        let total = cart.subtotal - cart.discount_total + tax_total + cart.shipping_total;
+
+        Ok(CartWithTotals {
+            cart,
+            items,
+            tax_total,
+            calculated_total: total,
+            tax_breakdown,
+        })
     }
 
     /// Add item to cart with product details
@@ -383,6 +436,60 @@ impl CartService {
             .ok_or_else(|| Error::not_found("Cart not found"))
     }
 
+    /// Set shipping address for cart
+    pub async fn set_shipping_address(&self, cart_id: Uuid, address_id: Uuid) -> Result<Cart> {
+        let mut cart = self.cart_repo
+            .find_by_id(cart_id)
+            .await?
+            .ok_or_else(|| Error::not_found("Cart not found"))?;
+
+        cart.shipping_address_id = Some(address_id);
+        cart.updated_at = Utc::now();
+        
+        self.cart_repo.update(&cart).await?;
+        
+        // Recalculate to update tax
+        self.recalculate_cart(cart_id).await?;
+        
+        self.cart_repo
+            .find_by_id(cart_id)
+            .await?
+            .ok_or_else(|| Error::not_found("Cart not found"))
+    }
+
+    /// Set shipping method for cart
+    pub async fn set_shipping_method(
+        &self, 
+        cart_id: Uuid, 
+        method: String, 
+        cost: Decimal
+    ) -> Result<Cart> {
+        let mut cart = self.cart_repo
+            .find_by_id(cart_id)
+            .await?
+            .ok_or_else(|| Error::not_found("Cart not found"))?;
+
+        cart.shipping_method = Some(method);
+        cart.shipping_total = cost;
+        cart.updated_at = Utc::now();
+        
+        self.cart_repo.update(&cart).await?;
+        
+        // Recalculate totals
+        self.recalculate_cart(cart_id).await?;
+        
+        self.cart_repo
+            .find_by_id(cart_id)
+            .await?
+            .ok_or_else(|| Error::not_found("Cart not found"))
+    }
+
+    /// Mark cart as converted to order
+    pub async fn mark_converted(&self, cart_id: Uuid, order_id: Option<Uuid>) -> Result<()> {
+        self.cart_repo.mark_converted(cart_id, order_id).await?;
+        Ok(())
+    }
+
     /// Recalculate cart totals
     async fn recalculate_cart(&self, cart_id: Uuid) -> Result<()> {
         let items = self.cart_repo.get_items(cart_id).await?;
@@ -421,12 +528,87 @@ impl CartService {
             self.cart_repo.update_item(&item).await?;
         }
 
+        // Calculate tax if we have shipping address and tax service
+        cart.tax_total = if let (Some(address_id), Some(tax_service)) = (cart.shipping_address_id, &self.tax_service) {
+            // TODO: Fetch address and calculate tax
+            // For now, tax will be calculated on-demand via get_cart_with_totals
+            Decimal::ZERO
+        } else {
+            Decimal::ZERO
+        };
+
         // Calculate final total
         cart.total = cart.subtotal - cart.discount_total + cart.tax_total + cart.shipping_total;
         cart.updated_at = Utc::now();
 
         self.cart_repo.update(&cart).await?;
         Ok(())
+    }
+
+    /// Calculate tax for cart items
+    async fn calculate_cart_tax(
+        &self,
+        cart: &Cart,
+        items: &[CartItem],
+        shipping_address: &Address,
+        vat_id: Option<&str>,
+    ) -> Result<(Decimal, Vec<TaxBreakdownItem>)> {
+        let tax_service = self.tax_service.as_ref()
+            .ok_or_else(|| Error::not_implemented("Tax service not configured"))?;
+
+        // Convert cart items to taxable items
+        let taxable_items: Vec<TaxableItem> = items.iter()
+            .filter(|i| !self.is_bundle_component(i))
+            .map(|item| TaxableItem {
+                id: item.id,
+                product_id: item.product_id,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                total_price: item.total,
+                tax_category_id: None, // TODO: Get from product
+                is_digital: false, // TODO: Get from product
+                title: item.title.clone(),
+                sku: item.sku.clone(),
+            }).collect();
+
+        // Build tax context
+        let tax_context = TaxContext {
+            customer: CustomerTaxInfo {
+                customer_id: cart.customer_id,
+                is_tax_exempt: false, // TODO: Check customer exemptions
+                vat_id: vat_id.and_then(|v| VatId::parse(v).ok()),
+                exemptions: vec![],
+            },
+            shipping_address: address_to_tax_address(shipping_address),
+            billing_address: address_to_tax_address(shipping_address), // Use shipping as billing for now
+            currency: cart.currency,
+            transaction_type: if vat_id.is_some() { 
+                TransactionType::B2B 
+            } else { 
+                TransactionType::B2C 
+            },
+        };
+
+        // Calculate tax
+        let calculation = tax_service.calculate_tax(&taxable_items, &tax_context).await?;
+        
+        let total_tax: Decimal = calculation.line_items.iter().map(|li| li.tax_amount).sum();
+        
+        // Convert to breakdown items
+        let breakdown: Vec<TaxBreakdownItem> = calculation.tax_breakdown.iter().map(|tb| {
+            TaxBreakdownItem {
+                tax_zone_name: tb.tax_zone_name.clone(),
+                tax_rate_name: tb.tax_rate_name.clone(),
+                rate: tb.rate,
+                taxable_amount: tb.taxable_amount,
+                tax_amount: tb.tax_amount,
+            }
+        }).collect();
+
+        debug!("Cart tax calculated: total_tax={}, breakdown_items={}", 
+            total_tax, breakdown.len());
+
+        Ok((total_tax, breakdown))
     }
 
     /// Check if a cart item is a bundle component
@@ -562,4 +744,65 @@ pub struct BundleCartDetails {
     pub image_url: Option<String>,
     pub requires_shipping: bool,
     pub components: Vec<BundleComponentDetails>,
+}
+
+/// Cart with calculated totals
+#[derive(Debug, Clone)]
+pub struct CartWithTotals {
+    pub cart: Cart,
+    pub items: Vec<CartItem>,
+    pub tax_total: Decimal,
+    pub calculated_total: Decimal,
+    pub tax_breakdown: Option<Vec<TaxBreakdownItem>>,
+}
+
+/// Tax breakdown item
+#[derive(Debug, Clone)]
+pub struct TaxBreakdownItem {
+    pub tax_zone_name: String,
+    pub tax_rate_name: String,
+    pub rate: Decimal,
+    pub taxable_amount: Decimal,
+    pub tax_amount: Decimal,
+}
+
+/// Convert Address to TaxAddress
+fn address_to_tax_address(address: &Address) -> TaxAddress {
+    TaxAddress {
+        country_code: address.country.clone(),
+        region_code: address.state.clone(),
+        postal_code: Some(address.zip.clone()),
+        city: Some(address.city.clone()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_address_conversion() {
+        let address = Address {
+            id: Uuid::new_v4(),
+            customer_id: Uuid::new_v4(),
+            first_name: "John".to_string(),
+            last_name: "Doe".to_string(),
+            company: None,
+            phone: None,
+            address1: "123 Main St".to_string(),
+            address2: None,
+            city: "Berlin".to_string(),
+            state: Some("BE".to_string()),
+            country: "DE".to_string(),
+            zip: "10115".to_string(),
+            is_default_shipping: true,
+            is_default_billing: true,
+            created_at: Utc::now(),
+        };
+
+        let tax_addr = address_to_tax_address(&address);
+        assert_eq!(tax_addr.country_code, "DE");
+        assert_eq!(tax_addr.region_code, Some("BE".to_string()));
+        assert_eq!(tax_addr.postal_code, Some("10115".to_string()));
+    }
 }

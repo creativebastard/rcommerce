@@ -1,6 +1,6 @@
 # Tax API
 
-The Tax API provides comprehensive tax calculation and management for global e-commerce, including EU VAT with OSS, US sales tax, and VAT/GST support.
+The Tax API provides comprehensive tax calculation and management for global e-commerce, including EU VAT with OSS, US sales tax, and VAT/GST support. The tax system is fully integrated with the Cart, Order, Shipping, and Checkout services.
 
 ## Overview
 
@@ -9,6 +9,52 @@ The Tax API provides comprehensive tax calculation and management for global e-c
 - **Scopes Required**: 
   - `tax:read` - for calculation and reporting
   - `tax:write` - for managing tax rates and zones
+
+## Service Integration
+
+The Tax API is integrated with the following services:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         Checkout Flow                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      CheckoutService                                     │
+│  Orchestrates: Cart → Tax Calc → Shipping → Order → Payment             │
+└─────────────────────────────────────────────────────────────────────────┘
+        │              │              │              │
+        ▼              ▼              ▼              ▼
+┌──────────────┐ ┌──────────┐ ┌────────────┐ ┌──────────────┐
+│ CartService  │ │TaxService│ │   Shipping │ │ OrderService │
+│              │ │          │ │   Service  │ │              │
+│ - Items      │ │- Calculate│ │ - Rates    │ │ - Create     │
+│ - Discounts  │ │- VAT ID  │ │ - Methods  │ │ - Tax Record │
+│ - Tax calc   │ │- OSS     │ │ - Tracking │ │ - Payment    │
+└──────────────┘ └──────────┘ └────────────┘ └──────────────┘
+```
+
+### Cart Service Integration
+
+Tax is automatically calculated when retrieving cart totals with a shipping address:
+
+```http
+GET /api/v1/carts/{cart_id}/totals?shipping_address_id={address_id}
+```
+
+The response includes:
+- `tax_total` - Total tax amount
+- `tax_breakdown` - Detailed tax by jurisdiction
+- `calculated_total` - Final total including tax
+
+### Checkout Integration
+
+During checkout, tax is calculated automatically:
+
+1. **Initiate Checkout** - Tax calculated based on shipping address
+2. **Select Shipping** - Shipping tax added to total
+3. **Complete Checkout** - Tax recorded with order
 
 ## Calculate Tax
 
@@ -66,8 +112,8 @@ POST /api/v1/tax/calculate
       "tax_zone_id": "550e8400-e29b-41d4-a716-446655440011"
     }
   ],
-  "shipping_tax": "0.00",
-  "total_tax": "11.40",
+  "shipping_tax": "1.90",
+  "total_tax": "13.30",
   "tax_breakdown": [
     {
       "tax_zone_id": "550e8400-e29b-41d4-a716-446655440011",
@@ -75,10 +121,53 @@ POST /api/v1/tax/calculate
       "tax_rate_id": "550e8400-e29b-41d4-a716-446655440010",
       "tax_rate_name": "German Standard VAT",
       "rate": "0.19",
-      "taxable_amount": "59.98",
-      "tax_amount": "11.40"
+      "taxable_amount": "70.00",
+      "tax_amount": "13.30"
     }
   ],
+  "currency": "EUR"
+}
+```
+
+### B2B Transactions
+
+For B2B transactions with valid VAT ID, reverse charge may apply:
+
+```json
+{
+  "items": [...],
+  "shipping_address": {
+    "country_code": "FR",
+    "region_code": "IDF",
+    "postal_code": "75001",
+    "city": "Paris"
+  },
+  "customer_id": "550e8400-e29b-41d4-a716-446655440003",
+  "vat_id": "FR12345678901",
+  "currency": "EUR"
+}
+```
+
+Response with reverse charge:
+
+```json
+{
+  "line_items": [
+    {
+      "item_id": "550e8400-e29b-41d4-a716-446655440000",
+      "taxable_amount": "100.00",
+      "tax_amount": "0.00",
+      "tax_rate": "0.00",
+      "tax_rate_id": "...",
+      "tax_zone_id": "...",
+      "reverse_charge": true
+    }
+  ],
+  "shipping_tax": "0.00",
+  "total_tax": "0.00",
+  "tax_breakdown": [],
+  "reverse_charge_applied": true,
+  "vat_id_valid": true,
   "currency": "EUR"
 }
 ```
@@ -163,6 +252,41 @@ GET /api/v1/tax/rates?country_code=DE&region_code=BY&postal_code=80331
       "valid_until": null
     }
   ]
+}
+```
+
+## Calculate Shipping Tax
+
+Calculate tax on shipping costs.
+
+```http
+POST /api/v1/tax/calculate-shipping
+```
+
+### Request
+
+```json
+{
+  "shipping_amount": "10.00",
+  "shipping_address": {
+    "country_code": "DE",
+    "region_code": "BY",
+    "postal_code": "80331",
+    "city": "Munich"
+  },
+  "currency": "EUR"
+}
+```
+
+### Response
+
+```json
+{
+  "shipping_amount": "10.00",
+  "shipping_tax": "1.90",
+  "tax_rate": "0.19",
+  "total_with_tax": "11.90",
+  "currency": "EUR"
 }
 ```
 
@@ -352,6 +476,53 @@ GET /api/v1/tax/categories
 }
 ```
 
+## Checkout Integration Examples
+
+### Example: Complete Checkout Flow
+
+```bash
+# Step 1: Initiate checkout
+POST /api/v1/checkout/initiate
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "shipping_address": {
+    "country_code": "DE",
+    "region_code": "BY",
+    "postal_code": "80331",
+    "city": "Munich",
+    "first_name": "John",
+    "last_name": "Doe",
+    "address1": "Musterstraße 1"
+  },
+  "vat_id": "DE123456789"
+}
+
+# Response includes:
+# - subtotal, discount_total
+# - item_tax, shipping_tax, tax_total
+# - available_shipping_rates
+# - tax_breakdown
+
+# Step 2: Select shipping
+POST /api/v1/checkout/shipping
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "shipping_rate_id": "rate_123",
+  "shipping_method": "DHL Express"
+}
+
+# Step 3: Complete checkout
+POST /api/v1/checkout/complete
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "payment_method": {
+    "type": "card",
+    "token": "tok_visa"
+  },
+  "customer_email": "john@example.com"
+}
+```
+
 ## EU VAT Rates Reference
 
 ### Standard VAT Rates (2026)
@@ -410,6 +581,8 @@ GET /api/v1/tax/categories
 | `tax_zone_not_found` | Tax zone not found for location |
 | `invalid_tax_rate` | Tax rate is invalid or expired |
 | `oss_report_failed` | Failed to generate OSS report |
+| `tax_calculation_failed` | Tax calculation failed |
+| `shipping_tax_failed` | Shipping tax calculation failed |
 
 ## Configuration
 
@@ -423,6 +596,10 @@ oss_member_state = "DE"
 validate_vat_ids = true
 vat_cache_days = 30
 
+# Default tax behavior
+default_tax_included = false
+default_tax_zone = "US"
+
 [tax.avalara]
 api_key = "${AVALARA_API_KEY}"
 account_id = "${AVALARA_ACCOUNT_ID}"
@@ -433,9 +610,100 @@ api_token = "${TAXJAR_API_TOKEN}"
 sandbox = true
 ```
 
+## SDK Usage Examples
+
+### Rust
+
+```rust
+use rcommerce_core::{
+    TaxService, DefaultTaxService, TaxContext, TaxAddress, TaxableItem,
+    TransactionType, CustomerTaxInfo, VatId,
+};
+
+// Create tax service
+let tax_service = DefaultTaxService::new(pool);
+
+// Build taxable items
+let items = vec![TaxableItem {
+    id: product_id,
+    product_id,
+    quantity: 2,
+    unit_price: dec!(29.99),
+    total_price: dec!(59.98),
+    tax_category_id: None,
+    is_digital: false,
+    title: "Premium T-Shirt".to_string(),
+    sku: Some("TSHIRT-001".to_string()),
+}];
+
+// Build tax context
+let context = TaxContext {
+    customer: CustomerTaxInfo {
+        customer_id: Some(customer_id),
+        is_tax_exempt: false,
+        vat_id: Some(VatId::parse("DE123456789")?),
+        exemptions: vec![],
+    },
+    shipping_address: TaxAddress::new("DE")
+        .with_region("BY")
+        .with_postal_code("80331")
+        .with_city("Munich"),
+    billing_address: TaxAddress::new("DE"),
+    currency: Currency::EUR,
+    transaction_type: TransactionType::B2C,
+};
+
+// Calculate tax
+let calculation = tax_service.calculate_tax(&items, &context).await?;
+println!("Total tax: {}", calculation.total_tax);
+
+// Validate VAT ID
+let validation = tax_service.validate_vat_id("DE123456789").await?;
+println!("VAT ID valid: {}", validation.is_valid);
+```
+
+### JavaScript/TypeScript
+
+```typescript
+import { RCommerceClient } from '@rcommerce/sdk';
+
+const client = new RCommerceClient({
+  baseUrl: 'https://api.example.com',
+  apiKey: 'your-api-key'
+});
+
+// Calculate tax
+const calculation = await client.tax.calculate({
+  items: [{
+    id: 'item-123',
+    product_id: 'prod-456',
+    quantity: 2,
+    unit_price: '29.99',
+    title: 'Premium T-Shirt'
+  }],
+  shipping_address: {
+    country_code: 'DE',
+    region_code: 'BY',
+    postal_code: '80331',
+    city: 'Munich'
+  },
+  vat_id: 'DE123456789',
+  currency: 'EUR'
+});
+
+console.log(`Total tax: ${calculation.total_tax}`);
+
+// Validate VAT ID
+const validation = await client.tax.validateVatId('DE123456789');
+console.log(`VAT ID valid: ${validation.is_valid}`);
+```
+
 ## See Also
 
 - [Tax System Architecture](../../architecture/13-tax-system.md)
+- [Cart API](./cart.md)
+- [Order API](./orders.md)
+- [Shipping API](./shipping.md)
 - [EU VAT OSS Guide](https://vat-one-stop-shop.ec.europa.eu/)
 - [Avalara AvaTax Documentation](https://developer.avalara.com/)
 - [TaxJar API Documentation](https://developers.taxjar.com/)

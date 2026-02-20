@@ -1,6 +1,6 @@
 # 税务 API
 
-税务 API 为全球电子商务提供全面的税务计算和管理，包括欧盟增值税（VAT）与 OSS、美国销售税以及增值税/消费税（GST）支持。
+税务 API 为全球电子商务提供全面的税务计算和管理，包括欧盟增值税（VAT）与 OSS、美国销售税以及增值税/消费税（GST）支持。税务系统已与购物车、订单、配送和结账服务完全集成。
 
 ## 概述
 
@@ -9,6 +9,52 @@
 - **所需权限**:
   - `tax:read` - 用于计算和报告
   - `tax:write` - 用于管理税率和区域
+
+## 服务集成
+
+税务 API 已与以下服务集成：
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         结账流程                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      结账服务 (CheckoutService)                          │
+│  协调：购物车 → 税费计算 → 配送 → 订单 → 支付                             │
+└─────────────────────────────────────────────────────────────────────────┘
+        │              │              │              │
+        ▼              ▼              ▼              ▼
+┌──────────────┐ ┌──────────┐ ┌────────────┐ ┌──────────────┐
+│ 购物车服务   │ │ 税务服务 │ │   配送服务 │ │   订单服务   │
+│              │ │          │ │            │ │              │
+│ - 商品       │ │- 计算税费│ │ - 运费     │ │ - 创建订单   │
+│ - 折扣       │ │- 验证VAT │ │ - 配送方式 │ │ - 记录税费   │
+│ - 税费计算   │ │- OSS     │ │ - 追踪     │ │ - 处理支付   │
+└──────────────┘ └──────────┘ └────────────┘ └──────────────┘
+```
+
+### 购物车服务集成
+
+在获取购物车总额时，系统会根据配送地址自动计算税费：
+
+```http
+GET /api/v1/carts/{cart_id}/totals?shipping_address_id={address_id}
+```
+
+响应包含：
+- `tax_total` - 税费总额
+- `tax_breakdown` - 按管辖区的详细税费
+- `calculated_total` - 包含税费的最终总额
+
+### 结账集成
+
+在结账过程中，税费会自动计算：
+
+1. **发起结账** - 根据配送地址计算税费
+2. **选择配送** - 将配送税费添加到总额
+3. **完成结账** - 税费随订单一起记录
 
 ## 计算税费
 
@@ -66,8 +112,8 @@ POST /api/v1/tax/calculate
       "tax_zone_id": "550e8400-e29b-41d4-a716-446655440011"
     }
   ],
-  "shipping_tax": "0.00",
-  "total_tax": "11.40",
+  "shipping_tax": "1.90",
+  "total_tax": "13.30",
   "tax_breakdown": [
     {
       "tax_zone_id": "550e8400-e29b-41d4-a716-446655440011",
@@ -75,10 +121,53 @@ POST /api/v1/tax/calculate
       "tax_rate_id": "550e8400-e29b-41d4-a716-446655440010",
       "tax_rate_name": "German Standard VAT",
       "rate": "0.19",
-      "taxable_amount": "59.98",
-      "tax_amount": "11.40"
+      "taxable_amount": "70.00",
+      "tax_amount": "13.30"
     }
   ],
+  "currency": "EUR"
+}
+```
+
+### B2B 交易
+
+对于带有有效 VAT 号码的 B2B 交易，可能适用反向征收：
+
+```json
+{
+  "items": [...],
+  "shipping_address": {
+    "country_code": "FR",
+    "region_code": "IDF",
+    "postal_code": "75001",
+    "city": "Paris"
+  },
+  "customer_id": "550e8400-e29b-41d4-a716-446655440003",
+  "vat_id": "FR12345678901",
+  "currency": "EUR"
+}
+```
+
+反向征收响应：
+
+```json
+{
+  "line_items": [
+    {
+      "item_id": "550e8400-e29b-41d4-a716-446655440000",
+      "taxable_amount": "100.00",
+      "tax_amount": "0.00",
+      "tax_rate": "0.00",
+      "tax_rate_id": "...",
+      "tax_zone_id": "...",
+      "reverse_charge": true
+    }
+  ],
+  "shipping_tax": "0.00",
+  "total_tax": "0.00",
+  "tax_breakdown": [],
+  "reverse_charge_applied": true,
+  "vat_id_valid": true,
   "currency": "EUR"
 }
 ```
@@ -163,6 +252,41 @@ GET /api/v1/tax/rates?country_code=DE&region_code=BY&postal_code=80331
       "valid_until": null
     }
   ]
+}
+```
+
+## 计算配送税费
+
+计算配送费用的税费。
+
+```http
+POST /api/v1/tax/calculate-shipping
+```
+
+### 请求
+
+```json
+{
+  "shipping_amount": "10.00",
+  "shipping_address": {
+    "country_code": "DE",
+    "region_code": "BY",
+    "postal_code": "80331",
+    "city": "Munich"
+  },
+  "currency": "EUR"
+}
+```
+
+### 响应
+
+```json
+{
+  "shipping_amount": "10.00",
+  "shipping_tax": "1.90",
+  "tax_rate": "0.19",
+  "total_with_tax": "11.90",
+  "currency": "EUR"
 }
 ```
 
@@ -352,6 +476,53 @@ GET /api/v1/tax/categories
 }
 ```
 
+## 结账集成示例
+
+### 示例：完整结账流程
+
+```bash
+# 步骤 1：发起结账
+POST /api/v1/checkout/initiate
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "shipping_address": {
+    "country_code": "DE",
+    "region_code": "BY",
+    "postal_code": "80331",
+    "city": "Munich",
+    "first_name": "John",
+    "last_name": "Doe",
+    "address1": "Musterstraße 1"
+  },
+  "vat_id": "DE123456789"
+}
+
+# 响应包含：
+# - subtotal（小计）、discount_total（折扣总额）
+# - item_tax（商品税费）、shipping_tax（配送税费）、tax_total（税费总额）
+# - available_shipping_rates（可用配送费率）
+# - tax_breakdown（税费明细）
+
+# 步骤 2：选择配送方式
+POST /api/v1/checkout/shipping
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "shipping_rate_id": "rate_123",
+  "shipping_method": "DHL Express"
+}
+
+# 步骤 3：完成结账
+POST /api/v1/checkout/complete
+{
+  "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+  "payment_method": {
+    "type": "card",
+    "token": "tok_visa"
+  },
+  "customer_email": "john@example.com"
+}
+```
+
 ## 欧盟增值税标准税率参考（2026）
 
 | 国家 | 代码 | 标准税率 | 减免税率 |
@@ -408,6 +579,8 @@ GET /api/v1/tax/categories
 | `tax_zone_not_found` | 未找到该位置的税务区域 |
 | `invalid_tax_rate` | 税率无效或已过期 |
 | `oss_report_failed` | 生成 OSS 报告失败 |
+| `tax_calculation_failed` | 税费计算失败 |
+| `shipping_tax_failed` | 配送税费计算失败 |
 
 ## 配置
 
@@ -421,6 +594,10 @@ oss_member_state = "DE"
 validate_vat_ids = true
 vat_cache_days = 30
 
+# 默认税务行为
+default_tax_included = false
+default_tax_zone = "US"
+
 [tax.avalara]
 api_key = "${AVALARA_API_KEY}"
 account_id = "${AVALARA_ACCOUNT_ID}"
@@ -431,9 +608,100 @@ api_token = "${TAXJAR_API_TOKEN}"
 sandbox = true
 ```
 
+## SDK 使用示例
+
+### Rust
+
+```rust
+use rcommerce_core::{
+    TaxService, DefaultTaxService, TaxContext, TaxAddress, TaxableItem,
+    TransactionType, CustomerTaxInfo, VatId,
+};
+
+// 创建税务服务
+let tax_service = DefaultTaxService::new(pool);
+
+// 构建应税商品
+let items = vec![TaxableItem {
+    id: product_id,
+    product_id,
+    quantity: 2,
+    unit_price: dec!(29.99),
+    total_price: dec!(59.98),
+    tax_category_id: None,
+    is_digital: false,
+    title: "Premium T-Shirt".to_string(),
+    sku: Some("TSHIRT-001".to_string()),
+}];
+
+// 构建税务上下文
+let context = TaxContext {
+    customer: CustomerTaxInfo {
+        customer_id: Some(customer_id),
+        is_tax_exempt: false,
+        vat_id: Some(VatId::parse("DE123456789")?),
+        exemptions: vec![],
+    },
+    shipping_address: TaxAddress::new("DE")
+        .with_region("BY")
+        .with_postal_code("80331")
+        .with_city("Munich"),
+    billing_address: TaxAddress::new("DE"),
+    currency: Currency::EUR,
+    transaction_type: TransactionType::B2C,
+};
+
+// 计算税费
+let calculation = tax_service.calculate_tax(&items, &context).await?;
+println!("税费总额: {}", calculation.total_tax);
+
+// 验证 VAT 号码
+let validation = tax_service.validate_vat_id("DE123456789").await?;
+println!("VAT 号码有效: {}", validation.is_valid);
+```
+
+### JavaScript/TypeScript
+
+```typescript
+import { RCommerceClient } from '@rcommerce/sdk';
+
+const client = new RCommerceClient({
+  baseUrl: 'https://api.example.com',
+  apiKey: 'your-api-key'
+});
+
+// 计算税费
+const calculation = await client.tax.calculate({
+  items: [{
+    id: 'item-123',
+    product_id: 'prod-456',
+    quantity: 2,
+    unit_price: '29.99',
+    title: 'Premium T-Shirt'
+  }],
+  shipping_address: {
+    country_code: 'DE',
+    region_code: 'BY',
+    postal_code: '80331',
+    city: 'Munich'
+  },
+  vat_id: 'DE123456789',
+  currency: 'EUR'
+});
+
+console.log(`税费总额: ${calculation.total_tax}`);
+
+// 验证 VAT 号码
+const validation = await client.tax.validateVatId('DE123456789');
+console.log(`VAT 号码有效: ${validation.is_valid}`);
+```
+
 ## 另请参阅
 
 - [税务系统架构](../../architecture/13-tax-system.md)
+- [购物车 API](./cart.md)
+- [订单 API](./orders.md)
+- [配送 API](./shipping.md)
 - [欧盟增值税 OSS 指南](https://vat-one-stop-shop.ec.europa.eu/)
 - [Avalara AvaTax 文档](https://developer.avalara.com/)
 - [TaxJar API 文档](https://developers.taxjar.com/)

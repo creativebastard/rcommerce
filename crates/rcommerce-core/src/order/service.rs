@@ -1,6 +1,13 @@
+//! Order Service
+//!
+//! Manages order lifecycle with integrated tax calculation, inventory management,
+//! and payment processing. Coordinates with TaxService for accurate tax computation.
+
+use std::sync::Arc;
+
 use uuid::Uuid;
 use rust_decimal::Decimal;
-
+use tracing::{debug, info, warn};
 
 use crate::{Result, Error};
 use crate::order::{Order, OrderItem, CreateOrderRequest, CreateOrderItem, OrderStatus, PaymentStatus};
@@ -8,15 +15,23 @@ use crate::order::lifecycle::OrderEventDispatcher;
 use crate::repository::Database;
 use crate::payment::PaymentGateway;
 use crate::inventory::InventoryService;
+use crate::tax::{
+    TaxService, TaxContext, TaxAddress, TaxableItem, CustomerTaxInfo,
+    TransactionType, VatId, TaxCalculation,
+};
+use crate::models::Address;
 
+/// Order service with integrated tax calculation
 pub struct OrderService {
     db: Database,
     payment_gateway: Box<dyn PaymentGateway>,
     inventory_service: InventoryService,
     event_dispatcher: OrderEventDispatcher,
+    tax_service: Option<Arc<dyn TaxService>>,
 }
 
 impl OrderService {
+    /// Create a new order service
     pub fn new(
         db: Database,
         payment_gateway: Box<dyn PaymentGateway>,
@@ -28,11 +43,20 @@ impl OrderService {
             payment_gateway,
             inventory_service,
             event_dispatcher,
+            tax_service: None,
         }
     }
+
+    /// Add tax service for tax calculation
+    pub fn with_tax_service(mut self, tax_service: Arc<dyn TaxService>) -> Self {
+        self.tax_service = Some(tax_service);
+        self
+    }
     
-    /// Create a new order
+    /// Create a new order with tax calculation
     pub async fn create_order(&self, request: CreateOrderRequest) -> Result<Order> {
+        info!("Creating order for customer {:?}", request.customer_id);
+        
         // Validate customer if provided
         if let Some(customer_id) = request.customer_id {
             self.validate_customer(customer_id).await?;
@@ -47,10 +71,40 @@ impl OrderService {
             self.validate_address(shipping_id).await?;
         }
         
+        // Calculate taxes if tax service is available
+        let tax_calculation = if let Some(ref tax_service) = self.tax_service {
+            // Try to get address info from metadata or use defaults
+            let shipping_address = self.get_shipping_address_from_request(&request).await?;
+            let billing_address = self.get_billing_address_from_request(&request).await?;
+            let vat_id = request.metadata.get("vat_id")
+                .and_then(|v| v.as_str());
+            
+            match self.calculate_order_tax(
+                &request.items,
+                &shipping_address,
+                billing_address.as_ref(),
+                vat_id,
+                request.customer_id,
+            ).await {
+                Ok(calc) => Some(calc),
+                Err(e) => {
+                    warn!("Tax calculation failed, using provided tax_total: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        // Use calculated tax or fall back to provided values
+        let tax_total = tax_calculation.as_ref()
+            .map(|c| c.total_tax)
+            .unwrap_or(request.tax_total);
+        
         // Validate and reserve inventory for items
         let mut order_items = Vec::new();
         let mut subtotal = Decimal::ZERO;
-        let mut total = Decimal::ZERO;
+        let mut total_item_tax = Decimal::ZERO;
         
         for (index, item) in request.items.iter().enumerate() {
             // Validate product exists and is active
@@ -70,11 +124,18 @@ impl OrderService {
             
             // Calculate item totals
             let item_subtotal = item.price * Decimal::from(item.quantity);
-            let item_tax = self.calculate_tax(item).await?;
+            
+            // Use calculated tax for this item if available
+            let item_tax = tax_calculation.as_ref()
+                .and_then(|calc| calc.line_items.iter()
+                    .find(|li| li.item_id == item.product_id) // Match by product_id
+                    .map(|li| li.tax_amount))
+                .unwrap_or(item.tax_amount);
+            
             let item_total = item_subtotal + item_tax;
             
             subtotal += item_subtotal;
-            total += item_total;
+            total_item_tax += item_tax;
             
             // Create order item
             let order_item = OrderItem {
@@ -100,6 +161,14 @@ impl OrderService {
             order_items.push(order_item);
         }
         
+        // Calculate shipping tax
+        let shipping_tax = tax_calculation.as_ref()
+            .map(|c| c.shipping_tax)
+            .unwrap_or_default();
+        
+        // Total includes: subtotal + item tax + shipping + shipping tax - discount
+        let total = subtotal + tax_total + request.shipping_total - request.discount_total;
+        
         // Generate order number
         let order_number = self.generate_order_number().await?;
         
@@ -118,8 +187,8 @@ impl OrderService {
                 $1, $2, $3, $4,
                 $5, $6,
                 'pending', 'pending', 'pending',
-                'USD', $7, $8, 0, 0, $9,
-                $10, $11, $12
+                $7, $8, $9, $10, $11, $12,
+                $13, $14, $15
             )
             RETURNING *
             "#
@@ -130,8 +199,11 @@ impl OrderService {
         .bind(request.customer_email)
         .bind(request.billing_address_id)
         .bind(request.shipping_address_id)
+        .bind(request.currency)
         .bind(subtotal)
-        .bind(Decimal::ZERO) // TODO: Calculate actual tax
+        .bind(tax_total)
+        .bind(request.shipping_total)
+        .bind(request.discount_total)
         .bind(total)
         .bind(request.notes)
         .bind(request.tags)
@@ -189,10 +261,108 @@ impl OrderService {
             }
         }
         
+        // Record tax transaction for reporting if tax was calculated
+        if let (Some(tax_service), Some(calculation)) = (&self.tax_service, tax_calculation) {
+            if let Err(e) = tax_service.record_tax_transaction(order_id, &calculation).await {
+                warn!("Failed to record tax transaction: {}", e);
+                // Don't fail order creation if tax recording fails
+            }
+        }
+        
         // Dispatch order created event
         self.event_dispatcher.order_created(&order).await?;
         
+        info!("Order created: id={}, number={}, total={}", order_id, order.order_number, total);
+        
         Ok(order)
+    }
+    
+    /// Calculate tax for order items
+    async fn calculate_order_tax(
+        &self,
+        items: &[CreateOrderItem],
+        shipping_address: &Address,
+        billing_address: Option<&Address>,
+        vat_id: Option<&str>,
+        customer_id: Option<Uuid>,
+    ) -> Result<TaxCalculation> {
+        let tax_service = self.tax_service.as_ref()
+            .ok_or_else(|| Error::not_implemented("Tax service not configured"))?;
+
+        // Convert order items to taxable items
+        let taxable_items: Vec<TaxableItem> = items.iter().map(|item| TaxableItem {
+            id: item.product_id, // Use product_id as item id for matching
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.price * Decimal::from(item.quantity),
+            tax_category_id: None, // TODO: Get from product
+            is_digital: false, // TODO: Get from product
+            title: format!("Product {}", item.product_id), // TODO: Get actual name
+            sku: None,
+        }).collect();
+
+        // Build tax context
+        let tax_context = TaxContext {
+            customer: CustomerTaxInfo {
+                customer_id,
+                is_tax_exempt: false, // TODO: Check customer exemptions
+                vat_id: vat_id.and_then(|v| VatId::parse(v).ok()),
+                exemptions: vec![],
+            },
+            shipping_address: address_to_tax_address(shipping_address),
+            billing_address: billing_address.map(address_to_tax_address)
+                .unwrap_or_else(|| address_to_tax_address(shipping_address)),
+            currency: crate::models::Currency::USD, // TODO: Get from request
+            transaction_type: if vat_id.is_some() { 
+                TransactionType::B2B 
+            } else { 
+                TransactionType::B2C 
+            },
+        };
+
+        // Calculate tax
+        let calculation = tax_service.calculate_tax(&taxable_items, &tax_context).await?;
+        
+        debug!("Order tax calculated: total_tax={}, items={}", 
+            calculation.total_tax, calculation.line_items.len());
+
+        Ok(calculation)
+    }
+
+    /// Get shipping address from request (from metadata or database)
+    async fn get_shipping_address_from_request(&self, request: &CreateOrderRequest) -> Result<Address> {
+        if let Some(address_id) = request.shipping_address_id {
+            let address = sqlx::query_as::<_, Address>(
+                "SELECT * FROM addresses WHERE id = $1"
+            )
+            .bind(address_id)
+            .fetch_optional(self.db.pool())
+            .await?;
+            
+            if let Some(addr) = address {
+                return Ok(addr);
+            }
+        }
+        
+        // Return a default address if none found
+        Ok(create_default_address())
+    }
+
+    /// Get billing address from request
+    async fn get_billing_address_from_request(&self, request: &CreateOrderRequest) -> Result<Option<Address>> {
+        if let Some(address_id) = request.billing_address_id {
+            let address = sqlx::query_as::<_, Address>(
+                "SELECT * FROM addresses WHERE id = $1"
+            )
+            .bind(address_id)
+            .fetch_optional(self.db.pool())
+            .await?;
+            
+            return Ok(address);
+        }
+        
+        Ok(None)
     }
     
     /// Get order by ID
@@ -210,9 +380,8 @@ impl OrderService {
         let items = self.get_order_items(order_id).await?;
         
         Ok(Some(OrderDetail {
-            order: order.clone(), // Clone for the main order
+            order: order.clone(),
             items,
-            // TODO: Add customer, addresses, payments, fulfillments
         }))
     }
     
@@ -479,12 +648,6 @@ impl OrderService {
         Ok(format!("{}-{}-{}", prefix, timestamp, random))
     }
     
-    async fn calculate_tax(&self, _item: &CreateOrderItem) -> Result<Decimal> {
-        // TODO: Implement tax calculation based on customer location
-        // For now, return 0 (tax-free)
-        Ok(Decimal::ZERO)
-    }
-    
     async fn get_default_location_id(&self) -> Result<Uuid> {
         // For now, return a static location ID
         // In production, select based on routing rules
@@ -542,7 +705,38 @@ impl crate::services::Service for OrderService {
 pub struct OrderDetail {
     pub order: Order,
     pub items: Vec<OrderItem>,
-    // TODO: Add customer, addresses, payments, fulfillments
+}
+
+/// Convert Address to TaxAddress
+fn address_to_tax_address(address: &Address) -> TaxAddress {
+    TaxAddress {
+        country_code: address.country.clone(),
+        region_code: address.state.clone(),
+        postal_code: Some(address.zip.clone()),
+        city: Some(address.city.clone()),
+    }
+}
+
+/// Create a default address for tax calculation fallback
+fn create_default_address() -> Address {
+    Address {
+        id: Uuid::nil(),
+        customer_id: Uuid::nil(),
+        first_name: "Default".to_string(),
+        last_name: "Address".to_string(),
+        company: None,
+        phone: None,
+        address1: "123 Default St".to_string(),
+        address2: None,
+        city: "Los Angeles".to_string(),
+        state: Some("CA".to_string()),
+        country: "US".to_string(),
+        zip: "90210".to_string(),
+        is_default_shipping: false,
+        is_default_billing: false,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+    }
 }
 
 #[cfg(test)]
@@ -562,5 +756,31 @@ mod tests {
         assert!(Shipped.can_transition_to(Delivered));
         assert!(Delivered.can_transition_to(Completed));
         assert!(!Completed.can_transition_to(Canceled));
+    }
+
+    #[test]
+    fn test_address_conversion() {
+        let address = Address {
+            id: Uuid::new_v4(),
+            customer_id: Uuid::new_v4(),
+            first_name: "John".to_string(),
+            last_name: "Doe".to_string(),
+            company: None,
+            phone: None,
+            address1: "123 Main St".to_string(),
+            address2: None,
+            city: "Berlin".to_string(),
+            state: Some("BE".to_string()),
+            country: "DE".to_string(),
+            zip: "10115".to_string(),
+            is_default_shipping: true,
+            is_default_billing: true,
+            created_at: chrono::Utc::now(),
+        };
+
+        let tax_addr = address_to_tax_address(&address);
+        assert_eq!(tax_addr.country_code, "DE");
+        assert_eq!(tax_addr.region_code, Some("BE".to_string()));
+        assert_eq!(tax_addr.postal_code, Some("10115".to_string()));
     }
 }

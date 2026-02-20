@@ -263,6 +263,19 @@ pub struct TaxTransaction {
     pub created_at: DateTime<Utc>,
 }
 
+/// VAT validation cache entry
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
+pub struct VatValidationCache {
+    pub id: Uuid,
+    pub vat_id: String,
+    pub country_code: String,
+    pub business_name: Option<String>,
+    pub business_address: Option<String>,
+    pub is_valid: bool,
+    pub validated_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+}
+
 /// OSS report data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OssReport {

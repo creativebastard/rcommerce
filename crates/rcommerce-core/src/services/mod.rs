@@ -10,6 +10,7 @@ pub mod statistics_service;
 pub mod dunning_service;
 pub mod digital_product_service;
 pub mod bundle_service;
+pub mod checkout_service;
 
 pub use product_service::ProductService;
 pub use customer_service::CustomerService;
@@ -29,6 +30,11 @@ pub use statistics_service::{
 pub use dunning_service::{DunningService, DunningHistory, RetryableInvoice, RetryProcessingResult};
 pub use digital_product_service::DigitalProductService;
 pub use bundle_service::BundleService;
+pub use checkout_service::{
+    CheckoutService, CheckoutConfig, CheckoutSummary, CheckoutResult,
+    InitiateCheckoutRequest, SelectShippingRequest, CompleteCheckoutRequest,
+    TaxBreakdownItem as CheckoutTaxBreakdownItem,
+};
 
 use crate::Result;
 

@@ -92,8 +92,14 @@ pub struct CreateOrderRequest {
     pub billing_address_id: Option<Uuid>,
     pub shipping_address_id: Option<Uuid>,
     pub items: Vec<CreateOrderItem>,
+    pub currency: String,
+    pub subtotal: Decimal,
+    pub tax_total: Decimal,
+    pub shipping_total: Decimal,
+    pub discount_total: Decimal,
+    pub total: Decimal,
     pub notes: Option<String>,
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     pub metadata: serde_json::Value,
 }
 
@@ -103,4 +109,5 @@ pub struct CreateOrderItem {
     pub variant_id: Option<Uuid>,
     pub quantity: i32,
     pub price: Decimal,
+    pub tax_amount: Decimal,
 }
