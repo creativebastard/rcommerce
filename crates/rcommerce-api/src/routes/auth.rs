@@ -1,8 +1,7 @@
-use axum::{extract::State, http::StatusCode, middleware, routing::post, Json, Router};
+use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::middleware::auth_rate_limit_middleware;
 use crate::state::AppState;
 use rcommerce_core::{models::CreateCustomerRequest, Error};
 

@@ -8,7 +8,10 @@
 //! - Coupon application
 //! - Tax and shipping calculations
 //!
-//! Run with: cargo test --test integration_tests
+//! Run with: cargo test --test integration_tests -- --test-threads=1
+//!
+//! IMPORTANT: Tests must run sequentially (--test-threads=1) because they share
+//! a database and perform migrations cleanup before each test.
 //!
 //! Required environment:
 //! - PostgreSQL database running
@@ -16,7 +19,11 @@
 
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 use std::time::Duration;
+
+// Static lock to prevent concurrent migration runs (causes deadlocks)
+static MIGRATION_LOCK: StdMutex<()> = StdMutex::new(());
 
 use axum::{Router, routing::get};
 use rust_decimal::Decimal;
@@ -318,6 +325,9 @@ impl TestApp {
     
     /// Run database migrations using SQLx
     async fn run_migrations(pool: &Pool<Postgres>) -> anyhow::Result<()> {
+        // Acquire lock to prevent concurrent migrations (causes deadlocks)
+        let _guard = MIGRATION_LOCK.lock().map_err(|e| anyhow::anyhow!("Lock poisoned: {}", e))?;
+        
         // Clean up existing objects first to ensure a fresh database state
         // This is necessary because tests may share the same database
         let cleanup_sql = r#"
