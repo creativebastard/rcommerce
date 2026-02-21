@@ -304,7 +304,6 @@ pub fn public_router() -> Router<AppState> {
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/refresh", post(refresh_token))
-        .layer(middleware::from_fn(auth_rate_limit_middleware))
 }
 
 /// Protected auth routes (API key required)

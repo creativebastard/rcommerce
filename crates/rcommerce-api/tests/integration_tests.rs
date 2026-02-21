@@ -18,7 +18,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::Router;
+use axum::{Router, routing::get};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
@@ -228,9 +228,10 @@ impl TestApp {
         
         let app_state = AppState::new(params);
         
-        // Create HTTP client
+        // Create HTTP client with proxy disabled for localhost
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(30))
+            .no_proxy()
             .build()?;
         
         // Start test server
@@ -240,13 +241,23 @@ impl TestApp {
         // Build router
         let app = Self::build_router(app_state.clone());
         
-        // Spawn server
-        tokio::spawn(async move {
-            axum::serve(listener, app).await.unwrap();
+        // Spawn server with error logging
+        let server_handle = tokio::spawn(async move {
+            println!("Test server starting on {}", server_addr);
+            let serve = axum::serve(listener, app);
+            if let Err(e) = serve.await {
+                eprintln!("Test server error: {:?}", e);
+            }
+            println!("Test server on {} has shut down", server_addr);
         });
         
         // Wait for server to be ready
         sleep(Duration::from_millis(500)).await;
+        
+        // Check if server is still running (not exited with error)
+        if server_handle.is_finished() {
+            eprintln!("WARNING: Server task finished before test started!");
+        }
         
         Ok(Self {
             app_state,
@@ -257,11 +268,52 @@ impl TestApp {
         })
     }
     
-    /// Build the API router
-    fn build_router(_state: AppState) -> Router {
-        // Build a simple router for testing
+    /// Build the API router (mirrors server.rs api_routes structure)
+    fn build_router(app_state: AppState) -> Router {
+        use axum::middleware;
+        use rcommerce_api::middleware::{auth_middleware, admin_middleware};
+        
+        // Public routes (no auth required)
+        let public_routes = Router::new()
+            .merge(routes::auth_public_router())
+            .merge(routes::cart_public_router());
+        
+        // Protected routes (JWT auth required)
+        let protected_routes = Router::new()
+            .merge(routes::product_router())
+            .merge(routes::customer_router())
+            .merge(routes::order_router())
+            .merge(routes::checkout_router())
+            .merge(routes::cart_protected_router())
+            .merge(routes::coupon_router())
+            .merge(routes::auth_protected_router())
+            .merge(routes::payment_router())
+            .route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                auth_middleware,
+            ));
+        
+        // Admin routes
+        let admin_routes = Router::new()
+            .nest("/admin", routes::admin_router())
+            .merge(routes::statistics_router())
+            .route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                admin_middleware,
+            ));
+        
+        // API v1 routes
+        let api_v1 = Router::new()
+            .merge(public_routes)
+            .merge(protected_routes)
+            .merge(admin_routes);
+        
+        // Main router
         Router::new()
-            .route("/health", axum::routing::get(|| async { "OK" }))
+            .route("/health", get(|| async { "OK" }))
+            .nest("/api/v1", api_v1)
+            .layer(tower_http::trace::TraceLayer::new_for_http())
+            .with_state(app_state)
     }
     
     /// Run database migrations using SQLx
@@ -542,12 +594,13 @@ impl TestApp {
         discount_value: &str,
     ) -> anyhow::Result<()> {
         // Create coupon directly in database
+        // Cast discount_type to enum and discount_value to numeric
         sqlx::query(
             r#"
             INSERT INTO coupons (
                 id, code, discount_type, discount_value, is_active,
                 usage_count, can_combine, created_at, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+            ) VALUES ($1, $2, $3::discount_type, $4::numeric, $5, $6, $7, NOW(), NOW())
             ON CONFLICT (code) DO NOTHING
             "#
         )
@@ -790,7 +843,12 @@ async fn test_auth_flows() {
         .await
         .expect("Failed to register");
     
-    assert_eq!(response.status(), 201);
+    let status = response.status();
+    if status != 201 {
+        let body = response.text().await.unwrap_or_default();
+        eprintln!("Registration failed with status {}: {}", status, body);
+    }
+    assert_eq!(status, 201);
     
     // 2. Login with credentials
     let response = app.http_client
@@ -816,7 +874,12 @@ async fn test_auth_flows() {
         .await
         .expect("Failed to access protected endpoint");
     
-    assert!(response.status().is_success());
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        eprintln!("Protected endpoint failed with status {}: {}", status, body);
+    }
+    assert!(status.is_success());
     
     // 4. Refresh token
     let response = app.http_client
@@ -953,26 +1016,37 @@ async fn test_tax_and_shipping_calculation() {
 async fn test_product_listing() {
     let app = TestApp::new().await.expect("Failed to create test app");
     
+    // Create test customer and login (product routes require auth)
+    let (customer, password) = app.create_test_customer().await.expect("Failed to create customer");
+    let token = app.login(&customer.email, &password).await.expect("Failed to login");
+    
     // Create test products
     let product1 = app.create_test_product("Listed Product 1", Decimal::new(1000, 2), 50).await.unwrap();
     let _product2 = app.create_test_product("Listed Product 2", Decimal::new(2000, 2), 50).await.unwrap();
     
-    // List products
+    // List products (with auth)
     let response = app.http_client
         .get(format!("{}/api/v1/products", app.base_url()))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .expect("Failed to list products");
     
-    assert!(response.status().is_success());
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        eprintln!("Product listing failed with status {}: {}", status, body);
+        panic!("Product listing failed with status {}", status);
+    }
     
     let body: serde_json::Value = response.json().await.expect("Failed to parse response");
     let products = body["products"].as_array().expect("Products not an array");
     assert!(!products.is_empty());
     
-    // Get specific product
+    // Get specific product (with auth)
     let response = app.http_client
         .get(format!("{}/api/v1/products/{}", app.base_url(), product1))
+        .header("Authorization", format!("Bearer {}", token))
         .send()
         .await
         .expect("Failed to get product");
@@ -1083,7 +1157,6 @@ async fn test_health_check() {
         .await
         .expect("Failed to check health");
     
-    // Accept any successful response (200-299)
     assert!(response.status().is_success(), "Expected success status, got {}", response.status());
     
     // Cleanup

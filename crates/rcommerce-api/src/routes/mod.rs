@@ -37,7 +37,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
 /// Create the main API router with all routes
-pub fn create_router(app_state: AppState) -> Router<AppState> {
+pub fn create_router(app_state: AppState) -> Router {
     // Configure CORS
     let cors = CorsLayer::new()
         .allow_origin(Any)

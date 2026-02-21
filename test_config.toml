@@ -6,7 +6,7 @@ graceful_shutdown_timeout_secs = 5
 
 [server.cors]
 enabled = true
-allowed_origins = ["*"]
+allowed_origins = ["http://localhost:3000", "http://localhost:8080"]
 allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
 allow_credentials = true
