@@ -57,16 +57,60 @@ worker_threads = 0
 # Rate limiting (per IP)
 rate_limit_per_minute = 1000
 rate_limit_burst = 200
+```
 
-# CORS settings
+## CORS Configuration
+
+CORS (Cross-Origin Resource Sharing) can be configured in your `config.toml`:
+
+```toml
 [cors]
 enabled = true
-allowed_origins = ["*"]    # or specific origins: ["https://store.com"]
-allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
-allowed_headers = ["Content-Type", "Authorization"]
-expose_headers = ["X-Request-ID", "X-Rate-Limit-Remaining"]
+allowed_origins = ["https://yourdomain.com", "https://app.yourdomain.com"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["authorization", "content-type", "x-requested-with"]
 allow_credentials = true
-max_age = "1h"
+max_age = 3600
+```
+
+### CORS Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `enabled` | boolean | Enable/disable CORS |
+| `allowed_origins` | array | List of allowed origins (use `"*"` for any) |
+| `allowed_methods` | array | HTTP methods to allow |
+| `allowed_headers` | array | Request headers to allow |
+| `expose_headers` | array | Response headers to expose |
+| `allow_credentials` | boolean | Allow credentials (cookies, auth headers) |
+| `max_age` | integer | Preflight cache duration in seconds |
+
+### Security Warning
+
+!!! warning "Production Security"
+    Never use `allowed_origins = ["*"]` in production when `allow_credentials = true`. This combination allows any website to make authenticated requests to your API, which is a security risk.
+
+**Recommended production configuration:**
+
+```toml
+[cors]
+enabled = true
+allowed_origins = ["https://store.example.com", "https://admin.example.com"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["authorization", "content-type", "x-requested-with"]
+expose_headers = ["x-request-id", "x-rate-limit-remaining"]
+allow_credentials = true
+max_age = 3600
+```
+
+**For development only:**
+
+```toml
+[cors]
+enabled = true
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["*"]
 ```
 
 ## Database Configuration

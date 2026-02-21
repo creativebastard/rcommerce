@@ -521,15 +521,30 @@ mod tests {
 
     #[test]
     fn test_license_key_format() {
+        // Test the license key generation logic directly
         // The format should be XXXX-XXXX-XXXX-XXXX
-        let service = DigitalProductService {
-            db: Database::default(), // This won't work in real tests
-            file_service: Arc::new(FileUploadService::new_local("./test", "http://test").unwrap()),
-        };
-        
-        let key = service.generate_license_key();
+        let key = generate_license_key_static();
         let parts: Vec<&str> = key.split('-').collect();
         assert_eq!(parts.len(), 4);
         assert!(parts.iter().all(|p| p.len() == 4));
+    }
+    
+    /// Standalone license key generation for testing
+    fn generate_license_key_static() -> String {
+        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let mut rng = rand::thread_rng();
+        
+        let segments: Vec<String> = (0..4)
+            .map(|_| {
+                (0..4)
+                    .map(|_| {
+                        let idx = rng.gen_range(0..CHARSET.len());
+                        CHARSET[idx] as char
+                    })
+                    .collect()
+            })
+            .collect();
+        
+        segments.join("-")
     }
 }

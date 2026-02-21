@@ -152,19 +152,220 @@ Expected response:
 }
 ```
 
-### Create Your First Product
+## API Quick Start
+
+### Step 1: Register a Customer
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/products \
+# Register a new customer
+curl -X POST http://localhost:8080/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
-    "name": "Test Product",
-    "slug": "test-product",
-    "description": "A test product",
-    "price": 29.99,
-    "status": "active"
-  }'
+    "email": "user@example.com",
+    "password": "securepassword123",
+    "first_name": "John",
+    "last_name": "Doe"
+  }' | jq
+```
+
+### Step 2: Login
+
+```bash
+# Login to get JWT token
+JWT=$(curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securepassword123"
+  }' | jq -r '.access_token')
+
+echo "JWT Token: $JWT"
+```
+
+### Step 3: Create a Guest Cart
+
+```bash
+# Create a guest cart
+CART_RESPONSE=$(curl -X POST http://localhost:8080/api/v1/carts/guest \
+  -H "Content-Type: application/json")
+
+CART_ID=$(echo $CART_RESPONSE | jq -r '.id')
+SESSION_TOKEN=$(echo $CART_RESPONSE | jq -r '.session_token')
+
+echo "Cart ID: $CART_ID"
+echo "Session Token: $SESSION_TOKEN"
+```
+
+### Step 4: List Products
+
+```bash
+# Get available products
+PRODUCTS=$(curl -X GET http://localhost:8080/api/v1/products \
+  -H "Authorization: Bearer $JWT")
+
+PRODUCT_ID=$(echo $PRODUCTS | jq -r '.products[0].id')
+echo "Product ID: $PRODUCT_ID"
+```
+
+### Step 5: Add Items to Cart
+
+```bash
+# Add a product to the cart
+curl -X POST http://localhost:8080/api/v1/carts/$CART_ID/items \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_id": "'$PRODUCT_ID'",
+    "quantity": 2
+  }' | jq
+```
+
+### Step 6: View Cart
+
+```bash
+# Get current cart
+curl -X GET http://localhost:8080/api/v1/carts/$CART_ID | jq
+```
+
+### Step 7: Checkout
+
+#### 7.1 Initiate Checkout
+
+```bash
+# Start checkout process to get shipping rates
+curl -X POST http://localhost:8080/api/v1/checkout/initiate \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cart_id": "'$CART_ID'",
+    "shipping_address": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "address1": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "zip": "10001"
+    },
+    "customer_email": "user@example.com"
+  }' | jq
+```
+
+#### 7.2 Select Shipping
+
+```bash
+# Select a shipping rate (use rate from previous response)
+curl -X POST http://localhost:8080/api/v1/checkout/shipping \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cart_id": "'$CART_ID'",
+    "shipping_rate": {
+      "provider_id": "ups",
+      "carrier": "UPS",
+      "service_code": "ground",
+      "service_name": "UPS Ground",
+      "rate": "10.00",
+      "currency": "USD",
+      "delivery_days": 5,
+      "total_cost": "10.00"
+    }
+  }' | jq
+```
+
+#### 7.3 Complete Checkout
+
+```bash
+# Complete checkout and create order
+curl -X POST http://localhost:8080/api/v1/checkout/complete \
+  -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cart_id": "'$CART_ID'",
+    "shipping_address": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "address1": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "country": "US",
+      "zip": "10001"
+    },
+    "payment_method": {
+      "type": "card",
+      "token": "tok_visa"
+    },
+    "customer_email": "user@example.com",
+    "selected_shipping_rate": {
+      "provider_id": "ups",
+      "carrier": "UPS",
+      "service_code": "ground",
+      "service_name": "UPS Ground",
+      "rate": "10.00",
+      "currency": "USD",
+      "delivery_days": 5,
+      "total_cost": "10.00"
+    }
+  }' | jq
+```
+
+### Step 8: View Orders
+
+```bash
+# List customer orders
+curl -X GET http://localhost:8080/api/v1/orders \
+  -H "Authorization: Bearer $JWT" | jq
+```
+
+## Complete Example Script
+
+Save this as `test_api.sh`:
+
+```bash
+#!/bin/bash
+
+API_URL="http://localhost:8080"
+
+echo "=== R Commerce API Test ==="
+
+# 1. Register
+echo "1. Registering customer..."
+curl -s -X POST "$API_URL/api/v1/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123",
+    "first_name": "Test",
+    "last_name": "User"
+  }' | jq
+
+# 2. Login
+echo "2. Logging in..."
+JWT=$(curl -s -X POST "$API_URL/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }' | jq -r '.access_token')
+
+echo "JWT: ${JWT:0:20}..."
+
+# 3. Create Cart
+echo "3. Creating guest cart..."
+CART=$(curl -s -X POST "$API_URL/api/v1/carts/guest" \
+  -H "Content-Type: application/json")
+
+CART_ID=$(echo $CART | jq -r '.id')
+echo "Cart ID: $CART_ID"
+
+echo "=== Test Complete ==="
+```
+
+Run it:
+
+```bash
+chmod +x test_api.sh
+./test_api.sh
 ```
 
 ## Next Steps
@@ -205,6 +406,16 @@ rustup update
 # Clean and rebuild
 cargo clean
 cargo build --release
+```
+
+### API Authentication Errors
+
+```bash
+# Verify JWT token is valid
+curl -X GET http://localhost:8080/api/v1/customers/me \
+  -H "Authorization: Bearer $JWT" -v
+
+# Check token expiration (tokens expire after 24 hours)
 ```
 
 ## Getting Help

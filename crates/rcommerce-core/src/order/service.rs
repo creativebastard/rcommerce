@@ -776,6 +776,7 @@ mod tests {
             is_default_shipping: true,
             is_default_billing: true,
             created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
         };
 
         let tax_addr = address_to_tax_address(&address);

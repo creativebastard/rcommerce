@@ -381,10 +381,10 @@ mod tests {
         let hash = auth.hash_password(password).unwrap();
         
         // Verify correct password
-        assert!(auth.verify_password(password, &hash).unwrap());
+        assert!(auth.verify_password(password, &hash).unwrap().0);
         
         // Verify wrong password fails
-        assert!(!auth.verify_password("wrong_password", &hash).unwrap());
+        assert!(!auth.verify_password("wrong_password", &hash).unwrap().0);
     }
     
     #[test]

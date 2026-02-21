@@ -4,19 +4,23 @@ use axum::{
     Router,
 };
 use std::net::SocketAddr;
+use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
 
-use crate::middleware::{admin_middleware, auth_middleware};
+use crate::middleware::{admin_middleware, auth_middleware, security_headers_middleware};
 
 use crate::state::{AppState, AppStateParams};
-use crate::tls::security_headers_middleware;
 use rcommerce_core::cache::RedisPool;
-use rcommerce_core::config::TlsConfig;
+use rcommerce_core::config::{CorsConfig, TlsConfig};
 use rcommerce_core::repository::{create_pool, CustomerRepository, Database, ProductRepository, PostgresApiKeyRepository, PostgresSubscriptionRepository, PgCouponRepository, PgCartRepository};
 use std::sync::Arc;
-use rcommerce_core::services::{AuthService, CustomerService, ProductService, CouponService};
+use rcommerce_core::services::{AuthService, CustomerService, ProductService, CouponService, CartService, CheckoutService, CheckoutConfig, OrderService};
+use rcommerce_core::inventory::{InventoryService, InventoryConfig};
+use rcommerce_core::order::lifecycle::OrderEventDispatcher;
+use rcommerce_core::tax::DefaultTaxService;
+use rcommerce_core::shipping::ShippingProviderFactory;
 use rcommerce_core::payment::agnostic::PaymentService;
 use rcommerce_core::payment::gateways::stripe_agnostic::StripeAgnosticGateway;
 use rcommerce_core::payment::gateways::wechatpay_agnostic::WeChatPayAgnosticGateway;
@@ -49,7 +53,7 @@ async fn run_http_server(config: Config) -> Result<()> {
     let app_state = create_app_state(&config).await?;
 
     // Build router
-    let app = build_router(app_state, None);
+    let app = build_router(app_state, None, &config.server.cors);
 
     info!("R Commerce API server listening on http://{}", addr);
     log_routes(&config);
@@ -104,7 +108,7 @@ async fn run_tls_server(config: Config) -> Result<()> {
     let app_state = create_app_state(&config).await?;
 
     // Build main API router (HTTPS)
-    let api_app = build_router(app_state.clone(), Some(config.tls.clone()));
+    let api_app = build_router(app_state.clone(), Some(config.tls.clone()), &config.server.cors);
 
     // Build HTTP challenge router (HTTP port 80)
     let http_app = build_http_challenge_router(app_state.clone());
@@ -333,14 +337,19 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     let customer_repo = CustomerRepository::new(db.clone());
     let api_key_repo = PostgresApiKeyRepository::new(db.pool().clone());
     let subscription_repo = PostgresSubscriptionRepository::new(db.pool().clone());
-    let coupon_repo = PgCouponRepository::new(db.pool().clone());
-    let cart_repo = PgCartRepository::new(db.pool().clone());
+    let coupon_repo = Arc::new(PgCouponRepository::new(db.pool().clone()));
+    let cart_repo = Arc::new(PgCartRepository::new(db.pool().clone()));
 
     // Initialize services
     let product_service = ProductService::new(product_repo);
     let customer_service = CustomerService::new(customer_repo);
     let auth_service = AuthService::new(config.clone());
-    let coupon_service = CouponService::new(Arc::new(coupon_repo), Arc::new(cart_repo));
+    let coupon_service = CouponService::new(coupon_repo.clone(), cart_repo.clone());
+    let cart_service = CartService::new(
+        cart_repo.clone(),
+        coupon_repo.clone(),
+        Arc::new(coupon_service.clone()),
+    );
 
     // Initialize payment service with gateways
     let default_gateway = config.payment.default_gateway.clone();
@@ -446,6 +455,45 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
     // Initialize file upload service
     let file_upload_service = rcommerce_core::FileUploadService::from_config(config)?;
 
+    // Initialize order service
+    let inventory_config = InventoryConfig {
+        low_stock_threshold: 20,
+        enable_restock_alerts: true,
+        enable_reservations: true,
+        reservation_timeout_minutes: 30,
+    };
+    let inventory_service = InventoryService::new(db.clone(), inventory_config);
+    let event_dispatcher = OrderEventDispatcher::new();
+    let mock_gateway_for_orders = Box::new(MockPaymentGateway::new());
+    let order_service = Arc::new(OrderService::new(
+        db.clone(),
+        mock_gateway_for_orders,
+        inventory_service,
+        event_dispatcher,
+    ));
+    
+    // Initialize tax service
+    let tax_service = Arc::new(DefaultTaxService::new(db.pool().clone()));
+    
+    // Initialize shipping provider factory
+    let shipping_factory = Arc::new(ShippingProviderFactory::from_config(&config.shipping));
+    info!("Shipping provider factory initialized");
+    
+    // Wrap cart_service in Arc for checkout service
+    let cart_service = Arc::new(cart_service);
+    
+    // Initialize checkout service
+    let checkout_config = CheckoutConfig::default();
+    let checkout_service = Arc::new(CheckoutService::new(
+        cart_service.clone(),
+        tax_service.clone(),
+        order_service.clone(),
+        Arc::new(MockPaymentGateway::new()),
+        shipping_factory.clone(),
+        checkout_config,
+    ));
+    info!("Checkout service initialized");
+
     // Create app state
     Ok(AppState::new(AppStateParams::new(
         product_service,
@@ -458,16 +506,54 @@ async fn create_app_state(config: &Config) -> Result<AppState> {
         coupon_service,
         payment_service,
         file_upload_service,
+        cart_service,
+        order_service,
+        tax_service,
+        shipping_factory,
+        checkout_service,
     )))
 }
 
+/// Build CORS layer from configuration
+fn build_cors_layer(config: &CorsConfig) -> CorsLayer {
+    let cors = CorsLayer::new();
+
+    // Origins
+    let cors = if config.allowed_origins.contains(&"*".to_string()) {
+        cors.allow_origin(Any)
+    } else {
+        let origins: Vec<axum::http::HeaderValue> = config
+            .allowed_origins
+            .iter()
+            .filter_map(|o| o.parse().ok())
+            .collect();
+        cors.allow_origin(origins)
+    };
+
+    // Methods
+    let methods: Vec<axum::http::Method> = config
+        .allowed_methods
+        .iter()
+        .filter_map(|m| m.parse().ok())
+        .collect();
+    let cors = cors.allow_methods(methods);
+
+    // Headers
+    let headers: Vec<axum::http::HeaderName> = config
+        .allowed_headers
+        .iter()
+        .filter_map(|h| h.parse().ok())
+        .collect();
+    let cors = cors.allow_headers(headers);
+
+    cors.allow_credentials(config.allow_credentials)
+        .max_age(Duration::from_secs(config.max_age.unwrap_or(3600)))
+}
+
 /// Build the main API router
-fn build_router(app_state: AppState, tls_config: Option<TlsConfig>) -> Router {
-    // Configure CORS for demo frontend
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+fn build_router(app_state: AppState, tls_config: Option<TlsConfig>, cors_config: &CorsConfig) -> Router {
+    // Configure CORS from config
+    let cors = build_cors_layer(cors_config);
 
     // Build main router with API v1 routes
     let mut app = Router::new()
@@ -475,15 +561,16 @@ fn build_router(app_state: AppState, tls_config: Option<TlsConfig>) -> Router {
         .route("/", get(root))
         .nest("/api/v1", api_routes(app_state.clone()))
         .layer(cors)
-        .layer(TraceLayer::new_for_http())
-        .with_state(app_state);
+        .layer(TraceLayer::new_for_http());
 
-    // Add security headers middleware if TLS is enabled
-    if tls_config.is_some() {
-        app = app.layer(middleware::from_fn(security_headers_middleware));
-    }
+    // Add security headers middleware (always, not just with TLS)
+    // HSTS header will only be added when TLS is enabled
+    app = app.layer(middleware::from_fn_with_state(
+        tls_config,
+        security_headers_middleware,
+    ));
 
-    app
+    app.with_state(app_state)
 }
 
 /// Log available routes
@@ -504,6 +591,9 @@ fn log_routes(config: &Config) {
     info!("  GET  /api/v1/customers/:id        - Get customer");
     info!("  GET  /api/v1/orders               - List orders");
     info!("  GET  /api/v1/orders/:id           - Get order");
+    info!("  POST /api/v1/checkout/initiate    - Initiate checkout (with tax/shipping calc)");
+    info!("  POST /api/v1/checkout/shipping    - Select shipping method");
+    info!("  POST /api/v1/checkout/complete    - Complete checkout");
     info!("  POST /api/v1/auth/login           - Login");
     info!("  POST /api/v1/auth/register        - Register");
     info!("  POST /api/v1/carts/guest          - Create guest cart");
@@ -571,6 +661,8 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
     // Public routes (no auth required)
     let public_routes = Router::new()
         .merge(crate::routes::auth_public_router())
+        // Public cart routes (guest cart creation, get cart by ID)
+        .merge(crate::routes::cart_public_router())
         // Webhooks are public (signature verification handles security)
         .route(
             "/webhooks/:gateway_id",
@@ -582,7 +674,9 @@ fn api_routes(app_state: AppState) -> Router<AppState> {
         .merge(crate::routes::product_router())
         .merge(crate::routes::customer_router())
         .merge(crate::routes::order_router())
-        .merge(crate::routes::cart_router())
+        .merge(crate::routes::checkout_router())
+        // Protected cart routes (customer cart, merge, modify items)
+        .merge(crate::routes::cart_protected_router())
         .merge(crate::routes::coupon_router())
         // Auth routes requiring API key (password reset request)
         .merge(crate::routes::auth_protected_router())

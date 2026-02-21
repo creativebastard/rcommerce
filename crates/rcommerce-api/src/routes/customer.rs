@@ -1,127 +1,177 @@
-use crate::state::AppState;
-use axum::{extract::State, routing::get, Json, Router};
-use rcommerce_core::Error;
+use axum::{
+    extract::{Path, State},
+    routing::get,
+    Extension, Json, Router,
+};
+use uuid::Uuid;
 
-/// List customers - Basic Phase 1 implementation
-pub async fn list_customers() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "customers": [
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174001",
-                "email": "demo@rcommerce.app",
-                "first_name": "Demo",
-                "last_name": "User",
-                "phone": "+1-555-0123",
-                "accepts_marketing": true,
-                "tax_exempt": false,
-                "currency": "USD",
-                "created_at": "2024-01-01T00:00:00Z",
-                "updated_at": "2024-01-01T00:00:00Z",
-                "confirmed_at": "2024-01-01T00:00:00Z"
-            },
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174002",
-                "email": "test@example.com",
-                "first_name": "Test",
-                "last_name": "Customer",
-                "phone": null,
-                "accepts_marketing": false,
-                "tax_exempt": false,
-                "currency": "USD",
-                "created_at": "2024-01-02T00:00:00Z",
-                "updated_at": "2024-01-02T00:00:00Z",
-                "confirmed_at": null
-            }
-        ],
+use crate::middleware::JwtAuth;
+use crate::state::AppState;
+use rcommerce_core::{services::PaginationParams, Error};
+
+/// List customers (admin only)
+pub async fn list_customers(
+    State(state): State<AppState>,
+    Extension(auth): Extension<JwtAuth>,
+) -> Result<Json<serde_json::Value>, Error> {
+    // Check admin permission
+    if !auth.is_admin() {
+        return Err(Error::unauthorized("Admin access required"));
+    }
+
+    let customer_list = state
+        .customer_service
+        .list_customers(PaginationParams::default())
+        .await?;
+
+    let customers: Vec<serde_json::Value> = customer_list
+        .customers
+        .into_iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "email": c.email,
+                "first_name": c.first_name,
+                "last_name": c.last_name,
+                "phone": c.phone,
+                "accepts_marketing": c.accepts_marketing,
+                "tax_exempt": c.tax_exempt,
+                "currency": c.currency.to_string(),
+                "created_at": c.created_at,
+                "updated_at": c.updated_at,
+                "confirmed_at": c.confirmed_at,
+            })
+        })
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "customers": customers,
         "meta": {
-            "total": 2,
-            "page": 1,
-            "per_page": 20,
-            "total_pages": 1
+            "total": customer_list.pagination.total,
+            "page": customer_list.pagination.page,
+            "per_page": customer_list.pagination.per_page,
+            "total_pages": customer_list.pagination.total_pages,
         }
-    }))
+    })))
 }
 
-/// Get customer by ID - Basic Phase 1 implementation
-pub async fn get_customer(path: axum::extract::Path<String>) -> Json<serde_json::Value> {
-    let _id = path.0; // Extract ID from path but ignore for now
+/// Get customer by ID
+pub async fn get_customer(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Extension(auth): Extension<JwtAuth>,
+) -> Result<Json<serde_json::Value>, Error> {
+    // Users can only access their own profile unless admin
+    if auth.customer_id != id && !auth.is_admin() {
+        return Err(Error::unauthorized("Access denied"));
+    }
 
-    Json(serde_json::json!({
-        "customer": {
-            "id": "123e4567-e89b-12d3-a456-426614174001",
-            "email": "demo@rcommerce.app",
-            "first_name": "Demo",
-            "last_name": "User",
-            "phone": "+1-555-0123",
-            "accepts_marketing": true,
-            "tax_exempt": false,
-            "currency": "USD",
-            "created_at": "2024-01-01T00:00:00Z",
-            "updated_at": "2024-01-01T00:00:00Z",
-            "confirmed_at": "2024-01-01T00:00:00Z"
-        },
-        "addresses": [
-            {
-                "id": "123e4567-e89b-12d3-a456-426614174003",
-                "first_name": "Demo",
-                "last_name": "User",
-                "company": null,
-                "phone": "+1-555-0123",
-                "address1": "123 Main St",
-                "address2": "Apt 4B",
-                "city": "New York",
-                "state": "NY",
-                "country": "US",
-                "zip": "10001",
-                "is_default_shipping": true,
-                "is_default_billing": true,
-                "created_at": "2024-01-01T00:00:00Z",
-                "updated_at": "2024-01-01T00:00:00Z"
-            }
-        ]
-    }))
+    let customer_data = state.customer_service.get_customer(id).await?;
+
+    match customer_data {
+        Some(detail) => {
+            let c = detail.customer;
+            let addresses: Vec<serde_json::Value> = detail
+                .addresses
+                .into_iter()
+                .map(|a| {
+                    serde_json::json!({
+                        "id": a.id,
+                        "first_name": a.first_name,
+                        "last_name": a.last_name,
+                        "company": a.company,
+                        "phone": a.phone,
+                        "address1": a.address1,
+                        "address2": a.address2,
+                        "city": a.city,
+                        "state": a.state,
+                        "country": a.country,
+                        "zip": a.zip,
+                        "is_default_shipping": a.is_default_shipping,
+                        "is_default_billing": a.is_default_billing,
+                        "created_at": a.created_at,
+                        "updated_at": a.updated_at,
+                    })
+                })
+                .collect();
+
+            Ok(Json(serde_json::json!({
+                "customer": {
+                    "id": c.id,
+                    "email": c.email,
+                    "first_name": c.first_name,
+                    "last_name": c.last_name,
+                    "phone": c.phone,
+                    "accepts_marketing": c.accepts_marketing,
+                    "tax_exempt": c.tax_exempt,
+                    "currency": c.currency.to_string(),
+                    "created_at": c.created_at,
+                    "updated_at": c.updated_at,
+                    "confirmed_at": c.confirmed_at,
+                },
+                "addresses": addresses,
+            })))
+        }
+        None => Err(Error::not_found("Customer not found")),
+    }
 }
 
 /// Get current customer profile (requires auth)
 pub async fn get_current_customer(
+    Extension(auth): Extension<JwtAuth>,
     State(state): State<AppState>,
-    headers: axum::http::HeaderMap,
 ) -> Result<Json<serde_json::Value>, Error> {
-    // Extract token from Authorization header
-    let auth_header = headers
-        .get("Authorization")
-        .and_then(|h| h.to_str().ok())
-        .ok_or_else(|| Error::unauthorized("Missing authorization header"))?;
-
-    let token = auth_header
-        .strip_prefix("Bearer ")
-        .ok_or_else(|| Error::unauthorized("Invalid authorization header format"))?;
-
-    // Verify token and get customer ID
-    let claims = state.auth_service.verify_token(token)?;
-    let customer_id = claims.sub;
-
-    // Fetch customer from database
-    let customer = state
+    let customer_data = state
         .customer_service
-        .get_customer(customer_id)
-        .await?
-        .ok_or_else(|| Error::not_found("Customer not found"))?;
+        .get_customer(auth.customer_id)
+        .await?;
 
-    Ok(Json(serde_json::json!({
-        "customer": {
-            "id": customer.customer.id,
-            "email": customer.customer.email,
-            "first_name": customer.customer.first_name,
-            "last_name": customer.customer.last_name,
-            "phone": customer.customer.phone,
-            "accepts_marketing": customer.customer.accepts_marketing,
-            "tax_exempt": customer.customer.tax_exempt,
-            "currency": customer.customer.currency.to_string(),
-            "created_at": customer.customer.created_at,
-            "updated_at": customer.customer.updated_at,
+    match customer_data {
+        Some(detail) => {
+            let c = detail.customer;
+            let addresses: Vec<serde_json::Value> = detail
+                .addresses
+                .into_iter()
+                .map(|a| {
+                    serde_json::json!({
+                        "id": a.id,
+                        "first_name": a.first_name,
+                        "last_name": a.last_name,
+                        "company": a.company,
+                        "phone": a.phone,
+                        "address1": a.address1,
+                        "address2": a.address2,
+                        "city": a.city,
+                        "state": a.state,
+                        "country": a.country,
+                        "zip": a.zip,
+                        "is_default_shipping": a.is_default_shipping,
+                        "is_default_billing": a.is_default_billing,
+                        "created_at": a.created_at,
+                        "updated_at": a.updated_at,
+                    })
+                })
+                .collect();
+
+            Ok(Json(serde_json::json!({
+                "customer": {
+                    "id": c.id,
+                    "email": c.email,
+                    "first_name": c.first_name,
+                    "last_name": c.last_name,
+                    "phone": c.phone,
+                    "accepts_marketing": c.accepts_marketing,
+                    "tax_exempt": c.tax_exempt,
+                    "currency": c.currency.to_string(),
+                    "created_at": c.created_at,
+                    "updated_at": c.updated_at,
+                    "confirmed_at": c.confirmed_at,
+                },
+                "addresses": addresses,
+            })))
         }
-    })))
+        None => Err(Error::not_found("Customer not found")),
+    }
 }
 
 /// Router for customer routes

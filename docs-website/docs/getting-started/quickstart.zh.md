@@ -42,29 +42,26 @@ docker-compose ps
 
 ## 配置
 
-### 选项 1：使用设置向导（推荐）
+### 选项 1：交互式设置向导（推荐）
 
-运行交互式设置向导：
+配置 R Commerce 最简单的方法是使用设置向导：
 
 ```bash
-# 运行设置向导
+# 运行交互式设置向导
 ./target/release/rcommerce setup
 
-# 或保存到特定路径
-./target/release/rcommerce setup -o /etc/rcommerce/config.toml
+# 或使用特定输出文件
+./target/release/rcommerce setup -o config/production.toml
 ```
 
 向导将引导您完成：
-1. 店铺信息（名称、默认货币）
-2. 数据库连接
-3. 数据库设置（迁移、导入）
-4. 服务器配置
-5. 缓存设置
-6. 安全设置
-7. 媒体存储
-8. TLS/SSL 证书
-9. 支付网关
-10. 通知（电子邮件）
+- 店铺配置（名称、货币）
+- 数据库设置（PostgreSQL）
+- 数据库迁移（处理现有数据库）
+- 从 WooCommerce、Shopify、Magento 或 Medusa 导入可选数据
+- 服务器、缓存和安全设置
+- TLS/SSL 配置（包括 Let's Encrypt）
+- 支付网关和电子邮件通知
 
 ### 选项 2：手动配置
 
@@ -74,10 +71,9 @@ docker-compose ps
 [server]
 host = "127.0.0.1"
 port = 8080
-log_level = "debug"
 
 [database]
-type = "postgres"
+db_type = "Postgres"
 host = "localhost"
 port = 5432
 username = "rcommerce_dev"
@@ -86,23 +82,15 @@ database = "rcommerce_dev"
 pool_size = 5
 
 [cache]
-provider = "memory"  # 开发环境使用内存缓存
+cache_type = "Memory"
 
-[payments]
-default_gateway = "mock"
-
-[logging]
-level = "debug"
-format = "text"
-
-[features]
-development_mode = true
-debug_api = true
+[payment]
+test_mode = true
 ```
 
-### 2. 设置数据库
+### 数据库设置
 
-**PostgreSQL：**
+**创建数据库（PostgreSQL）：**
 
 ```bash
 # 创建数据库
@@ -111,11 +99,12 @@ psql -U postgres -c "CREATE USER rcommerce_dev WITH PASSWORD 'devpass';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE rcommerce_dev TO rcommerce_dev;"
 ```
 
-### 3. 运行迁移
+**运行迁移：**
 
 ```bash
-# 运行数据库迁移
-cargo run -- migrate run
+# 如果使用设置向导，迁移会自动运行
+# 否则，手动运行：
+./target/release/rcommerce db migrate -c config.toml
 ```
 
 ## 运行服务器

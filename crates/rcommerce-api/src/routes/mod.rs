@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod auth;
 pub mod cart;
+pub mod checkout;
 pub mod coupon;
 pub mod customer;
 pub mod order;
@@ -15,7 +16,10 @@ pub mod webhook;
 pub use admin::router as admin_router;
 pub use auth::public_router as auth_public_router;
 pub use auth::protected_router as auth_protected_router;
+pub use cart::public_router as cart_public_router;
+pub use cart::protected_router as cart_protected_router;
 pub use cart::router as cart_router;
+pub use checkout::router as checkout_router;
 pub use coupon::router as coupon_router;
 pub use customer::router as customer_router;
 pub use order::router as order_router;
@@ -57,7 +61,11 @@ fn api_v1_routes() -> Router<AppState> {
         .merge(order_router())
         .merge(auth_public_router())
         .merge(auth_protected_router())
-        .merge(cart_router())
+        // Cart routes split by auth requirement:
+        // Public routes (guest cart, get cart) + Protected routes (modify, merge, coupons)
+        .merge(cart_public_router())
+        .merge(cart_protected_router())
+        .merge(checkout_router())
         .merge(coupon_router())
         .merge(payment_router())
         .merge(subscription_router())

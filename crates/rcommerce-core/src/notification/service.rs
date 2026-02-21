@@ -18,6 +18,7 @@ pub struct NotificationService {
     sms_channel: SmsChannel,
     #[allow(dead_code)]
     webhook_channel: WebhookChannel,
+    db: sqlx::PgPool,
 }
 
 impl NotificationService {
@@ -25,11 +26,13 @@ impl NotificationService {
         email_channel: EmailChannel,
         sms_channel: SmsChannel,
         webhook_channel: WebhookChannel,
+        db: sqlx::PgPool,
     ) -> Self {
         Self {
             email_channel,
             sms_channel,
             webhook_channel,
+            db,
         }
     }
     
@@ -216,11 +219,9 @@ impl NotificationService {
         }.to_string()
     }
     
-    /// Helper: Get database connection (PLACEHOLDER - implement properly)
-    #[allow(dead_code)]
+    /// Helper: Get database connection
     fn db(&self) -> &sqlx::PgPool {
-        // This is a placeholder - in production, inject the pool
-        unimplemented!("Database connection needed")
+        &self.db
     }
 }
 

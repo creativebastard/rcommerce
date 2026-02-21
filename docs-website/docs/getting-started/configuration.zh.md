@@ -392,6 +392,23 @@ payments = true
 shipping = true
 ```
 
+## CORS 配置
+
+CORS（跨域资源共享）可以在您的 `config.toml` 中配置：
+
+```toml
+[cors]
+allowed_origins = ["https://yourdomain.com", "https://app.yourdomain.com"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["authorization", "content-type", "x-requested-with"]
+allow_credentials = true
+max_age = 3600
+```
+
+### 安全警告
+
+切勿在生产环境中使用 `allowed_origins = ["*"]`。这会允许任何网站向您的 API 发出请求。
+
 ## 下一步
 
 - [开发指南](../development/index.md) - 设置开发环境

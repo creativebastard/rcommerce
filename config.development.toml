@@ -9,10 +9,12 @@ port = 8080
 worker_threads = 2
 
 [server.cors]
-# Allow all origins in development
+# Allow all origins in development (NEVER do this in production!)
 allowed_origins = ["*"]
 allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-allowed_headers = ["*"]
+# Note: When using "*" for origins with credentials, browsers will reject the request.
+# For development with credentials, you may need to specify exact origins.
+allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
 allow_credentials = false
 
 [database]

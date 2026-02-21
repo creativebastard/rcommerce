@@ -3,7 +3,9 @@ use std::sync::Arc;
 use rcommerce_core::cache::RedisPool;
 use rcommerce_core::payment::agnostic::PaymentService;
 use rcommerce_core::repository::{Database, PostgresApiKeyRepository, PostgresSubscriptionRepository};
-use rcommerce_core::services::{AuthService, CustomerService, ProductService, SubscriptionService, CouponService};
+use rcommerce_core::services::{AuthService, CustomerService, ProductService, SubscriptionService, CouponService, CartService, CheckoutService, OrderService};
+use rcommerce_core::shipping::ShippingProviderFactory;
+use rcommerce_core::tax::DefaultTaxService;
 use rcommerce_core::{DigitalProductService, BundleService, FileUploadService};
 
 use crate::middleware::AuthRateLimiter;
@@ -20,6 +22,11 @@ pub struct AppStateParams {
     pub coupon_service: CouponService,
     pub payment_service: PaymentService,
     pub file_upload_service: FileUploadService,
+    pub cart_service: Arc<CartService>,
+    pub order_service: Arc<OrderService>,
+    pub tax_service: Arc<DefaultTaxService>,
+    pub shipping_factory: Arc<ShippingProviderFactory>,
+    pub checkout_service: Arc<CheckoutService>,
 }
 
 impl AppStateParams {
@@ -36,6 +43,11 @@ impl AppStateParams {
         coupon_service: CouponService,
         payment_service: PaymentService,
         file_upload_service: FileUploadService,
+        cart_service: Arc<CartService>,
+        order_service: Arc<OrderService>,
+        tax_service: Arc<DefaultTaxService>,
+        shipping_factory: Arc<ShippingProviderFactory>,
+        checkout_service: Arc<CheckoutService>,
     ) -> Self {
         Self {
             product_service,
@@ -48,6 +60,11 @@ impl AppStateParams {
             coupon_service,
             payment_service,
             file_upload_service,
+            cart_service,
+            order_service,
+            tax_service,
+            shipping_factory,
+            checkout_service,
         }
     }
 }
@@ -64,6 +81,11 @@ pub struct AppState {
     pub digital_product_service: Arc<DigitalProductService>,
     pub bundle_service: Arc<BundleService>,
     pub file_upload_service: Arc<FileUploadService>,
+    pub cart_service: Arc<CartService>,
+    pub order_service: Arc<OrderService>,
+    pub tax_service: Arc<DefaultTaxService>,
+    pub shipping_factory: Arc<ShippingProviderFactory>,
+    pub checkout_service: Arc<CheckoutService>,
     pub db: Database,
     pub redis: Option<RedisPool>,
     pub auth_rate_limiter: AuthRateLimiter,
@@ -99,6 +121,11 @@ impl AppState {
             digital_product_service,
             bundle_service,
             file_upload_service,
+            cart_service: params.cart_service,
+            order_service: params.order_service,
+            tax_service: params.tax_service,
+            shipping_factory: params.shipping_factory,
+            checkout_service: params.checkout_service,
             db: params.db,
             redis: params.redis,
             auth_rate_limiter,

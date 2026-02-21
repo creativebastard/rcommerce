@@ -1,6 +1,6 @@
 # Security Configuration & SSL/TLS Setup
 
-This guide covers security best practices for deploying R Commerce in production, including automatic SSL certificate provisioning with Let's Encrypt, TLS 1.3 configuration, and HSTS.
+This guide covers security best practices for deploying R Commerce in production, including automatic SSL certificate provisioning with Let's Encrypt, TLS 1.3 configuration, CORS policies, security headers, and authentication hardening.
 
 ##  Overview
 
@@ -9,10 +9,12 @@ R Commerce implements comprehensive security features:
 - **Automatic SSL Certificate Provisioning** via Let's Encrypt
 - **TLS 1.3** minimum (TLS 1.2 disabled for security)
 - **HSTS (HTTP Strict Transport Security)** with preloading option
-- **Security Headers** (CSP, X-Frame-Options, etc.)
+- **Security Headers** (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy)
 - **Rate Limiting** on authentication endpoints
 - **Secure Cookie** configuration
-- **CORS** with strict origin policies
+- **CORS** with configurable origin policies
+- **Password Reset Security** - Tokens hidden in production
+- **API Key Security** - SHA-256 hashed secrets with prefix-based lookup
 
 ##  Prerequisites
 
@@ -445,13 +447,329 @@ Before going live:
 - [x] Staging tested first
 - [x] Backup strategy in place
 
+##  CORS Configuration
+
+Cross-Origin Resource Sharing (CORS) is configured via `config.toml` and is essential for allowing frontend applications to access the API.
+
+### Default Configuration
+
+```toml
+[server.cors]
+enabled = true
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
+allow_credentials = true
+max_age = 3600
+```
+
+### Production CORS Configuration
+
+**Never use `*` (allow all origins) in production.** Configure specific origins:
+
+```toml
+[server.cors]
+enabled = true
+# Specify exact origins allowed to access the API
+allowed_origins = [
+    "https://yourstore.com",
+    "https://www.yourstore.com",
+    "https://admin.yourstore.com",
+    "https://app.yourstore.com"
+]
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+allowed_headers = [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With",
+    "X-CSRF-Token"
+]
+allow_credentials = true
+max_age = 3600  # 1 hour preflight cache
+```
+
+### Environment-Specific Configuration
+
+**Development:**
+```toml
+[server.cors]
+enabled = true
+allowed_origins = ["*"]
+allow_credentials = false  # Allow any origin without credentials
+```
+
+**Production:**
+```toml
+[server.cors]
+enabled = true
+allowed_origins = ["https://yourstore.com"]
+allow_credentials = true   # Requires specific origin (not *)
+```
+
+### CORS Security Considerations
+
+1. **Never use `allowed_origins = ["*"]` with `allow_credentials = true`**
+   - This combination is insecure and browsers reject it
+   - Always specify exact origins when using credentials
+
+2. **Restrict methods to those actually needed:**
+   ```toml
+   allowed_methods = ["GET", "POST"]  # If only reading and creating
+   ```
+
+3. **Limit headers to required ones:**
+   ```toml
+   allowed_headers = ["Content-Type", "Authorization"]
+   ```
+
+4. **Use a reasonable max_age:**
+   - Higher values reduce preflight requests
+   - But changes take longer to propagate to clients
+   - Recommended: 3600 seconds (1 hour)
+
+##  Security Headers
+
+R Commerce automatically adds security headers to all HTTP responses via the `security_headers_middleware`.
+
+### Headers Applied
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME type sniffing |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking attacks |
+| `X-XSS-Protection` | `1; mode=block` | XSS protection (legacy browsers) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Privacy - limits referrer info |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | HSTS (when TLS enabled) |
+
+### Security Headers Middleware
+
+The middleware is applied globally to all routes:
+
+```rust
+// Add security headers middleware (always, not just with TLS)
+// HSTS header will only be added when TLS is enabled
+app = app.layer(middleware::from_fn_with_state(
+    tls_config,
+    security_headers_middleware,
+));
+```
+
+### HSTS (HTTP Strict Transport Security)
+
+HSTS is automatically enabled when TLS is configured:
+
+```toml
+[tls.hsts]
+enabled = true
+max_age = 31536000        # 1 year in seconds
+include_subdomains = true # Apply to all subdomains
+preload = false           # Set to true only for long-term HTTPS commitment
+```
+
+**⚠️ WARNING: Preload Considerations**
+
+Setting `preload = true` submits your domain to browser preload lists:
+- **Benefit:** Browsers will ALWAYS use HTTPS, even on first visit
+- **Risk:** Difficult to remove if you need to disable HTTPS
+- **Recommendation:** Only enable after 3+ months of stable HTTPS
+
+##  Production Security Hardening
+
+### Password Reset Token Security
+
+Password reset tokens are handled securely:
+
+**Development Mode:**
+- Reset tokens are returned in the API response for testing
+- Token is included in `PasswordResetResponse.token`
+
+**Production Mode:**
+- Reset tokens are **NEVER** returned in API responses
+- Tokens are sent via email only (email integration required)
+- API returns generic success message regardless of email existence
+
+```rust
+// Only return token in development mode for testing
+let token = if cfg!(debug_assertions) {
+    Some(reset_token)  // Development: return token for testing
+} else {
+    None  // Production: token sent via email only
+};
+```
+
+### Authentication Endpoint Protection
+
+Auth endpoints have additional protection:
+
+```rust
+// Public auth routes with strict rate limiting
+pub fn public_router() -> Router<AppState> {
+    Router::new()
+        .route("/auth/login", post(login))
+        .route("/auth/register", post(register))
+        .route("/auth/refresh", post(refresh_token))
+        .layer(middleware::from_fn(auth_rate_limit_middleware))
+}
+```
+
+**Rate Limits:**
+- 5 attempts per minute per IP for login/register
+- Exponential backoff for repeated failures
+- IP-based blocking after excessive attempts
+
+### API Key Security
+
+API keys are stored securely using SHA-256 hashing:
+
+```
+┌─────────────────────────────────────────┐
+│ API Key Format: prefix.secret           │
+│ Example: ak_1a2b3c4d.x9y8z7w6...       │
+└─────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────┐
+│ Database Storage:                       │
+│ - prefix: stored in plaintext           │
+│ - secret_hash: SHA-256(secret)          │
+│ - scopes: permissions array             │
+└─────────────────────────────────────────┘
+```
+
+**Best Practices:**
+1. Store keys in environment variables, not code
+2. Rotate keys periodically
+3. Revoke unused keys
+4. Use minimum required scopes
+5. Monitor key usage via `last_used_at`
+
+### Security Checklist for Production
+
+Before deploying to production:
+
+- [ ] **TLS Configuration**
+  - [ ] TLS 1.3 enforced (`min_tls_version = "1.3"`)
+  - [ ] Valid SSL certificate (Let's Encrypt or manual)
+  - [ ] HSTS enabled with appropriate max-age
+  - [ ] HTTP redirects to HTTPS
+
+- [ ] **CORS Configuration**
+  - [ ] Specific origins configured (not `*`)
+  - [ ] Credentials only if origins are specific
+  - [ ] Methods limited to required ones
+
+- [ ] **Authentication Security**
+  - [ ] JWT secret is strong (≥32 characters)
+  - [ ] Rate limiting enabled on auth endpoints
+  - [ ] Password reset tokens hidden in production
+  - [ ] API keys use minimum required scopes
+
+- [ ] **Security Headers**
+  - [ ] X-Content-Type-Options: nosniff
+  - [ ] X-Frame-Options: DENY
+  - [ ] X-XSS-Protection: 1; mode=block
+  - [ ] Referrer-Policy configured
+  - [ ] HSTS header present (when TLS enabled)
+
+- [ ] **Database Security**
+  - [ ] Strong database passwords
+  - [ ] SSL/TLS for database connections
+  - [ ] Connection pooling configured
+  - [ ] Least privilege database user
+
+- [ ] **Infrastructure Security**
+  - [ ] Firewall configured (ports 80/443 only)
+  - [ ] Server behind reverse proxy (recommended)
+  - [ ] Log rotation enabled
+  - [ ] Monitoring and alerting configured
+
+### Security Configuration Example
+
+Complete production security configuration:
+
+```toml
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[server.cors]
+enabled = true
+allowed_origins = ["https://yourstore.com", "https://admin.yourstore.com"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["Content-Type", "Authorization"]
+allow_credentials = true
+max_age = 3600
+
+[security]
+api_key_prefix_length = 8
+api_key_secret_length = 32
+
+[security.jwt]
+secret = "your-very-long-and-secure-random-secret-key-min-32-chars"
+expiry_hours = 24
+
+[tls]
+enabled = true
+min_tls_version = "1.3"
+max_tls_version = "1.3"
+ocsp_stapling = true
+
+[tls.hsts]
+enabled = true
+max_age = 31536000
+include_subdomains = true
+preload = false
+
+[tls.lets_encrypt]
+enabled = true
+email = "admin@yourstore.com"
+domains = ["api.yourstore.com"]
+use_staging = false
+```
+
+##  Security Incident Response
+
+### Detecting Security Issues
+
+Monitor logs for:
+- Multiple failed authentication attempts from same IP
+- Unusual API usage patterns
+- Rate limit violations
+- Invalid API key attempts
+- Suspicious webhook activity
+
+### Response Steps
+
+1. **Immediate Actions**
+   - Identify affected accounts/API keys
+   - Revoke compromised API keys: `rcommerce api-key revoke <prefix>`
+   - Block suspicious IPs at firewall level
+
+2. **Investigation**
+   - Review access logs
+   - Check for data exfiltration
+   - Identify vulnerability source
+
+3. **Recovery**
+   - Rotate all API keys if master key compromised
+   - Reset passwords for affected accounts
+   - Update firewall rules
+   - Deploy security patches
+
+4. **Post-Incident**
+   - Document incident timeline
+   - Update security procedures
+   - Conduct security review
+
 ##  Additional Resources
 
 - [Let's Encrypt Documentation](https://letsencrypt.org/docs/)
 - [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/)
 - [SSL Labs Best Practices](https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices)
 - [HSTS Preload List](https://hstspreload.org/)
+- [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
+- [CORS Best Practices](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
 
 ---
 
-*Monitoring and observability documentation coming soon.*
+*For security vulnerabilities, please see [SECURITY.md](../../SECURITY.md) for responsible disclosure procedures.*

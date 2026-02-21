@@ -27,21 +27,35 @@ graceful_shutdown_timeout_secs = 30
 # Enable CORS (default: true)
 enabled = true
 
-# Allowed origins (default: ["*"] for all)
-# For production, specify exact domains:
+# Allowed origins (default: ["*"] for all - ONLY FOR DEVELOPMENT!)
+# 
+# IMPORTANT: For production, NEVER use "*". Always specify exact domains:
 # allowed_origins = ["https://yourstore.com", "https://admin.yourstore.com"]
+#
+# If your API is used by multiple frontends, list them all:
+# allowed_origins = [
+#     "https://store.example.com",
+#     "https://admin.example.com",
+#     "https://app.example.com"
+# ]
 allowed_origins = ["*"]
 
-# Allowed HTTP methods (default: GET, POST, PUT, PATCH, DELETE)
-allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+# Allowed HTTP methods (default: GET, POST, PUT, PATCH, DELETE, OPTIONS)
+# OPTIONS is required for preflight requests
+allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
-# Allowed headers (default: Content-Type, Authorization)
-allowed_headers = ["Content-Type", "Authorization"]
+# Allowed headers (default: Content-Type, Authorization, X-Requested-With)
+# - Content-Type: Required for JSON request bodies
+# - Authorization: Required for JWT/API key authentication
+# - X-Requested-With: Common header used by frontend frameworks
+allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
 
 # Allow credentials (cookies, authorization headers) (default: true)
+# Set to false if your API is completely public and doesn't use cookies/auth
 allow_credentials = true
 
-# Max age for preflight cache in seconds (default: 3600)
+# Max age for preflight cache in seconds (default: 3600 = 1 hour)
+# Browsers cache preflight responses for this duration
 max_age = 3600
 
 # Request limits configuration

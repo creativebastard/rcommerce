@@ -216,7 +216,10 @@ pub async fn refresh_token(
 }
 
 /// Request password reset
-/// Generates a reset token and sends it via email (or returns for demo)
+/// Generates a reset token and sends it via email
+/// 
+/// Security note: In production, the token is NEVER returned in the response.
+/// It is only returned in development builds for testing purposes.
 pub async fn request_password_reset(
     State(state): State<AppState>,
     Json(payload): Json<PasswordResetRequest>,
@@ -228,11 +231,11 @@ pub async fn request_password_reset(
         .await?;
 
     // Always return success even if email not found (security)
+    // This prevents email enumeration attacks
     if customer.is_none() {
         tracing::info!("Password reset requested for non-existent email: {}", payload.email);
         return Ok(Json(PasswordResetResponse {
             message: "If the email exists, a reset link has been sent".to_string(),
-            // In demo mode, return token directly
             token: None,
         }));
     }
@@ -245,12 +248,21 @@ pub async fn request_password_reset(
         .generate_password_reset_token(customer.id, &customer.email)?;
 
     // TODO: Send email with reset link
-    tracing::info!("Password reset token for {}: {}", customer.email, reset_token);
+    // In production, the token should be sent via email only
+    tracing::info!("Password reset token generated for customer {}", customer.id);
+
+    // Only return token in development mode for testing
+    // In production, the token is sent via email only
+    let token = if cfg!(debug_assertions) {
+        tracing::debug!("Development mode: returning reset token in response");
+        Some(reset_token)
+    } else {
+        None
+    };
 
     Ok(Json(PasswordResetResponse {
-        message: "Password reset instructions sent".to_string(),
-        // In demo mode, return token directly for testing
-        token: Some(reset_token),
+        message: "If the email exists, a reset link has been sent".to_string(),
+        token,
     }))
 }
 

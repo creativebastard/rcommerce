@@ -447,6 +447,134 @@ All errors follow a consistent JSON format:
 
 ---
 
+### 8xx - Checkout Errors
+
+#### `checkout_cart_empty`
+- **Status**: 422
+- **Message**: "Cannot checkout with empty cart"
+- **Common Causes**: Attempting to checkout without items in cart
+- **Solution**: Add items to cart before checkout
+
+#### `checkout_cart_not_found`
+- **Status**: 404
+- **Message**: "Cart not found for checkout"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+  ```
+
+#### `checkout_cart_expired`
+- **Status**: 410
+- **Message**: "Cart has expired"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+    "expired_at": "2026-01-01T00:00:00Z"
+  }
+  ```
+
+#### `checkout_invalid_shipping_method`
+- **Status**: 422
+- **Message**: "Selected shipping method is invalid"
+- **Common Causes**: Shipping rate no longer available, rate expired
+- **Solution**: Re-initiate checkout to get fresh shipping rates
+
+#### `checkout_payment_failed`
+- **Status**: 402
+- **Message**: "Payment processing failed"
+- **Details**:
+  ```json
+  {
+    "payment_error": "Card declined",
+    "retryable": true
+  }
+  ```
+
+#### `checkout_invalid_payment_method`
+- **Status**: 422
+- **Message**: "Invalid payment method"
+- **Common Causes**: Unsupported payment type, invalid token
+- **Solution**: Use a supported payment method
+
+#### `checkout_already_completed`
+- **Status**: 409
+- **Message**: "Checkout already completed"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+    "order_id": "550e8400-e29b-41d4-a716-446655440001"
+  }
+  ```
+
+---
+
+### 9xx - Cart Errors
+
+#### `cart_not_found`
+- **Status**: 404
+- **Message**: "Cart not found"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+  ```
+
+#### `cart_expired`
+- **Status**: 410
+- **Message**: "Cart has expired"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+    "expired_at": "2026-01-01T00:00:00Z"
+  }
+  ```
+
+#### `cart_converted`
+- **Status**: 409
+- **Message**: "Cart was already converted to an order"
+- **Details**:
+  ```json
+  {
+    "cart_id": "550e8400-e29b-41d4-a716-446655440000",
+    "order_id": "550e8400-e29b-41d4-a716-446655440001"
+  }
+  ```
+
+#### `cart_item_not_found`
+- **Status**: 404
+- **Message**: "Cart item not found"
+
+#### `invalid_quantity`
+- **Status**: 400
+- **Message**: "Invalid quantity"
+- **Details**:
+  ```json
+  {
+    "quantity": 0,
+    "min_quantity": 1,
+    "max_quantity": 9999
+  }
+  ```
+
+#### `product_not_available`
+- **Status**: 422
+- **Message**: "Product is not available for purchase"
+- **Details**:
+  ```json
+  {
+    "product_id": "550e8400-e29b-41d4-a716-446655440000",
+    "reason": "Out of stock"
+  }
+  ```
+
+---
+
 ### 8xx - Validation Errors
 
 #### `validation_error`
@@ -712,6 +840,17 @@ impl IntoResponse for ApiError {
 | `address_mismatch` | Fraud | Billing and shipping addresses differ |
 | `bad_request` | General | Malformed request |
 | `card_declined` | Payment | Card was declined by issuer |
+| `cart_converted` | Cart | Cart already converted to order |
+| `cart_expired` | Cart | Cart has passed expiration date |
+| `cart_item_not_found` | Cart | Cart item ID does not exist |
+| `cart_not_found` | Cart | Cart ID does not exist |
+| `checkout_already_completed` | Checkout | Checkout already processed |
+| `checkout_cart_empty` | Checkout | Cannot checkout with empty cart |
+| `checkout_cart_expired` | Checkout | Cart expired during checkout |
+| `checkout_cart_not_found` | Checkout | Cart not found for checkout |
+| `checkout_invalid_payment_method` | Checkout | Invalid payment method |
+| `checkout_invalid_shipping_method` | Checkout | Shipping method no longer available |
+| `checkout_payment_failed` | Checkout | Payment processing failed |
 | `conflict` | General | Concurrent modification |
 | `customer_duplicate_email` | Customer | Email already exists |
 | `customer_not_found` | Customer | Customer ID not found |
@@ -734,6 +873,7 @@ impl IntoResponse for ApiError {
 | `invalid_cvv` | Payment | CVV verification failed |
 | `invalid_field_value` | Validation | Field value outside allowed range |
 | `invalid_parameters` | Validation | Request parameters invalid |
+| `invalid_quantity` | Cart | Quantity must be 1-9999 |
 | `invalid_request` | General | Request format incorrect |
 | `ip_restricted` | Security | IP address not whitelisted |
 | `method_not_allowed` | General | HTTP method not allowed |
@@ -754,6 +894,7 @@ impl IntoResponse for ApiError {
 | `payment_method_invalid` | Payment | Payment method format invalid |
 | `payment_processing` | Payment | Payment currently processing |
 | `payment_unsupported_currency` | Payment | Currency not supported by gateway |
+| `product_not_available` | Cart/Product | Product not available for purchase |
 | `product_not_found` | Product | Product ID not found |
 | `product_not_published` | Product | Product not available for sale |
 | `product_out_of_stock` | Product | Inventory quantity is zero |

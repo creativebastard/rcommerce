@@ -40,11 +40,13 @@ Development: http://localhost:8080/v1
 
 ## Authentication & Authorization
 
-R Commerce supports two authentication methods:
+R Commerce supports two authentication methods with a unified middleware approach using Axum's Extension pattern.
 
-### 1. JWT Authentication (User Sessions)
+### Authentication Methods
 
-For customer and admin user sessions.
+#### 1. JWT Authentication (User Sessions)
+
+For customer and admin user sessions. JWT tokens are short-lived (24 hours by default) and provide role-based permissions.
 
 **Login:**
 ```bash
@@ -63,7 +65,13 @@ Content-Type: application/json
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "token_type": "Bearer",
-  "expires_in": 86400
+  "expires_in": 86400,
+  "customer": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe"
+  }
 }
 ```
 
@@ -74,56 +82,209 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
 ```
 
 **Token expiration:**
-- Access token: 24 hours (configurable)
+- Access token: 24 hours (configurable via `security.jwt.expiry_hours`)
 - Refresh token: 7 days (configurable)
 
-### 2. API Key Authentication (Service-to-Service)
+#### 2. API Key Authentication (Service-to-Service)
 
-For server-to-server authentication. Managed via CLI.
+For server-to-server authentication with fine-grained scope-based permissions. API keys are long-lived and designed for integrations.
 
 ```http
 GET /api/v1/orders
-Authorization: Bearer <prefix>.<secret>
+Authorization: Bearer ak_1a2b3c4d.x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4
 ```
 
 **Creating API keys:**
 ```bash
-rcommerce api-key create --name "Production Backend" --scopes "read,write"
+rcommerce api-key create --name "Production Backend" --scopes "products:read,orders:write"
 ```
 
 **API Key Features:**
-- Prefix + secret format (e.g., `aB3dEfGh.sEcReTkEy123`)
-- Configurable scopes: `read`, `write`
+- Prefix + secret format (e.g., `ak_1a2b3c4d.x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4`)
+- Fine-grained scopes: `resource:action` format (e.g., `products:read`, `orders:write`)
+- Wildcard scopes: `read`, `write`, `admin`
 - Optional expiration
 - Revocable via CLI
+- SHA-256 hashed secret storage
+
+### Extension Pattern Authentication
+
+All protected handlers use Axum's `Extension` extractor to receive pre-validated authentication context. The middleware validates tokens and adds the auth context to request extensions.
+
+#### JwtAuth Context
+
+```rust
+pub struct JwtAuth {
+    pub customer_id: Uuid,
+    pub email: String,
+    pub permissions: Vec<String>,
+}
+
+impl JwtAuth {
+    /// Check if this JWT has permission for a specific resource and action
+    pub fn can(&self, resource: Resource, action: Action) -> bool;
+    
+    /// Check if this JWT has read access
+    pub fn can_read(&self, resource: Resource) -> bool;
+    
+    /// Check if this JWT has write access
+    pub fn can_write(&self, resource: Resource) -> bool;
+    
+    /// Check if this JWT has admin access
+    pub fn is_admin(&self) -> bool;
+}
+```
+
+**Example Handler:**
+```rust
+use axum::{extract::Extension, Json};
+use crate::middleware::JwtAuth;
+
+pub async fn get_customer_cart(
+    State(state): State<AppState>,
+    Extension(jwt_auth): Extension<JwtAuth>,  // Extracted by middleware
+) -> Result<Json<CartWithItems>, Error> {
+    // jwt_auth.customer_id contains the authenticated customer
+    let cart = state
+        .cart_service
+        .get_or_create_cart(CartIdentifier::Customer(jwt_auth.customer_id), "USD")
+        .await?;
+    
+    Ok(Json(cart))
+}
+```
+
+#### ApiKeyAuth Context
+
+```rust
+pub struct ApiKeyAuth {
+    pub key_id: Uuid,
+    pub customer_id: Option<Uuid>,
+    pub scopes: Vec<String>,
+    pub name: String,
+}
+
+impl ApiKeyAuth {
+    /// Check if this API key has permission
+    pub fn can(&self, resource: Resource, action: Action) -> bool;
+    
+    /// Check read/write/admin access
+    pub fn can_read(&self, resource: Resource) -> bool;
+    pub fn can_write(&self, resource: Resource) -> bool;
+    pub fn is_admin(&self) -> bool;
+}
+```
 
 ### Permission Scopes
 
-**JWT Tokens:**
-- Inherit permissions from user role
-- Default: `["read", "write"]` for authenticated users
+#### JWT Token Permissions
 
-**API Keys:**
-- Explicitly assigned at creation
-- Simple scope model: `read`, `write`, or both
+JWT tokens inherit permissions from the user's role:
+
+| Role | Permissions |
+|------|-------------|
+| `customer` | `["read", "write"]` - Can read own data and create orders |
+| `admin` | `["read", "write", "admin"]` - Full system access |
+
+#### API Key Scopes
+
+API keys use hierarchical scope-based permissions:
+
+**Resource-Specific Scopes:**
+- `products:read` - Read access to products
+- `products:write` - Create/update products
+- `products:admin` - Full product management (including delete)
+- `orders:read`, `orders:write`, `orders:admin`
+- `customers:read`, `customers:write`, `customers:admin`
+- `carts:read`, `carts:write`, `carts:admin`
+
+**Wildcard Scopes:**
+- `read` - Read access to all resources
+- `write` - Read and write access to all resources
+- `admin` - Full admin access to all resources
+
+**Permission Hierarchy:**
+```
+admin > write > read
+```
 
 ### Protected vs Public Routes
 
 **Public (no auth required):**
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/refresh`
-- `POST /api/v1/webhooks/*` (HMAC signature verified)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/auth/login` | User login |
+| POST | `/api/v1/auth/register` | User registration |
+| POST | `/api/v1/auth/refresh` | Refresh access token |
+| POST | `/api/v1/carts/guest` | Create guest cart |
+| GET | `/api/v1/carts/:id` | Get cart by ID |
+| POST | `/api/v1/webhooks/:gateway_id` | Payment webhooks (HMAC verified) |
 
 **Protected (JWT or API key required):**
-- `GET/POST /api/v1/products` - *Authentication required to prevent unauthorized scraping*
-- `GET /api/v1/products/:id`
-- `GET/POST /api/v1/customers`
-- `GET/POST /api/v1/orders`
-- All `/api/v1/carts/*` endpoints
-- All `/api/v1/payments/*` endpoints
+| Method | Path | Auth Type | Description |
+|--------|------|-----------|-------------|
+| GET | `/api/v1/carts/me` | JWT | Get customer cart |
+| POST | `/api/v1/carts/:id/items` | JWT | Add item to cart |
+| POST | `/api/v1/carts/merge` | JWT | Merge guest cart |
+| POST | `/api/v1/checkout/*` | JWT | Checkout operations |
+| GET | `/api/v1/customers` | API Key | List customers |
+| GET | `/api/v1/orders` | API Key/JWT | List orders |
+| POST | `/api/v1/orders` | API Key | Create order |
+| GET | `/api/v1/products` | API Key | List products |
+| POST | `/api/v1/products` | API Key | Create product |
 
-> **Note:** Product endpoints require authentication to protect against data scraping and unauthorized access to product information.
+### Middleware Implementation
+
+#### Combined Authentication Middleware
+
+The combined auth middleware tries API key auth first, then JWT:
+
+```rust
+pub async fn combined_auth_middleware(
+    Extension(repo): Extension<Arc<PostgresApiKeyRepository>>,
+    Extension(auth_service): Extension<Arc<AuthService>>,
+    mut request: Request<Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // 1. Try API key authentication (format: prefix.secret)
+    if let Some(api_key) = extract_api_key(auth_header) {
+        if let Ok(Some(record)) = repo.verify_key(&api_key).await {
+            request.extensions_mut().insert(ApiKeyAuth { ... });
+            return Ok(next.run(request).await);
+        }
+    }
+    
+    // 2. Try JWT authentication (format: Bearer <jwt>)
+    if let Some(token) = AuthService::extract_bearer_token(auth_header) {
+        if let Ok(claims) = auth_service.verify_token(token) {
+            request.extensions_mut().insert(JwtAuth { ... });
+            return Ok(next.run(request).await);
+        }
+    }
+    
+    Err(StatusCode::UNAUTHORIZED)
+}
+```
+
+#### Auth Middleware Setup
+
+```rust
+// Protected routes with JWT auth
+let protected_routes = Router::new()
+    .merge(customer_router())
+    .merge(order_router())
+    .merge(cart_protected_router())
+    .merge(checkout_router())
+    .route_layer(middleware::from_fn_with_state(
+        app_state.clone(),
+        auth_middleware,
+    ));
+
+// Admin routes with admin middleware
+let admin_routes = Router::new()
+    .nest("/admin", admin_router())
+    .route_layer(middleware::from_fn_with_state(app_state, admin_middleware));
+```
 
 ## Common Response Formats
 

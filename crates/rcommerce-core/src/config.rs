@@ -201,11 +201,11 @@ impl Default for CorsConfig {
         Self {
             enabled: true,
             allowed_origins: vec!["*".to_string()],
-            allowed_methods: vec!["GET", "POST", "PUT", "PATCH", "DELETE"]
+            allowed_methods: vec!["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
                 .into_iter()
                 .map(String::from)
                 .collect(),
-            allowed_headers: vec!["Content-Type", "Authorization"]
+            allowed_headers: vec!["Content-Type", "Authorization", "X-Requested-With"]
                 .into_iter()
                 .map(String::from)
                 .collect(),

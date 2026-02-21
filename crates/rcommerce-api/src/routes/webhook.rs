@@ -7,7 +7,7 @@
 
 use axum::{
     extract::{Path, State, Query},
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Json, Router,
     http::StatusCode,
 };

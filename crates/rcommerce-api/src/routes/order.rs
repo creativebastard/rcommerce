@@ -5,10 +5,14 @@ use axum::{
     Json, Router,
 };
 use rust_decimal::Decimal;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use rcommerce_core::tax::TaxService;
 
 use crate::state::AppState;
+use crate::middleware::JwtAuth;
+use axum::Extension;
 
 /// Create order request from API
 #[derive(Debug, Deserialize)]
@@ -17,8 +21,11 @@ pub struct CreateOrderRequest {
     pub customer_email: String,
     pub billing_address_id: Option<Uuid>,
     pub shipping_address_id: Option<Uuid>,
+    /// Shipping address for tax and shipping calculation
+    pub shipping_address: Option<rcommerce_core::models::Address>,
     pub items: Vec<CreateOrderItem>,
     pub notes: Option<String>,
+    pub coupon_code: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -190,8 +197,12 @@ pub async fn get_order(
 }
 
 /// Create a new order
+/// 
+/// This endpoint now integrates with TaxService and ShippingService for accurate calculations.
+/// For a full checkout flow with shipping selection, use the /checkout endpoints.
 pub async fn create_order(
     State(state): State<AppState>,
+    Extension(_auth): Extension<JwtAuth>,
     Json(request): Json<CreateOrderRequest>,
 ) -> Result<(StatusCode, Json<OrderResponse>), (StatusCode, Json<serde_json::Value>)> {
     // Validate email
@@ -212,6 +223,7 @@ pub async fn create_order(
 
     let mut order_items = Vec::new();
     let mut subtotal = Decimal::ZERO;
+    let mut taxable_items = Vec::new();
 
     // Process each item
     for item in &request.items {
@@ -280,13 +292,123 @@ pub async fn create_order(
         let item_subtotal = product.price * Decimal::from(item.quantity);
         subtotal += item_subtotal;
 
+        // Build taxable item for tax calculation
+        taxable_items.push(rcommerce_core::tax::TaxableItem {
+            id: Uuid::new_v4(),
+            product_id: product.id,
+            quantity: item.quantity,
+            unit_price: product.price,
+            total_price: item_subtotal,
+            tax_category_id: None, // TODO: Get from product
+            is_digital: false,     // TODO: Get from product
+            title: product.title.clone(),
+            sku: product.sku.clone(),
+        });
+
         order_items.push((product, item.quantity, item_subtotal));
     }
 
-    // Calculate totals (simple tax - 10% for now)
-    let tax_rate = Decimal::from_str_exact("0.10").unwrap();
-    let tax_total = (subtotal * tax_rate).round_dp(2);
-    let shipping_total = Decimal::ZERO; // Free shipping for MVP
+    // Calculate tax using TaxService if shipping address is provided
+    let (tax_total, shipping_total) = if let Some(ref address) = request.shipping_address {
+        // Calculate tax based on shipping address
+        let tax_context = rcommerce_core::tax::TaxContext {
+            customer: rcommerce_core::tax::CustomerTaxInfo {
+                customer_id: request.customer_id,
+                is_tax_exempt: false,
+                vat_id: None,
+                exemptions: vec![],
+            },
+            shipping_address: rcommerce_core::tax::TaxAddress {
+                country_code: address.country.clone(),
+                region_code: address.state.clone(),
+                postal_code: Some(address.zip.clone()),
+                city: Some(address.city.clone()),
+            },
+            billing_address: rcommerce_core::tax::TaxAddress {
+                country_code: address.country.clone(),
+                region_code: address.state.clone(),
+                postal_code: Some(address.zip.clone()),
+                city: Some(address.city.clone()),
+            },
+            currency: rcommerce_core::models::Currency::USD,
+            transaction_type: rcommerce_core::tax::TransactionType::B2C,
+        };
+
+        let tax_calculation = match state.tax_service.calculate_tax(&taxable_items, &tax_context).await {
+            Ok(calc) => calc,
+            Err(e) => {
+                tracing::warn!("Tax calculation failed, using fallback: {}", e);
+                // Fallback to simple percentage
+                let rate = Decimal::from_str_exact("0.10").unwrap();
+                rcommerce_core::tax::TaxCalculation {
+                    total_tax: (subtotal * rate).round_dp(2),
+                    line_items: vec![],
+                    shipping_tax: Decimal::ZERO,
+                    tax_breakdown: vec![],
+                }
+            }
+        };
+
+        // Calculate shipping cost
+        let package = rcommerce_core::shipping::Package {
+            weight: Decimal::from_str_exact("0.5").unwrap() * Decimal::from(order_items.iter().map(|(_, qty, _)| qty).sum::<i32>()),
+            weight_unit: "kg".to_string(),
+            length: Some(Decimal::from(30)),
+            width: Some(Decimal::from(20)),
+            height: Some(Decimal::from(15)),
+            dimension_unit: Some("cm".to_string()),
+            predefined_package: None,
+        };
+
+        let origin = rcommerce_core::models::Address {
+            id: Uuid::new_v4(),
+            customer_id: Uuid::nil(),
+            first_name: "Store".to_string(),
+            last_name: "Warehouse".to_string(),
+            company: None,
+            phone: None,
+            address1: "123 Warehouse St".to_string(),
+            address2: None,
+            city: "Los Angeles".to_string(),
+            state: Some("CA".to_string()),
+            country: "US".to_string(),
+            zip: "90210".to_string(),
+            is_default_shipping: false,
+            is_default_billing: false,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        };
+
+        let options = rcommerce_core::shipping::RateOptions {
+            carriers: None,
+            services: None,
+            include_insurance: false,
+            insurance_value: None,
+            signature_confirmation: false,
+            adult_signature: false,
+            saturday_delivery: false,
+            hold_for_pickup: false,
+            currency: Some("USD".to_string()),
+        };
+
+        let shipping_cost = match state.shipping_factory.get_available().first() {
+            Some(provider) => {
+                match provider.get_rates(&origin, address, &package, &options).await {
+                    Ok(rates) if !rates.is_empty() => rates[0].total_cost,
+                    _ => Decimal::ZERO, // Free shipping if no rates available
+                }
+            }
+            None => Decimal::ZERO, // Free shipping if no providers configured
+        };
+
+        (tax_calculation.total_tax, shipping_cost)
+    } else {
+        // Fallback to simple calculations if no address provided
+        let tax_rate = Decimal::from_str_exact("0.10").unwrap();
+        let tax = (subtotal * tax_rate).round_dp(2);
+        (tax, Decimal::ZERO)
+    };
+
     let total = subtotal + tax_total + shipping_total;
 
     // Generate order number

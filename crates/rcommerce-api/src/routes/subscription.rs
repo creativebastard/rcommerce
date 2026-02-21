@@ -7,7 +7,7 @@
 //! - Admin subscription management
 
 use axum::{
-    extract::{Path, State, Query},
+    extract::{Extension, Path, State, Query},
     http::StatusCode,
     routing::{get, post, put},
     Json, Router,
@@ -15,6 +15,7 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::middleware::JwtAuth;
 use crate::state::AppState;
 use rcommerce_core::repository::SubscriptionRepository;
 use rcommerce_core::models::{
@@ -33,10 +34,11 @@ pub struct ListSubscriptionsQuery {
 /// Create subscription handler
 async fn create_subscription(
     State(state): State<AppState>,
-    Json(request): Json<CreateSubscriptionRequest>,
+    Extension(auth): Extension<JwtAuth>,
+    Json(mut request): Json<CreateSubscriptionRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    // TODO: Get customer_id from authenticated user
-    // For now, use the one from request
+    // Set customer_id from authenticated user
+    request.customer_id = auth.customer_id;
     
     match state.subscription_service.create_subscription(request).await {
         Ok(subscription) => {
@@ -55,10 +57,11 @@ async fn create_subscription(
 /// List subscriptions for authenticated customer
 async fn list_my_subscriptions(
     State(state): State<AppState>,
+    Extension(auth): Extension<JwtAuth>,
     Query(query): Query<ListSubscriptionsQuery>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    // TODO: Get customer_id from authenticated user
-    let customer_id = Uuid::nil(); // Placeholder
+    // Get customer_id from authenticated user
+    let customer_id = auth.customer_id;
     
     let filter = SubscriptionFilter {
         customer_id: Some(customer_id),

@@ -3,7 +3,7 @@
 use axum::{
     body::Body,
     extract::{ConnectInfo, Request, State},
-    http::StatusCode,
+    http::{HeaderValue, StatusCode},
     middleware::Next,
     response::Response,
 };
@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 use crate::state::AppState;
+use rcommerce_core::config::TlsConfig;
 use rcommerce_core::services::AuthService;
 
 pub mod scopes;
@@ -125,9 +126,10 @@ pub async fn auth_rate_limit_middleware(
 }
 
 /// Authentication middleware - validates JWT tokens
+/// Adds JwtAuth to request extensions for downstream handlers
 pub async fn auth_middleware(
     State(state): State<AppState>,
-    request: Request<Body>,
+    mut request: Request<Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
     tracing::debug!("Auth middleware checking request");
@@ -158,6 +160,16 @@ pub async fn auth_middleware(
     match state.auth_service.verify_token(token) {
         Ok(claims) => {
             tracing::debug!("Token verified for customer: {}", claims.sub);
+            
+            // Create JWT auth context and add to request extensions
+            let auth = JwtAuth {
+                customer_id: claims.sub,
+                email: claims.email,
+                permissions: claims.permissions,
+            };
+            
+            request.extensions_mut().insert(auth);
+            
             Ok(next.run(request).await)
         }
         Err(e) => {
@@ -223,4 +235,60 @@ pub async fn admin_middleware(
     }
 
     Ok(next.run(request).await)
+}
+
+/// Security headers middleware
+/// 
+/// This middleware adds security headers to all responses:
+/// - X-Content-Type-Options: nosniff
+/// - X-Frame-Options: DENY
+/// - X-XSS-Protection: 1; mode=block
+/// - Referrer-Policy: strict-origin-when-cross-origin
+/// - Strict-Transport-Security (when TLS is enabled)
+pub async fn security_headers_middleware(
+    State(tls_config): State<Option<TlsConfig>>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+
+    // Prevent MIME type sniffing
+    headers.insert(
+        "X-Content-Type-Options",
+        HeaderValue::from_static("nosniff"),
+    );
+
+    // Prevent clickjacking
+    headers.insert(
+        "X-Frame-Options",
+        HeaderValue::from_static("DENY"),
+    );
+
+    // XSS protection (legacy but still useful)
+    headers.insert(
+        "X-XSS-Protection",
+        HeaderValue::from_static("1; mode=block"),
+    );
+
+    // Referrer policy
+    headers.insert(
+        "Referrer-Policy",
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+
+    // HSTS (only when TLS is enabled)
+    if let Some(tls_config) = tls_config {
+        if tls_config.enabled {
+            let hsts_value = tls_config.hsts.as_ref()
+                .map(|h| h.header_value())
+                .unwrap_or_else(|| "max-age=31536000; includeSubDomains".to_string());
+            
+            if let Ok(value) = HeaderValue::from_str(&hsts_value) {
+                headers.insert("Strict-Transport-Security", value);
+            }
+        }
+    }
+
+    response
 }

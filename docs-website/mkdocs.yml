@@ -276,6 +276,7 @@ nav:
     - Orders: api-reference/orders.md
     - Customers: api-reference/customers.md
     - Cart: api-reference/cart.md
+    - Checkout: api-reference/checkout.md
     - Coupons: api-reference/coupons.md
     - Payments: api-reference/payments.md
     - Subscriptions: api-reference/subscriptions.md
