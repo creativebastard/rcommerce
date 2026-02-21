@@ -205,6 +205,16 @@ CREATE TABLE IF NOT EXISTS product_category_relations (
 CREATE INDEX IF NOT EXISTS idx_product_category_category ON product_category_relations(category_id);
 CREATE INDEX IF NOT EXISTS idx_product_category_primary ON product_category_relations(product_id, is_primary) WHERE is_primary = true;
 
+-- Product tags
+CREATE TABLE IF NOT EXISTS product_tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Product-tag many-to-many relation
 CREATE TABLE IF NOT EXISTS product_tag_relations (
     product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -362,6 +372,7 @@ DECLARE
         'notifications',
         'notification_templates',
         'customer_notification_preferences',
+        'product_tags',
         'shipping_carrier_configs',
         'subscription_retry_configs',
         'dunning_campaigns',

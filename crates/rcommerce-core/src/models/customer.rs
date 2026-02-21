@@ -8,7 +8,7 @@ use validator::Validate;
 /// Customer role for access control
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
-#[sqlx(rename_all = "snake_case")]
+#[sqlx(type_name = "customer_role", rename_all = "snake_case")]
 pub enum CustomerRole {
     #[default]
     Customer,

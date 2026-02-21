@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS tax_zones (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_tax_zones_country ON tax_zones(country_code);
-CREATE INDEX idx_tax_zones_region ON tax_zones(country_code, region_code);
-CREATE INDEX idx_tax_zones_type ON tax_zones(zone_type);
+CREATE INDEX IF NOT EXISTS idx_tax_zones_country ON tax_zones(country_code);
+CREATE INDEX IF NOT EXISTS idx_tax_zones_region ON tax_zones(country_code, region_code);
+CREATE INDEX IF NOT EXISTS idx_tax_zones_type ON tax_zones(zone_type);
 
 -- Tax categories (food, digital, luxury, medical, etc.)
 CREATE TABLE IF NOT EXISTS tax_categories (
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS tax_categories (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_tax_categories_code ON tax_categories(code);
+CREATE INDEX IF NOT EXISTS idx_tax_categories_code ON tax_categories(code);
 
 -- Tax rates
 CREATE TABLE IF NOT EXISTS tax_rates (
@@ -68,10 +68,10 @@ CREATE TABLE IF NOT EXISTS tax_rates (
     UNIQUE(tax_zone_id, tax_category_id, valid_from)
 );
 
-CREATE INDEX idx_tax_rates_zone ON tax_rates(tax_zone_id);
-CREATE INDEX idx_tax_rates_category ON tax_rates(tax_category_id);
-CREATE INDEX idx_tax_rates_valid ON tax_rates(valid_from, valid_until);
-CREATE INDEX idx_tax_rates_vat ON tax_rates(is_vat, vat_type);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_zone ON tax_rates(tax_zone_id);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_category ON tax_rates(tax_category_id);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_valid ON tax_rates(valid_from, valid_until);
+CREATE INDEX IF NOT EXISTS idx_tax_rates_vat ON tax_rates(is_vat, vat_type);
 
 -- VAT ID validation cache
 CREATE TABLE IF NOT EXISTS vat_id_validations (
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS vat_id_validations (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_vat_validations_id ON vat_id_validations(vat_id);
-CREATE INDEX idx_vat_validations_expires ON vat_id_validations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_vat_validations_id ON vat_id_validations(vat_id);
+CREATE INDEX IF NOT EXISTS idx_vat_validations_expires ON vat_id_validations(expires_at);
 
 -- Tax exemptions (resale certificates, nonprofit status, etc.)
 CREATE TABLE IF NOT EXISTS tax_exemptions (
@@ -104,9 +104,9 @@ CREATE TABLE IF NOT EXISTS tax_exemptions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_tax_exemptions_customer ON tax_exemptions(customer_id);
-CREATE INDEX idx_tax_exemptions_zone ON tax_exemptions(tax_zone_id);
-CREATE INDEX idx_tax_exemptions_active ON tax_exemptions(is_active, valid_from, valid_until);
+CREATE INDEX IF NOT EXISTS idx_tax_exemptions_customer ON tax_exemptions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_tax_exemptions_zone ON tax_exemptions(tax_zone_id);
+CREATE INDEX IF NOT EXISTS idx_tax_exemptions_active ON tax_exemptions(is_active, valid_from, valid_until);
 
 -- Tax transactions (for reporting and audit trail)
 CREATE TABLE IF NOT EXISTS tax_transactions (
@@ -135,10 +135,10 @@ CREATE TABLE IF NOT EXISTS tax_transactions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_tax_transactions_order ON tax_transactions(order_id);
-CREATE INDEX idx_tax_transactions_country ON tax_transactions(country_code, region_code);
-CREATE INDEX idx_tax_transactions_oss ON tax_transactions(oss_scheme, oss_period);
-CREATE INDEX idx_tax_transactions_created ON tax_transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_tax_transactions_order ON tax_transactions(order_id);
+CREATE INDEX IF NOT EXISTS idx_tax_transactions_country ON tax_transactions(country_code, region_code);
+CREATE INDEX IF NOT EXISTS idx_tax_transactions_oss ON tax_transactions(oss_scheme, oss_period);
+CREATE INDEX IF NOT EXISTS idx_tax_transactions_created ON tax_transactions(created_at);
 
 -- Economic nexus tracking (for US sales tax)
 CREATE TABLE IF NOT EXISTS economic_nexus_tracking (
@@ -159,19 +159,19 @@ CREATE TABLE IF NOT EXISTS economic_nexus_tracking (
     UNIQUE(country_code, region_code, year, month)
 );
 
-CREATE INDEX idx_nexus_tracking_region ON economic_nexus_tracking(country_code, region_code);
-CREATE INDEX idx_nexus_tracking_period ON economic_nexus_tracking(year, month);
-CREATE INDEX idx_nexus_tracking_triggered ON economic_nexus_tracking(nexus_triggered);
+CREATE INDEX IF NOT EXISTS idx_nexus_tracking_region ON economic_nexus_tracking(country_code, region_code);
+CREATE INDEX IF NOT EXISTS idx_nexus_tracking_period ON economic_nexus_tracking(year, month);
+CREATE INDEX IF NOT EXISTS idx_nexus_tracking_triggered ON economic_nexus_tracking(nexus_triggered);
 
 -- Add tax_category_id to products
 ALTER TABLE products ADD COLUMN IF NOT EXISTS tax_category_id UUID REFERENCES tax_categories(id);
-CREATE INDEX idx_products_tax_category ON products(tax_category_id);
+CREATE INDEX IF NOT EXISTS idx_products_tax_category ON products(tax_category_id);
 
 -- Add VAT ID to customers
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS vat_id VARCHAR(50);
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS vat_id_validated_at TIMESTAMPTZ;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS vat_id_is_valid BOOLEAN;
-CREATE INDEX idx_customers_vat_id ON customers(vat_id);
+CREATE INDEX IF NOT EXISTS idx_customers_vat_id ON customers(vat_id);
 
 -- Insert default tax zones for major markets
 
@@ -296,18 +296,22 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for updated_at
+DROP TRIGGER IF EXISTS update_tax_zones_updated_at ON tax_zones;
 CREATE TRIGGER update_tax_zones_updated_at
     BEFORE UPDATE ON tax_zones
     FOR EACH ROW EXECUTE FUNCTION update_tax_updated_at();
 
+DROP TRIGGER IF EXISTS update_tax_categories_updated_at ON tax_categories;
 CREATE TRIGGER update_tax_categories_updated_at
     BEFORE UPDATE ON tax_categories
     FOR EACH ROW EXECUTE FUNCTION update_tax_updated_at();
 
+DROP TRIGGER IF EXISTS update_tax_rates_updated_at ON tax_rates;
 CREATE TRIGGER update_tax_rates_updated_at
     BEFORE UPDATE ON tax_rates
     FOR EACH ROW EXECUTE FUNCTION update_tax_updated_at();
 
+DROP TRIGGER IF EXISTS update_economic_nexus_tracking_updated_at ON economic_nexus_tracking;
 CREATE TRIGGER update_economic_nexus_tracking_updated_at
     BEFORE UPDATE ON economic_nexus_tracking
     FOR EACH ROW EXECUTE FUNCTION update_tax_updated_at();
