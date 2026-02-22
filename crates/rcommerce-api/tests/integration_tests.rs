@@ -151,7 +151,7 @@ impl TestApp {
         
         // Create payment service
         let payment_service = PaymentService::new("stripe".to_string());
-        let payment_service_arc = Arc::new(payment_service);
+        let _payment_service_arc = Arc::new(payment_service);
         
         // Create inventory service and event dispatcher for order service
         let inventory_config = InventoryConfig::default();
@@ -170,7 +170,7 @@ impl TestApp {
         );
         
         // Create other services
-        let file_upload_service = Arc::new(FileUploadService::new_local(
+        let _file_upload_service = Arc::new(FileUploadService::new_local(
             std::path::PathBuf::from("./test_uploads"),
             "http://localhost:8080/uploads".to_string(),
         ).expect("Failed to create file upload service"));
