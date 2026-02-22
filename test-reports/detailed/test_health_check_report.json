@@ -1,0 +1,42 @@
+{
+  "test_name": "test_health_check",
+  "start_time": "2026-02-22T01:27:44.772221+00:00",
+  "end_time": "2026-02-22T01:27:45.309443+00:00",
+  "duration_ms": 537,
+  "status": "passed",
+  "steps": [
+    {
+      "number": 1,
+      "description": "Check health endpoint",
+      "status": "success",
+      "duration_ms": 2,
+      "details": null
+    }
+  ],
+  "api_calls": [
+    {
+      "method": "GET",
+      "endpoint": "/health",
+      "request_body": null,
+      "response_status": 200,
+      "response_body": null,
+      "duration_ms": 0
+    }
+  ],
+  "db_operations": [],
+  "created_entities": [],
+  "assertions": [
+    {
+      "description": "Health check returns success",
+      "passed": true,
+      "expected": "200-299",
+      "actual": "200 OK"
+    }
+  ],
+  "logs": [
+    "[01:27:45.297] Starting: Check health endpoint",
+    "[01:27:45.300] API GET /health -> 200",
+    "[01:27:45.300] ✓ Assertion passed: Health check returns success",
+    "[01:27:45.300] Completed step 1 in 2ms"
+  ]
+}

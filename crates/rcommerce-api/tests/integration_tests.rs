@@ -25,6 +25,10 @@ use std::time::Duration;
 // Static lock to prevent concurrent migration runs (causes deadlocks)
 static MIGRATION_LOCK: StdMutex<()> = StdMutex::new(());
 
+// Test reporter module
+mod test_reporter;
+use test_reporter::{TestReporter, save_all_reports};
+
 use axum::{Router, routing::get};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -1162,16 +1166,63 @@ async fn test_cart_item_updates() {
 /// Test 10: Health check
 #[tokio::test]
 async fn test_health_check() {
+    let mut reporter = TestReporter::new("test_health_check");
     let app = TestApp::new().await.expect("Failed to create test app");
     
+    reporter.step("Check health endpoint");
     let response = app.http_client
         .get(format!("{}/health", app.base_url()))
         .send()
         .await
         .expect("Failed to check health");
     
-    assert!(response.status().is_success(), "Expected success status, got {}", response.status());
+    reporter.api_call("GET", "/health", response.status().as_u16());
+    
+    let success = response.status().is_success();
+    reporter.assertion("Health check returns success", success, "200-299".to_string(), response.status().to_string());
+    reporter.step_ok();
     
     // Cleanup
     app.cleanup().await.ok();
+    
+    // Finalize report (saves immediately)
+    reporter.finalize(success);
+    
+    assert!(success, "Expected success status, got {}", response.status());
+}
+
+/// Helper macro for running tests with reporting
+#[macro_export]
+macro_rules! test_with_report {
+    ($name:expr, $body:expr) => {{
+        let mut reporter = TestReporter::new($name);
+        let result = $body(&mut reporter).await;
+        reporter.finalize(result.is_ok());
+        result.unwrap();
+    }};
+}
+
+/// Generate index of all test reports
+#[tokio::test]
+async fn z_generate_report_index() {
+    // This test runs last and generates an index of all reports
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    
+    // Reports are saved immediately by each test (relative to workspace root)
+    let output_dir = "./test-reports/detailed";
+    
+    // Count existing reports
+    let mut count = 0;
+    if let Ok(entries) = std::fs::read_dir(output_dir) {
+        for entry in entries.flatten() {
+            if let Some(name) = entry.file_name().to_str() {
+                if name.ends_with("_report.json") {
+                    count += 1;
+                }
+            }
+        }
+    }
+    
+    println!("📊 Generated {} detailed test reports in: {}/", count, output_dir);
+    println!("📊 View index: open {}/index.html", output_dir);
 }

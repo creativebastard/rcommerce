@@ -24,7 +24,6 @@ use rcommerce_core::payment::gateways::{
 };
 
 // Import API routes for test server
-use rcommerce_api::routes::{cart_router, coupon_router};
 
 // =============================================================================
 // Test Types

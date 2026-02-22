@@ -54,6 +54,7 @@ impl TestHarness {
 // =============================================================================
 
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct RegisterRequest {
     email: String,
     password: String,
@@ -62,6 +63,7 @@ struct RegisterRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AuthResponse {
     #[serde(rename = "access_token")]
     token: String,
@@ -69,6 +71,7 @@ struct AuthResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct CustomerResponse {
     id: String,
     email: String,
@@ -77,18 +80,21 @@ struct CustomerResponse {
 }
 
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct CreateOrderRequest {
     customer_email: String,
     items: Vec<CreateOrderItem>,
 }
 
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct CreateOrderItem {
     product_id: String,
     quantity: i32,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct OrderResponse {
     id: String,
     order_number: String,

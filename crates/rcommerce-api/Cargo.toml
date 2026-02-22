@@ -97,3 +97,4 @@ rcgen = "0.11"
 # Additional test dependencies
 redis = { workspace = true }
 rand = { workspace = true }
+once_cell = { workspace = true }
