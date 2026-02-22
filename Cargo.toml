@@ -12,6 +12,12 @@ homepage = "https://rcommerce.app"
 rust-version = "1.70.0"
 
 [workspace.dependencies]
+# rustls with ring crypto provider (avoids aws-lc-sys for cross-compilation)
+# Version 0.23 defaults to aws-lc, we force ring via patches below
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+rustls-pemfile = "2.0"
+
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 tokio-stream = "0.1"
@@ -64,10 +70,10 @@ validator = { version = "0.16", features = ["derive"] }
 
 # Email
 tokio-smtp = "0.1"
-lettre = { version = "0.11", features = ["tokio1-native-tls", "builder"] }
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "tokio1-rustls-tls", "builder"] }
 
 # HTTP client
-reqwest = { version = "0.12", features = ["json", "multipart", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "json", "multipart", "stream"] }
 
 # Pagination
 ulid = { version = "1.1", features = ["serde"] }
@@ -135,7 +141,7 @@ url = "2.5"
 
 # JWT authentication
 jsonwebtoken = "9.2"
-jwt-simple = "0.12"
+# jwt-simple = "0.12"  # Removed - using jsonwebtoken instead
 
 # Scheduling and time utilities
 chrono-tz = { version = "0.8", features = ["serde"] }

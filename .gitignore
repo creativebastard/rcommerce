@@ -46,3 +46,4 @@ site/
 *.pdf
 docs/_build/
 test-emails/
+dist/

@@ -27,7 +27,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 
 # Database types
-sqlx = { workspace = true, features = ["postgres", "runtime-tokio-native-tls"] }
+sqlx = { workspace = true, features = ["postgres", "runtime-tokio-rustls"] }
 
 # Validation
 validator = { workspace = true }
@@ -96,7 +96,7 @@ cron = { workspace = true }
 
 # Crypto for JWT and passwords
 jsonwebtoken = { workspace = true }
-jwt-simple = { workspace = true }
+# jwt-simple = { workspace = true }  # Removed - using jsonwebtoken instead
 
 # Email sending
 lettre = { workspace = true }

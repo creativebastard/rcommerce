@@ -13,7 +13,8 @@ name = "rcommerce_api"
 path = "src/lib.rs"
 
 [features]
-default = ["letsencrypt"]
+default = []
+# letsencrypt feature disabled by default for cross-compilation compatibility
 letsencrypt = ["dep:rustls-acme", "dep:futures"]
 
 [dependencies]
@@ -78,9 +79,9 @@ hex = { workspace = true }
 reqwest = { workspace = true }
 
 # TLS/SSL
-rustls = "0.21"
-rustls-pemfile = "1.0"
-tokio-rustls = "0.24"
+rustls = { workspace = true }
+rustls-pemfile = { workspace = true }
+tokio-rustls = { workspace = true }
 axum-server = { version = "0.8", features = ["tls-rustls"] }
 
 # Let's Encrypt (optional, enabled by default) - pure Rust, no OpenSSL
