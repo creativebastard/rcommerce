@@ -10,9 +10,8 @@ use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::tax::{
-    calculator::TaxCalculator, models::*, vat_validation::*, CustomerTaxInfo, OssReport,
-    OssScheme, OssTransaction, OssSummary, CountrySummary, TaxAddress, TaxCalculation, TaxCategory, TaxContext, TaxExemption, TaxRate,
-    TaxTransaction, TaxZone, TaxableItem, VatId,
+    calculator::TaxCalculator, models::*, vat_validation::*, OssReport,
+    OssScheme, OssTransaction, OssSummary, CountrySummary, TaxAddress, TaxCalculation, TaxCategory, TaxContext, TaxRate, TaxZone, TaxableItem, VatId,
 };
 use crate::{Error, Result};
 
@@ -369,8 +368,8 @@ impl TaxService for DefaultTaxService {
             scheme, period, member_state
         );
 
-        // Parse period (YYYY-MM)
-        let (year, month): (i32, i32) = {
+        // Parse period (YYYY-MM) for validation
+        let (_year, _month): (i32, i32) = {
             let parts: Vec<&str> = period.split('-').collect();
             if parts.len() != 2 {
                 return Err(Error::validation("Invalid period format, expected YYYY-MM"));
@@ -634,6 +633,7 @@ struct OssTransactionRow {
 
 /// VAT validation cache row
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 struct VatValidationCache {
     vat_id: String,
     country_code: String,

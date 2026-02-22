@@ -4,13 +4,11 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use rust_decimal::Decimal;
 use uuid::Uuid;
 
 use crate::{
     Result, Error,
     order::{Order, OrderItem, OrderStatus, PaymentStatus, FulfillmentStatus},
-    models::Address,
 };
 
 /// Order repository trait - database agnostic

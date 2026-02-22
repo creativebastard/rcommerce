@@ -126,7 +126,7 @@ impl TaxProvider for AvalaraProvider {
             return Err(Error::Network(format!("Avalara error: {}", error)));
         }
 
-        let result: AvalaraTaxResponse = response
+        let _result: AvalaraTaxResponse = response
             .json()
             .await
             .map_err(|e| Error::Network(format!("Failed to parse Avalara response: {}", e)))?;
@@ -233,6 +233,7 @@ struct AvalaraAddress {
 
 /// Avalara tax response
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AvalaraTaxResponse {
     #[serde(rename = "totalTax")]
     total_tax: Decimal,
@@ -242,6 +243,7 @@ struct AvalaraTaxResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AvalaraLineResponse {
     #[serde(rename = "lineNumber")]
     line_number: String,
@@ -253,6 +255,7 @@ struct AvalaraLineResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AvalaraTaxDetail {
     #[serde(rename = "taxName")]
     tax_name: String,
@@ -367,7 +370,7 @@ impl TaxProvider for TaxJarProvider {
             return Err(Error::Network(format!("TaxJar error: {}", error)));
         }
 
-        let result: TaxJarTaxResponse = response
+        let _result: TaxJarTaxResponse = response
             .json()
             .await
             .map_err(|e| Error::Network(format!("Failed to parse TaxJar response: {}", e)))?;
@@ -437,11 +440,13 @@ struct TaxJarLineItem {
 
 /// TaxJar tax response
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct TaxJarTaxResponse {
     tax: TaxJarTaxAmounts,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct TaxJarTaxAmounts {
     #[serde(rename = "amount_to_collect")]
     amount_to_collect: Decimal,

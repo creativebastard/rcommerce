@@ -20,11 +20,9 @@ use crate::{
     },
     shipping::{
         ShippingProviderFactory, ShippingRate, Package, RateOptions,
-        calculation::{ShippingCalculator, WeightUnit},
     },
     order::{
         OrderService, CreateOrderRequest, CreateOrderItem, Order,
-        OrderStatus, PaymentStatus as OrderPaymentStatus,
     },
     payment::{PaymentGateway, CreatePaymentRequest, PaymentMethod},
     services::CartService,
@@ -36,6 +34,7 @@ pub struct CheckoutService {
     tax_service: Arc<dyn TaxService>,
     order_service: Arc<OrderService>,
     payment_gateway: Arc<dyn PaymentGateway>,
+    #[allow(dead_code)]
     shipping_factory: Arc<ShippingProviderFactory>,
     config: CheckoutConfig,
 }
@@ -530,7 +529,7 @@ impl CheckoutService {
         let tax_address = address_to_tax_address(destination);
         
         // Use TaxCalculator directly for shipping tax
-        let calculator = crate::tax::TaxCalculator::new(
+        let _calculator = crate::tax::TaxCalculator::new(
             vec![], // rates will be fetched by tax service
             vec![], // zones will be fetched by tax service
             vec![], // categories
@@ -636,7 +635,7 @@ impl CheckoutService {
     }
 
     /// Get shipping address stored for cart
-    async fn get_cart_shipping_address(&self, cart_id: Uuid) -> Result<Option<Address>> {
+    async fn get_cart_shipping_address(&self, _cart_id: Uuid) -> Result<Option<Address>> {
         // TODO: Implement address storage/retrieval for carts
         // For now, return None - should be stored during initiate_checkout
         Ok(None)

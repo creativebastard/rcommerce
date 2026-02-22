@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     Result, Error,
-    notification::types::{Notification, DeliveryStatus, NotificationPriority},
+    notification::types::{Notification, DeliveryStatus},
     notification::NotificationChannel,
 };
 

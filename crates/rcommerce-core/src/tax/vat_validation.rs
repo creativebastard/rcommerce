@@ -6,7 +6,7 @@
 use chrono::{DateTime, Duration, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use crate::{Error, Result};
 
@@ -341,6 +341,7 @@ fn validate_vat_format(country_code: &str, number: &str) -> bool {
 
 /// UK VAT validator (post-Brexit)
 pub struct UkVatValidator {
+    #[allow(dead_code)]
     client: reqwest::Client,
 }
 

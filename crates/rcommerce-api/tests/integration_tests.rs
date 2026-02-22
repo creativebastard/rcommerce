@@ -40,7 +40,7 @@ use rcommerce_api::routes;
 
 // Import core types
 use rcommerce_core::models::{
-    Address, CartWithItems, CreateCustomerRequest, Currency, Customer,
+    CartWithItems, CreateCustomerRequest, Currency, Customer,
     ProductType, InventoryPolicy,
 };
 use rcommerce_core::repository::{
@@ -660,6 +660,7 @@ impl TestApp {
 // =============================================================================
 
 #[derive(Debug, Serialize)]
+#[allow(dead_code)]
 struct RegisterRequest {
     email: String,
     password: String,
@@ -668,6 +669,7 @@ struct RegisterRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct AuthResponse {
     access_token: String,
     refresh_token: String,
@@ -676,6 +678,7 @@ struct AuthResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct CustomerInfo {
     id: String,
     email: String,

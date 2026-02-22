@@ -72,7 +72,7 @@ impl OrderService {
         }
         
         // Calculate taxes if tax service is available
-        let tax_calculation = if let Some(ref tax_service) = self.tax_service {
+        let tax_calculation = if let Some(ref _tax_service) = self.tax_service {
             // Try to get address info from metadata or use defaults
             let shipping_address = self.get_shipping_address_from_request(&request).await?;
             let billing_address = self.get_billing_address_from_request(&request).await?;
@@ -162,7 +162,7 @@ impl OrderService {
         }
         
         // Calculate shipping tax
-        let shipping_tax = tax_calculation.as_ref()
+        let _shipping_tax = tax_calculation.as_ref()
             .map(|c| c.shipping_tax)
             .unwrap_or_default();
         

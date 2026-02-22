@@ -2,7 +2,6 @@
 
 use async_trait::async_trait;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 use crate::{
     Result, Error,

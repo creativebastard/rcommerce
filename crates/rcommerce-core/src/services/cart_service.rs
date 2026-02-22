@@ -7,20 +7,20 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use rust_decimal::Decimal;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 use uuid::Uuid;
 
 use crate::{
     Error, Result,
     models::{
         Cart, CartItem, CartWithItems, CartIdentifier, AddToCartInput, 
-        UpdateCartItemInput, ApplyCouponInput, Currency, Address,
+        UpdateCartItemInput, ApplyCouponInput, Address,
     },
     repository::{CartRepository, CouponRepository, Database},
     services::{CouponService, BundleService},
     tax::{
         TaxService, TaxContext, TaxAddress, TaxableItem, CustomerTaxInfo,
-        TransactionType, TaxCalculation, VatId,
+        TransactionType, VatId,
     },
 };
 
@@ -167,7 +167,7 @@ impl CartService {
         let items = cart_with_items.items;
 
         // Calculate tax if address provided and tax service available
-        let (tax_total, tax_breakdown) = if let (Some(address), Some(tax_service)) = (shipping_address, &self.tax_service) {
+        let (tax_total, tax_breakdown) = if let (Some(address), Some(_tax_service)) = (shipping_address, &self.tax_service) {
             match self.calculate_cart_tax(&cart, &items, address, vat_id).await {
                 Ok((tax, breakdown)) => (tax, Some(breakdown)),
                 Err(e) => {
@@ -529,7 +529,7 @@ impl CartService {
         }
 
         // Calculate tax if we have shipping address and tax service
-        cart.tax_total = if let (Some(address_id), Some(tax_service)) = (cart.shipping_address_id, &self.tax_service) {
+        cart.tax_total = if let (Some(_address_id), Some(_tax_service)) = (cart.shipping_address_id, &self.tax_service) {
             // TODO: Fetch address and calculate tax
             // For now, tax will be calculated on-demand via get_cart_with_totals
             Decimal::ZERO

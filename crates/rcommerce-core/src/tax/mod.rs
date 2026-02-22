@@ -20,7 +20,7 @@ pub use models::*;
 pub use service::{TaxService, DefaultTaxService};
 pub use vat_validation::{VatId, VatValidationResult, ViesValidator};
 
-use crate::{Error, Result};
+use crate::Result;
 
 /// Transaction type for tax determination
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

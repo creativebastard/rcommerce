@@ -1342,6 +1342,7 @@ struct OrderRecord {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 struct OrderDetailRecord {
     id: Uuid,
     customer_email: String,
@@ -1375,6 +1376,7 @@ struct CustomerRecord {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 struct CustomerDetailRecord {
     id: Uuid,
     email: String,
@@ -1389,6 +1391,7 @@ struct CustomerDetailRecord {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 struct ApiKeyRecord {
     key_prefix: String,
     name: String,
@@ -1399,6 +1402,7 @@ struct ApiKeyRecord {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 struct ApiKeyDetailRecord {
     id: Uuid,
     key_prefix: String,

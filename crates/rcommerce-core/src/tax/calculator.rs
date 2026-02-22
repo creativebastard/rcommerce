@@ -3,15 +3,14 @@
 //! Core tax calculation logic for the tax system.
 
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::tax::{
     CustomerTaxInfo, TaxAddress, TaxCategory, TaxContext, TaxRate, TaxZone, TaxableItem,
-    TransactionType, VatType,
+    TransactionType,
 };
-use crate::{Error, Result};
+use crate::Result;
 
 /// Tax calculation result
 #[derive(Debug, Clone)]
@@ -92,6 +91,7 @@ pub struct TaxCalculator {
     /// Tax zones
     zones: Vec<TaxZone>,
     /// Tax categories
+    #[allow(dead_code)]
     categories: Vec<TaxCategory>,
 }
 
@@ -250,7 +250,7 @@ impl TaxCalculator {
         &self,
         tax_zone: &TaxZone,
         category_id: Option<Uuid>,
-        context: &TaxContext,
+        _context: &TaxContext,
     ) -> Result<TaxRate> {
         let now = chrono::Local::now().date_naive();
 
