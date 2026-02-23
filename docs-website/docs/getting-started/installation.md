@@ -29,9 +29,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # PostgreSQL 13+ (Required)
 # See database setup below
 
-# Optional but recommended
-# - pkg-config
-# - OpenSSL development headers
+# Optional: Zig for cross-compilation
+# macOS: brew install zig
+# Linux: see https://ziglang.org/download/
 ```
 
 ### Platform-Specific Prerequisites
@@ -43,7 +43,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 pkg install -y \
   postgresql15-client \
   pkgconf \
-  openssl \
   ca_root_nss
 
 # For additional features
@@ -61,10 +60,8 @@ apt-get update
 apt-get install -y \
   build-essential \
   pkg-config \
-  libssl-dev \
   postgresql-client \
   libpq-dev
-
 ```
 
 **Linux (CentOS/RHEL/Fedora):**
@@ -73,7 +70,6 @@ apt-get install -y \
 # Install build dependencies
 yum groupinstall -y "Development Tools"
 yum install -y \
-  openssl-devel \
   postgresql-devel \
   pkgconfig
 ```
@@ -91,17 +87,22 @@ xcode-select --install
 brew install \
   postgresql@15 \
   pkg-config
+
+# Optional: Install Zig for cross-compilation
+brew install zig
 ```
 
 ## Build Steps (All Platforms)
 
+### Quick Build
+
 ```bash
 # Clone repository
 git clone https://github.com/creativebastard/rcommerce.git
-cd gocart
+cd rcommerce
 
 # Build release binary
-cargo build --release
+cargo build --release -p rcommerce-cli
 
 # Binary location
 target/release/rcommerce
@@ -109,6 +110,48 @@ target/release/rcommerce
 # Run tests
 cargo test --release
 ```
+
+### Cross-Compilation Build (Recommended for Distribution)
+
+```bash
+# Install cargo-zigbuild for cross-compilation
+cargo install cargo-zigbuild
+
+# Add cross-compilation targets
+rustup target add \
+  aarch64-apple-darwin \
+  x86_64-apple-darwin \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl \
+  x86_64-unknown-freebsd
+
+# Build for all platforms
+./scripts/build-release.sh
+
+# Or build specific platforms
+./scripts/build-release.sh --macos-only      # macOS only
+./scripts/build-release.sh --linux-only      # Linux (GNU + MUSL)
+./scripts/build-release.sh --musl-only       # Static Linux binaries
+./scripts/build-release.sh --freebsd-only    # FreeBSD only
+```
+
+**Build Outputs:**
+
+| Platform | Binary | Size |
+|----------|--------|------|
+| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB |
+| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB |
+| macOS Universal | `rcommerce-macos-universal` | ~30 MB |
+| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB |
+| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB |
+| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB |
+| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB |
+| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB |
+| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB |
+
+All binaries are output to the `dist/` directory with SHA256 checksums.
 
 ## Initial Setup
 
@@ -173,7 +216,6 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y \
     pkg-config \
-    libssl-dev \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -195,7 +237,6 @@ FROM debian:bookworm-slim
 RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
-    libssl3 \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -247,12 +288,12 @@ When available, download pre-built binaries from the releases page:
 
 ```bash
 # Download for Linux x86_64
-wget https://github.com/captainjez/gocart/releases/download/v0.1.0/rcommerce-linux-x86_64.tar.gz
-tar -xzf rcommerce-linux-x86_64.tar.gz
+wget https://github.com/creativebastard/rcommerce/releases/download/v0.1.0/rcommerce-x86_64-linux-static.tar.gz
+tar -xzf rcommerce-x86_64-linux-static.tar.gz
 sudo mv rcommerce /usr/local/bin/
 
 # Download for macOS ARM64
-wget https://github.com/captainjez/gocart/releases/download/v0.1.0/rcommerce-macos-arm64.tar.gz
+wget https://github.com/creativebastard/rcommerce/releases/download/v0.1.0/rcommerce-macos-arm64.tar.gz
 tar -xzf rcommerce-macos-arm64.tar.gz
 sudo mv rcommerce /usr/local/bin/
 ```
@@ -260,8 +301,10 @@ sudo mv rcommerce /usr/local/bin/
 ### Install via Cargo
 
 ```bash
-# Install from crates.io (when published)
-cargo install rcommerce-cli
+# Install from source
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo install --path crates/rcommerce-cli
 
 # Verify installation
 rcommerce --version
@@ -359,19 +402,17 @@ sudo yum groupinstall "Development Tools"
 xcode-select --install
 ```
 
-**Error: `openssl-sys` build failure**
+**Cross-compilation errors**
 
 ```bash
-# Install OpenSSL development headers
-# Ubuntu/Debian
-sudo apt-get install libssl-dev pkg-config
+# Ensure SQLX_OFFLINE is set for builds without database
+export SQLX_OFFLINE=true
 
-# CentOS/RHEL
-sudo yum install openssl-devel pkgconfig
+# Ensure Zig is installed (for cargo-zigbuild)
+zig version
 
-# macOS
-brew install openssl pkg-config
-export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl/lib/pkgconfig"
+# Reinstall cargo-zigbuild if needed
+cargo install cargo-zigbuild --force
 ```
 
 **Error: `pq-sys` build failure (PostgreSQL)**
@@ -405,6 +446,18 @@ sudo chmod 750 /var/lib/rcommerce /var/log/rcommerce
 sudo lsof -i :8080
 
 # Kill process or change port in configuration
+```
+
+**Static binary won't run on older Linux**
+
+MUSL static binaries should run on any Linux system. If you encounter issues:
+
+```bash
+# Check binary type
+file rcommerce
+
+# Try the GNU version instead (requires glibc)
+./rcommerce-x86_64-linux-gnu
 ```
 
 ## Next Steps

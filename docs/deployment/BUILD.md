@@ -13,25 +13,41 @@ cargo build --release -p rcommerce-cli
 # Binary location: target/release/rcommerce
 ```
 
-### Using the Build Script
+### Using the Cross-Compilation Build Script
 
 ```bash
-# Build for host platform
+# Build for all supported platforms
 ./scripts/build-release.sh
 
-# Build with specific version
-./scripts/build-release.sh 0.1.0
+# Build only macOS targets
+./scripts/build-release.sh --macos-only
+
+# Build only Linux targets (GNU and MUSL)
+./scripts/build-release.sh --linux-only
+
+# Build only static MUSL targets
+./scripts/build-release.sh --musl-only
+
+# Build only FreeBSD targets
+./scripts/build-release.sh --freebsd-only
+
+# Build specific target
+./scripts/build-release.sh x86_64-unknown-linux-musl
 ```
 
 ## Supported Platforms
 
-| Platform | Architecture | Target Triple |
-|----------|--------------|---------------|
-| macOS | Intel (x86_64) | `x86_64-apple-darwin` |
-| macOS | Apple Silicon (ARM64) | `aarch64-apple-darwin` |
-| Linux | x86_64 | `x86_64-unknown-linux-gnu` |
-| Linux | ARM64 | `aarch64-unknown-linux-gnu` |
-| FreeBSD | x86_64 | `x86_64-unknown-freebsd` |
+| Platform | Architecture | Target Triple | Binary Type |
+|----------|--------------|---------------|-------------|
+| macOS | Intel (x86_64) | `x86_64-apple-darwin` | Native |
+| macOS | Apple Silicon (ARM64) | `aarch64-apple-darwin` | Native |
+| macOS | Universal | `universal` | Fat binary (both archs) |
+| Linux | x86_64 (GNU) | `x86_64-unknown-linux-gnu` | Dynamic linking |
+| Linux | x86_64 (MUSL) | `x86_64-unknown-linux-musl` | Static binary |
+| Linux | ARM64 (GNU) | `aarch64-unknown-linux-gnu` | Dynamic linking |
+| Linux | ARM64 (MUSL) | `aarch64-unknown-linux-musl` | Static binary |
+| Linux | ARMv7 (GNU) | `armv7-unknown-linux-gnueabihf` | Dynamic linking |
+| FreeBSD | x86_64 | `x86_64-unknown-freebsd` | Static-ish |
 
 ## Prerequisites
 
@@ -40,7 +56,7 @@ cargo build --release -p rcommerce-cli
 - [Rust](https://rustup.rs/) 1.70.0 or later
 - PostgreSQL 14+ (for runtime)
 
-### macOS
+### macOS (Build Host for Cross-Compilation)
 
 ```bash
 # Install Xcode command line tools
@@ -49,8 +65,22 @@ xcode-select --install
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Add targets for cross-compilation
-rustup target add aarch64-apple-darwin  # For Apple Silicon
+# Install Zig (required for Linux/FreeBSD cross-compilation)
+brew install zig
+
+# Install cargo-zigbuild (required for Linux/FreeBSD cross-compilation)
+cargo install cargo-zigbuild
+
+# Add all targets for cross-compilation
+rustup target add \
+  aarch64-apple-darwin \
+  x86_64-apple-darwin \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  armv7-unknown-linux-gnueabihf \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl \
+  x86_64-unknown-freebsd
 ```
 
 ### Linux
@@ -63,8 +93,9 @@ sudo apt-get install -y build-essential pkg-config libssl-dev
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# For cross-compilation, install cross
-cargo install cross --git https://github.com/cross-rs/cross
+# For cross-compilation, install cargo-zigbuild
+# Note: On Linux, you can also use 'cross' which uses Docker
+cargo install cargo-zigbuild
 ```
 
 ### FreeBSD
@@ -79,7 +110,25 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ## Cross-Compilation
 
-### Using `cross` (Recommended for Linux)
+### Using `cargo-zigbuild` (Recommended from macOS)
+
+`cargo-zigbuild` uses Zig as the linker, enabling cross-compilation without Docker:
+
+```bash
+# Build for Linux x86_64 (GNU)
+cargo zigbuild --release --target x86_64-unknown-linux-gnu -p rcommerce-cli
+
+# Build for Linux ARM64 (GNU)
+cargo zigbuild --release --target aarch64-unknown-linux-gnu -p rcommerce-cli
+
+# Build for Linux x86_64 (static MUSL)
+cargo zigbuild --release --target x86_64-unknown-linux-musl -p rcommerce-cli
+
+# Build for FreeBSD x86_64
+cargo zigbuild --release --target x86_64-unknown-freebsd -p rcommerce-cli
+```
+
+### Using `cross` (Alternative for Linux hosts)
 
 The `cross` tool uses Docker containers for cross-compilation:
 
@@ -105,7 +154,7 @@ docker build -f Dockerfile.build --target export --output type=local,dest=./rele
 
 ### macOS Cross-Compilation
 
-macOS can cross-compile between Intel and Apple Silicon:
+macOS can cross-compile between Intel and Apple Silicon using native cargo:
 
 ```bash
 # On Intel Mac, build for Apple Silicon
@@ -115,15 +164,13 @@ cargo build --release --target aarch64-apple-darwin -p rcommerce-cli
 # On Apple Silicon Mac, build for Intel
 rustup target add x86_64-apple-darwin
 cargo build --release --target x86_64-apple-darwin -p rcommerce-cli
+
+# Create universal binary (fat binary)
+lipo -create \
+  target/x86_64-apple-darwin/release/rcommerce \
+  target/aarch64-apple-darwin/release/rcommerce \
+  -output target/release/rcommerce-universal
 ```
-
-### FreeBSD Cross-Compilation
-
-FreeBSD cross-compilation requires special setup. Options:
-
-1. **Use a FreeBSD VM** (recommended)
-2. **Use GitHub Actions** (see `.github/workflows/release.yml`)
-3. **Build natively on FreeBSD**
 
 ## Automated Builds with GitHub Actions
 
@@ -137,22 +184,27 @@ git push origin v0.1.0
 
 The workflow will:
 1. Build for macOS (Intel and Apple Silicon)
-2. Build for Linux (x86_64 and ARM64)
+2. Build for Linux (x86_64, ARM64, ARMv7 with both GNU and MUSL)
 3. Build for FreeBSD (x86_64)
-4. Create a GitHub Release with all binaries
-5. Generate SHA256 checksums
+4. Create macOS universal binary
+5. Create a GitHub Release with all binaries
+6. Generate SHA256 checksums
 
 ## Binary Sizes
 
-Typical release binary sizes (compressed):
+Typical release binary sizes:
 
-| Platform | Size |
-|----------|------|
-| macOS Intel | ~8 MB |
-| macOS Apple Silicon | ~8 MB |
-| Linux x86_64 | ~10 MB |
-| Linux ARM64 | ~10 MB |
-| FreeBSD x86_64 | ~10 MB |
+| Platform | Size | Type |
+|----------|------|------|
+| macOS ARM64 | ~14 MB | Native |
+| macOS x86_64 | ~16 MB | Native |
+| macOS Universal | ~30 MB | Fat binary |
+| Linux ARM64 GNU | ~13 MB | Dynamic linking |
+| Linux ARM64 MUSL | ~12 MB | Static binary |
+| Linux x86_64 GNU | ~15 MB | Dynamic linking |
+| Linux x86_64 MUSL | ~14 MB | Static binary |
+| Linux ARMv7 GNU | ~12 MB | Dynamic linking |
+| FreeBSD x86_64 | ~15 MB | Static-ish |
 
 ## Verification
 
@@ -180,38 +232,62 @@ Install a C compiler:
 - Ubuntu/Debian: `sudo apt-get install build-essential`
 - FreeBSD: `pkg install gcc`
 
-### OpenSSL errors
+### "target may not be installed"
 
-Install OpenSSL development libraries:
-- Ubuntu/Debian: `sudo apt-get install libssl-dev pkg-config`
-- macOS: OpenSSL is included with Xcode
-- FreeBSD: `pkg install openssl`
+Add the target to Rust:
+```bash
+rustup target add <target-triple>
+```
 
-### Cross-compilation failures
+### Cross-compilation failures with cargo-zigbuild
 
-1. Ensure the target is installed: `rustup target add <target>`
-2. For Linux cross-compilation, use `cross` instead of `cargo`
-3. Check Docker is running (required for `cross`)
+1. Ensure Zig is installed: `brew install zig`
+2. Ensure cargo-zigbuild is installed: `cargo install cargo-zigbuild`
+3. Set `SQLX_OFFLINE=true` for builds without database: `export SQLX_OFFLINE=true`
 
 ### Binary won't run on target system
 
-The binary may be dynamically linked. Either:
-1. Build a static binary (see below)
-2. Ensure target system has required libraries
+**GNU targets**: The binary is dynamically linked and requires glibc. Use MUSL targets for fully static binaries.
+
+**MUSL targets**: Fully static, should run on any Linux system.
 
 ## Advanced: Static Linking
 
-For fully static Linux binaries:
+For fully static Linux binaries, use the MUSL targets:
 
 ```bash
 # Install musl target
 rustup target add x86_64-unknown-linux-musl
 
-# Build with musl (static linking)
-cargo build --release --target x86_64-unknown-linux-musl -p rcommerce-cli
+# Build with musl (static linking) using cargo-zigbuild
+cargo zigbuild --release --target x86_64-unknown-linux-musl -p rcommerce-cli
 ```
 
-Note: Static linking with musl may have performance implications and PostgreSQL client libraries may still require dynamic linking.
+## Build Configuration
+
+### TLS Implementation
+
+R Commerce uses **rustls** (pure Rust TLS implementation) instead of OpenSSL for easier cross-compilation. The following crates are configured:
+
+- `reqwest` - Uses `rustls-tls` feature
+- `sqlx` - Uses `runtime-tokio-rustls` feature
+- `lettre` - Uses `tokio1-rustls-tls` feature
+- `redis` - Uses `tokio-rustls-comp` feature
+
+This avoids OpenSSL/BoringSSL linking issues during cross-compilation.
+
+### Environment Variables
+
+```bash
+# For builds without database connection
+export SQLX_OFFLINE=true
+
+# For verbose build output
+export RUST_LOG=debug
+
+# For faster builds (disable LTO)
+export CARGO_PROFILE_RELEASE_LTO=false
+```
 
 ## Distribution
 

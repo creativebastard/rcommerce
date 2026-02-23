@@ -8,6 +8,7 @@ This guide walks you through setting up a local development environment for R Co
 - **PostgreSQL 13+**
 - **Redis 6+** (optional, for caching)
 - **Git**
+- **Zig** (optional, for cross-compilation)
 
 ## Quick Start
 
@@ -109,6 +110,59 @@ cargo test -p rcommerce-core
 cargo test -- --nocapture
 ```
 
+## Cross-Compilation
+
+To build binaries for other platforms from your development machine:
+
+### Prerequisites for Cross-Compilation
+
+```bash
+# Install Zig (cross-compilation linker)
+brew install zig
+
+# Install cargo-zigbuild
+cargo install cargo-zigbuild
+
+# Add cross-compilation targets
+rustup target add \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl \
+  x86_64-unknown-freebsd
+```
+
+### Using the Build Script
+
+```bash
+# Build for all platforms
+./scripts/build-release.sh
+
+# Build only macOS targets
+./scripts/build-release.sh --macos-only
+
+# Build only Linux targets
+./scripts/build-release.sh --linux-only
+
+# Build specific target
+./scripts/build-release.sh x86_64-unknown-linux-musl
+```
+
+### Manual Cross-Compilation
+
+```bash
+# Build for Linux x86_64 (requires cargo-zigbuild)
+SQLX_OFFLINE=true cargo zigbuild --release --target x86_64-unknown-linux-musl -p rcommerce-cli
+
+# Build for Linux ARM64
+SQLX_OFFLINE=true cargo zigbuild --release --target aarch64-unknown-linux-musl -p rcommerce-cli
+
+# Build for FreeBSD
+SQLX_OFFLINE=true cargo zigbuild --release --target x86_64-unknown-freebsd -p rcommerce-cli
+```
+
+Binaries will be in `target/<target-triple>/release/rcommerce`.
+
 ## Development Tools
 
 ### Hot Reload
@@ -165,6 +219,15 @@ brew link libpq --force
 # Set SQLX_OFFLINE for builds without database
 export SQLX_OFFLINE=true
 cargo build
+```
+
+**Cross-compilation errors with OpenSSL**
+
+R Commerce uses rustls (pure Rust TLS) instead of OpenSSL, so OpenSSL linking issues should not occur. If you encounter TLS-related build errors:
+
+```bash
+# Ensure you're using the rustls feature flags
+grep -r "rustls" Cargo.toml crates/*/Cargo.toml
 ```
 
 ### Database Connection Issues

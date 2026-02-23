@@ -29,9 +29,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # PostgreSQL 13+（必需）
 # 请参阅下面的数据库设置
 
-# 可选但推荐
-# - pkg-config
-# - OpenSSL 开发头文件
+# 可选：Zig 用于交叉编译
+# macOS: brew install zig
+# Linux: 参见 https://ziglang.org/download/
 ```
 
 ### 平台特定前提条件
@@ -43,7 +43,6 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 pkg install -y \
   postgresql15-client \
   pkgconf \
-  openssl \
   ca_root_nss
 
 # 用于附加功能
@@ -61,10 +60,8 @@ apt-get update
 apt-get install -y \
   build-essential \
   pkg-config \
-  libssl-dev \
   postgresql-client \
   libpq-dev
-
 ```
 
 **Linux (CentOS/RHEL/Fedora)：**
@@ -73,7 +70,6 @@ apt-get install -y \
 # 安装构建依赖
 yum groupinstall -y "Development Tools"
 yum install -y \
-  openssl-devel \
   postgresql-devel \
   pkgconfig
 ```
@@ -91,31 +87,98 @@ xcode-select --install
 brew install \
   postgresql@15 \
   pkg-config
+
+# 可选：安装 Zig 用于交叉编译
+brew install zig
 ```
 
 ## 构建步骤（所有平台）
 
+### 快速构建
+
 ```bash
 # 克隆仓库
 git clone https://github.com/creativebastard/rcommerce.git
-cd gocart
+cd rcommerce
 
 # 构建发布二进制文件
-cargo build --release
+cargo build --release -p rcommerce-cli
 
 # 二进制文件位置
 target/release/rcommerce
 
 # 运行测试
 cargo test --release
+```
 
-# 检查平台兼容性
-cargo check --target x86_64-unknown-linux-gnu     # Linux x86_64
-cargo check --target aarch64-unknown-linux-gnu    # Linux ARM64
-cargo check --target x86_64-unknown-freebsd      # FreeBSD x86_64
-cargo check --target aarch64-unknown-freebsd     # FreeBSD ARM64
-cargo check --target x86_64-apple-darwin         # macOS x86_64
-cargo check --target aarch64-apple-darwin        # macOS ARM64 (Apple Silicon)
+### 交叉编译构建（推荐用于分发）
+
+```bash
+# 安装 cargo-zigbuild 用于交叉编译
+cargo install cargo-zigbuild
+
+# 添加交叉编译目标
+rustup target add \
+  aarch64-apple-darwin \
+  x86_64-apple-darwin \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl \
+  x86_64-unknown-freebsd
+
+# 为所有平台构建
+./scripts/build-release.sh
+
+# 或构建特定平台
+./scripts/build-release.sh --macos-only      # 仅 macOS
+./scripts/build-release.sh --linux-only      # Linux (GNU + MUSL)
+./scripts/build-release.sh --musl-only       # 静态 Linux 二进制文件
+./scripts/build-release.sh --freebsd-only    # 仅 FreeBSD
+```
+
+**构建输出：**
+
+| 平台 | 二进制文件 | 大小 |
+|------|------------|------|
+| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB |
+| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB |
+| macOS 通用 | `rcommerce-macos-universal` | ~30 MB |
+| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB |
+| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB |
+| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB |
+| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB |
+| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB |
+| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB |
+
+所有二进制文件都输出到 `dist/` 目录，并包含 SHA256 校验和。
+
+## 初始设置
+
+构建完成后，使用交互式设置向导配置您的实例：
+
+```bash
+# 运行设置向导
+./target/release/rcommerce setup
+
+# 向导将引导您完成：
+# - 数据库配置和迁移
+# - 从现有商店导入数据（可选）
+# - 服务器、缓存和安全设置
+# - TLS/SSL（包括 Let's Encrypt）
+# - 支付网关和通知
+```
+
+**设置向导选项：**
+
+```bash
+# 保存配置到特定位置
+./target/release/rcommerce setup -o /etc/rcommerce/config.toml
+
+# 如果跳过向导，请手动配置：
+# 1. 创建 config.toml（参见配置指南）
+# 2. 运行迁移：./target/release/rcommerce db migrate -c config.toml
+# 3. 启动服务器：./target/release/rcommerce server -c config.toml
 ```
 
 ## Docker 安装
@@ -153,7 +216,6 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y \
     pkg-config \
-    libssl-dev \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -175,7 +237,6 @@ FROM debian:bookworm-slim
 RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
-    libssl3 \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -227,12 +288,12 @@ docker run -d \
 
 ```bash
 # 下载 Linux x86_64 版本
-wget https://github.com/captainjez/gocart/releases/download/v0.1.0/rcommerce-linux-x86_64.tar.gz
-tar -xzf rcommerce-linux-x86_64.tar.gz
+wget https://github.com/creativebastard/rcommerce/releases/download/v0.1.0/rcommerce-x86_64-linux-static.tar.gz
+tar -xzf rcommerce-x86_64-linux-static.tar.gz
 sudo mv rcommerce /usr/local/bin/
 
 # 下载 macOS ARM64 版本
-wget https://github.com/captainjez/gocart/releases/download/v0.1.0/rcommerce-macos-arm64.tar.gz
+wget https://github.com/creativebastard/rcommerce/releases/download/v0.1.0/rcommerce-macos-arm64.tar.gz
 tar -xzf rcommerce-macos-arm64.tar.gz
 sudo mv rcommerce /usr/local/bin/
 ```
@@ -240,8 +301,10 @@ sudo mv rcommerce /usr/local/bin/
 ### 通过 Cargo 安装
 
 ```bash
-# 从 crates.io 安装（发布时）
-cargo install rcommerce-cli
+# 从源码安装
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo install --path crates/rcommerce-cli
 
 # 验证安装
 rcommerce --version
@@ -339,19 +402,17 @@ sudo yum groupinstall "Development Tools"
 xcode-select --install
 ```
 
-**错误：`openssl-sys` 构建失败**
+**交叉编译错误**
 
 ```bash
-# 安装 OpenSSL 开发头文件
-# Ubuntu/Debian
-sudo apt-get install libssl-dev pkg-config
+# 确保为无数据库构建设置了 SQLX_OFFLINE
+export SQLX_OFFLINE=true
 
-# CentOS/RHEL
-sudo yum install openssl-devel pkgconfig
+# 确保已安装 Zig（用于 cargo-zigbuild）
+zig version
 
-# macOS
-brew install openssl pkg-config
-export PKG_CONFIG_PATH="/opt/homebrew/opt/openssl/lib/pkgconfig"
+# 如需，重新安装 cargo-zigbuild
+cargo install cargo-zigbuild --force
 ```
 
 **错误：`pq-sys` 构建失败 (PostgreSQL)**
@@ -385,6 +446,18 @@ sudo chmod 750 /var/lib/rcommerce /var/log/rcommerce
 sudo lsof -i :8080
 
 # 终止进程或在配置中更改端口
+```
+
+**静态二进制文件无法在旧版 Linux 上运行**
+
+MUSL 静态二进制文件应该可以在任何 Linux 系统上运行。如果遇到问题：
+
+```bash
+# 检查二进制文件类型
+file rcommerce
+
+# 尝试改用 GNU 版本（需要 glibc）
+./rcommerce-x86_64-linux-gnu
 ```
 
 ## 下一步

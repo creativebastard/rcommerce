@@ -8,6 +8,7 @@
 - **PostgreSQL 13+**
 - **Redis 6+**（可选，用于缓存）
 - **Git**
+- **Zig**（可选，用于交叉编译）
 
 ## 快速开始
 
@@ -109,6 +110,59 @@ cargo test -p rcommerce-core
 cargo test -- --nocapture
 ```
 
+## 交叉编译
+
+要从开发机器为其他平台构建二进制文件：
+
+### 交叉编译的前提条件
+
+```bash
+# 安装 Zig（交叉编译链接器）
+brew install zig
+
+# 安装 cargo-zigbuild
+cargo install cargo-zigbuild
+
+# 添加交叉编译目标
+rustup target add \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl \
+  x86_64-unknown-freebsd
+```
+
+### 使用构建脚本
+
+```bash
+# 为所有平台构建
+./scripts/build-release.sh
+
+# 仅构建 macOS 目标
+./scripts/build-release.sh --macos-only
+
+# 仅构建 Linux 目标
+./scripts/build-release.sh --linux-only
+
+# 构建特定目标
+./scripts/build-release.sh x86_64-unknown-linux-musl
+```
+
+### 手动交叉编译
+
+```bash
+# 为 Linux x86_64 构建（需要 cargo-zigbuild）
+SQLX_OFFLINE=true cargo zigbuild --release --target x86_64-unknown-linux-musl -p rcommerce-cli
+
+# 为 Linux ARM64 构建
+SQLX_OFFLINE=true cargo zigbuild --release --target aarch64-unknown-linux-musl -p rcommerce-cli
+
+# 为 FreeBSD 构建
+SQLX_OFFLINE=true cargo zigbuild --release --target x86_64-unknown-freebsd -p rcommerce-cli
+```
+
+二进制文件将位于 `target/<target-triple>/release/rcommerce`。
+
 ## 开发工具
 
 ### 热重载
@@ -165,6 +219,15 @@ brew link libpq --force
 # 为无数据库构建设置 SQLX_OFFLINE
 export SQLX_OFFLINE=true
 cargo build
+```
+
+**OpenSSL 交叉编译错误**
+
+R Commerce 使用 rustls（纯 Rust TLS）而不是 OpenSSL，因此不应该出现 OpenSSL 链接问题。如果遇到 TLS 相关的构建错误：
+
+```bash
+# 确保您使用的是 rustls 功能标志
+grep -r "rustls" Cargo.toml crates/*/Cargo.toml
 ```
 
 ### 数据库连接问题
