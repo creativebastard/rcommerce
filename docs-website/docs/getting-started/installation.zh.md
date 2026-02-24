@@ -139,19 +139,21 @@ rustup target add \
 
 **构建输出：**
 
-| 平台 | 二进制文件 | 大小 |
-|------|------------|------|
-| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB |
-| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB |
-| macOS 通用 | `rcommerce-macos-universal` | ~30 MB |
-| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB |
-| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB |
-| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB |
-| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB |
-| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB |
-| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB |
+| 平台 | 二进制文件 | 大小 | 构建方式 |
+|------|------------|------|----------|
+| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB | 本地或交叉编译 |
+| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB | 本地或交叉编译 |
+| macOS 通用 | `rcommerce-macos-universal` | ~30 MB | 本地或交叉编译 |
+| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB | 本地或交叉编译 |
+| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB | 本地或交叉编译 |
+| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB | 本地或交叉编译 |
+| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB | 本地或交叉编译 |
+| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB | 本地或交叉编译 |
+| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB | 仅本地构建（见下方 BSD 章节） |
 
 所有二进制文件都输出到 `dist/` 目录，并包含 SHA256 校验和。
+
+**注意：** BSD 系统（FreeBSD、NetBSD、OpenBSD、DragonFlyBSD）必须在目标系统上本地构建。详见下方的 [BSD 系统本地构建](#bsd-系统本地构建) 章节。
 
 ## 初始设置
 
@@ -278,6 +280,61 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config/production.toml:/etc/rcommerce/config.toml:ro \
   rcommerce:latest
+```
+
+## BSD 系统本地构建
+
+BSD 系统（FreeBSD、NetBSD、OpenBSD、DragonFlyBSD）需要在目标系统上**本地构建**。交叉编译不受支持。
+
+### FreeBSD
+
+```bash
+# 安装依赖
+pkg install rust postgresql15-client git
+
+# 克隆并构建
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### NetBSD
+
+```bash
+# 安装依赖（使用 pkgin）
+pkgin install rust postgresql15-client git
+
+# 或从 pkgsrc
+cd /usr/pkgsrc/databases/postgresql15-client && make install
+
+# 克隆并构建
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### OpenBSD
+
+```bash
+# 安装依赖
+pkg_add rust postgresql-client git
+
+# 克隆并构建
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### DragonFlyBSD
+
+```bash
+# 安装依赖
+pkg install rust postgresql15-client git
+
+# 克隆并构建
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
 ```
 
 ## 二进制安装

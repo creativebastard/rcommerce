@@ -211,40 +211,76 @@ Typical release binary sizes:
 
 ## BSD Support Notes
 
-### FreeBSD ✅
+### Native Build Instructions
 
-FreeBSD x86_64 cross-compilation works using `cargo-zigbuild`:
+All BSD systems should be built **natively** on the target system. Cross-compilation is not supported due to rustls/aws-lc-sys dependencies.
+
+#### FreeBSD ✅
 
 ```bash
-# From macOS or Linux
-cargo zigbuild --release --target x86_64-unknown-freebsd -p rcommerce-cli
+# Install dependencies
+pkg install rust postgresql15-client git
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+
+# Binary location: target/release/rcommerce
 ```
 
-### NetBSD ⚠️
-
-NetBSD has a Rust target (`x86_64-unknown-netbsd`) but **cross-compilation is not supported** due to:
-- rustls → aws-lc-rs dependency with platform-specific assembly
-- aws-lc-sys crypto library doesn't support NetBSD cross-compilation
-
-**Workaround:** Build natively on NetBSD:
+#### NetBSD ✅
 
 ```bash
-# On NetBSD system
-pkg install rust postgresql15-client
+# Install dependencies (using pkgin)
+pkgin install rust postgresql15-client git
+
+# Or from pkgsrc
+cd /usr/pkgsrc/databases/postgresql15-client && make install
+
+# Clone and build
 git clone https://github.com/creativebastard/rcommerce.git
 cd rcommerce
 cargo build --release -p rcommerce-cli
 ```
 
-### OpenBSD ❌
+#### OpenBSD ✅
 
-OpenBSD does not have an official Rust target (`x86_64-unknown-openbsd` does not exist in rustup).
+```bash
+# Install dependencies
+pkg_add rust postgresql-client git
 
-To support OpenBSD, Rust would need to add a target. See [Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html).
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
 
-### DragonFlyBSD ❌
+#### DragonFlyBSD ✅
 
-DragonFlyBSD also lacks an official Rust target. Native builds are not currently possible with standard Rust.
+```bash
+# Install dependencies
+pkg install rust postgresql15-client git
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### Cross-Compilation Status
+
+| BSD | Cross-Compile | Native Build | Notes |
+|-----|---------------|--------------|-------|
+| **FreeBSD** x86_64 | ⚠️ Experimental | ✅ Recommended | cargo-zigbuild may work |
+| **NetBSD** x86_64 | ❌ Not supported | ✅ Supported | aws-lc-sys limitation |
+| **OpenBSD** x86_64 | ❌ Not supported | ✅ Supported | No Rust target for cross-compile |
+| **DragonFlyBSD** x86_64 | ❌ Not supported | ✅ Supported | No Rust target for cross-compile |
+
+**Why no cross-compilation?**
+- rustls → aws-lc-rs → aws-lc-sys dependency chain
+- aws-lc-sys contains x86_64 assembly code that doesn't cross-compile to BSDs
+- OpenBSD and DragonFlyBSD lack official Rust targets for cross-compilation
 
 ## Verification
 

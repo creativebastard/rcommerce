@@ -139,19 +139,21 @@ rustup target add \
 
 **Build Outputs:**
 
-| Platform | Binary | Size |
-|----------|--------|------|
-| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB |
-| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB |
-| macOS Universal | `rcommerce-macos-universal` | ~30 MB |
-| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB |
-| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB |
-| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB |
-| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB |
-| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB |
-| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB |
+| Platform | Binary | Size | Build Method |
+|----------|--------|------|--------------|
+| macOS ARM64 | `rcommerce-macos-arm64` | ~14 MB | Native or cross-compile |
+| macOS x86_64 | `rcommerce-macos-x86_64` | ~16 MB | Native or cross-compile |
+| macOS Universal | `rcommerce-macos-universal` | ~30 MB | Native or cross-compile |
+| Linux x86_64 GNU | `rcommerce-x86_64-linux-gnu` | ~15 MB | Native or cross-compile |
+| Linux x86_64 MUSL | `rcommerce-x86_64-linux-static` | ~14 MB | Native or cross-compile |
+| Linux ARM64 GNU | `rcommerce-aarch64-linux-gnu` | ~13 MB | Native or cross-compile |
+| Linux ARM64 MUSL | `rcommerce-aarch64-linux-static` | ~12 MB | Native or cross-compile |
+| Linux ARMv7 | `rcommerce-armv7-linux` | ~12 MB | Native or cross-compile |
+| FreeBSD x86_64 | `rcommerce-x86_64-freebsd` | ~15 MB | Native only (see BSD section below) |
 
 All binaries are output to the `dist/` directory with SHA256 checksums.
+
+**Note:** BSD systems (FreeBSD, NetBSD, OpenBSD, DragonFlyBSD) must be built natively. See [BSD Native Build](#bsd-native-build) section below.
 
 ## Initial Setup
 
@@ -278,6 +280,61 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config/production.toml:/etc/rcommerce/config.toml:ro \
   rcommerce:latest
+```
+
+## BSD Native Build
+
+BSD systems (FreeBSD, NetBSD, OpenBSD, DragonFlyBSD) must be built **natively** on the target system. Cross-compilation is not supported.
+
+### FreeBSD
+
+```bash
+# Install dependencies
+pkg install rust postgresql15-client git
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### NetBSD
+
+```bash
+# Install dependencies (using pkgin)
+pkgin install rust postgresql15-client git
+
+# Or from pkgsrc
+cd /usr/pkgsrc/databases/postgresql15-client && make install
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### OpenBSD
+
+```bash
+# Install dependencies
+pkg_add rust postgresql-client git
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### DragonFlyBSD
+
+```bash
+# Install dependencies
+pkg install rust postgresql15-client git
+
+# Clone and build
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
 ```
 
 ## Binary Installation
