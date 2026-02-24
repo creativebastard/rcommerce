@@ -27,6 +27,9 @@ MACOS_TARGETS=("aarch64-apple-darwin" "x86_64-apple-darwin")
 LINUX_GNU_TARGETS=("x86_64-unknown-linux-gnu" "aarch64-unknown-linux-gnu" "armv7-unknown-linux-gnueabihf")
 LINUX_MUSL_TARGETS=("x86_64-unknown-linux-musl" "aarch64-unknown-linux-musl")
 FREEBSD_TARGETS=("x86_64-unknown-freebsd")
+FREEBSD_TARGETS=("x86_64-unknown-freebsd")
+# NetBSD has rustls/aws-lc-sys issues - disabled for now
+# NETBSD_TARGETS=("x86_64-unknown-netbsd")
 
 ALL_TARGETS=("${MACOS_TARGETS[@]}" "${LINUX_GNU_TARGETS[@]}" "${LINUX_MUSL_TARGETS[@]}" "${FREEBSD_TARGETS[@]}")
 
@@ -54,7 +57,7 @@ check_prerequisites() {
     
     # Check cargo-zigbuild (for Linux/FreeBSD)
     if ! command -v cargo-zigbuild &> /dev/null; then
-        echo -e "${YELLOW}⚠ cargo-zigbuild not found (needed for Linux/FreeBSD builds)${NC}"
+        echo -e "${YELLOW}⚠ cargo-zigbuild not found (needed for Linux/BSD builds)${NC}"
         echo -e "  Install with: ${CYAN}cargo install cargo-zigbuild${NC}"
         HAS_ZIGBUILD=false
     else
@@ -188,6 +191,15 @@ copy_artifacts() {
             echo -e "${GREEN}✓${NC} rcommerce-${name}"
         fi
     done
+    
+    # NetBSD binaries (disabled - see https://github.com/rustls/rustls/issues/...)    
+    # for target in "${NETBSD_TARGETS[@]}"; do
+    #     if [ -f "target/${target}/release/rcommerce" ]; then
+    #         local name=$(echo "$target" | sed 's/-unknown//g')
+    #         cp "target/${target}/release/rcommerce" "${DIST_DIR}/rcommerce-${name}"
+    #         echo -e "${GREEN}✓${NC} rcommerce-${name}"
+    #     fi
+    # done
 }
 
 generate_checksums() {
@@ -248,6 +260,11 @@ main() {
                 --freebsd-only)
                     build_freebsd=true
                     ;;
+                --netbsd-only)
+                    echo -e "${YELLOW}⚠ NetBSD cross-compilation disabled (aws-lc-sys compatibility issues)${NC}"
+                    echo -e "  Build natively on NetBSD instead, or use FreeBSD target"
+                    exit 0
+                    ;;
                 aarch64-apple-darwin|x86_64-apple-darwin|x86_64-unknown-linux-gnu|aarch64-unknown-linux-gnu|armv7-unknown-linux-gnueabihf|x86_64-unknown-linux-musl|aarch64-unknown-linux-musl|x86_64-unknown-freebsd)
                     targets_to_build+=("$arg")
                     ;;
@@ -274,6 +291,7 @@ main() {
         if [ "$build_freebsd" = true ]; then
             targets_to_build+=("${FREEBSD_TARGETS[@]}")
         fi
+        
     fi
     
     echo -e "${BLUE}ℹ Building ${#targets_to_build[@]} target(s)...${NC}"

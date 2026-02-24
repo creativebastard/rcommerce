@@ -37,17 +37,20 @@ cargo build --release -p rcommerce-cli
 
 ## Supported Platforms
 
-| Platform | Architecture | Target Triple | Binary Type |
-|----------|--------------|---------------|-------------|
-| macOS | Intel (x86_64) | `x86_64-apple-darwin` | Native |
-| macOS | Apple Silicon (ARM64) | `aarch64-apple-darwin` | Native |
-| macOS | Universal | `universal` | Fat binary (both archs) |
-| Linux | x86_64 (GNU) | `x86_64-unknown-linux-gnu` | Dynamic linking |
-| Linux | x86_64 (MUSL) | `x86_64-unknown-linux-musl` | Static binary |
-| Linux | ARM64 (GNU) | `aarch64-unknown-linux-gnu` | Dynamic linking |
-| Linux | ARM64 (MUSL) | `aarch64-unknown-linux-musl` | Static binary |
-| Linux | ARMv7 (GNU) | `armv7-unknown-linux-gnueabihf` | Dynamic linking |
-| FreeBSD | x86_64 | `x86_64-unknown-freebsd` | Static-ish |
+| Platform | Architecture | Target Triple | Binary Type | Notes |
+|----------|--------------|---------------|-------------|-------|
+| macOS | Intel (x86_64) | `x86_64-apple-darwin` | Native | ✅ Fully supported |
+| macOS | Apple Silicon (ARM64) | `aarch64-apple-darwin` | Native | ✅ Fully supported |
+| macOS | Universal | `universal` | Fat binary | ✅ Both archs |
+| Linux | x86_64 (GNU) | `x86_64-unknown-linux-gnu` | Dynamic linking | ✅ Fully supported |
+| Linux | x86_64 (MUSL) | `x86_64-unknown-linux-musl` | Static binary | ✅ Fully supported |
+| Linux | ARM64 (GNU) | `aarch64-unknown-linux-gnu` | Dynamic linking | ✅ Fully supported |
+| Linux | ARM64 (MUSL) | `aarch64-unknown-linux-musl` | Static binary | ✅ Fully supported |
+| Linux | ARMv7 (GNU) | `armv7-unknown-linux-gnueabihf` | Dynamic linking | ✅ Fully supported |
+| FreeBSD | x86_64 | `x86_64-unknown-freebsd` | Static-ish | ✅ Cross-compilation works |
+| NetBSD | x86_64 | `x86_64-unknown-netbsd` | - | ⚠️ Build natively (see below) |
+| OpenBSD | - | - | - | ❌ No Rust target available |
+| DragonFlyBSD | - | - | - | ❌ No Rust target available |
 
 ## Prerequisites
 
@@ -205,6 +208,43 @@ Typical release binary sizes:
 | Linux x86_64 MUSL | ~14 MB | Static binary |
 | Linux ARMv7 GNU | ~12 MB | Dynamic linking |
 | FreeBSD x86_64 | ~15 MB | Static-ish |
+
+## BSD Support Notes
+
+### FreeBSD ✅
+
+FreeBSD x86_64 cross-compilation works using `cargo-zigbuild`:
+
+```bash
+# From macOS or Linux
+cargo zigbuild --release --target x86_64-unknown-freebsd -p rcommerce-cli
+```
+
+### NetBSD ⚠️
+
+NetBSD has a Rust target (`x86_64-unknown-netbsd`) but **cross-compilation is not supported** due to:
+- rustls → aws-lc-rs dependency with platform-specific assembly
+- aws-lc-sys crypto library doesn't support NetBSD cross-compilation
+
+**Workaround:** Build natively on NetBSD:
+
+```bash
+# On NetBSD system
+pkg install rust postgresql15-client
+git clone https://github.com/creativebastard/rcommerce.git
+cd rcommerce
+cargo build --release -p rcommerce-cli
+```
+
+### OpenBSD ❌
+
+OpenBSD does not have an official Rust target (`x86_64-unknown-openbsd` does not exist in rustup).
+
+To support OpenBSD, Rust would need to add a target. See [Rust Platform Support](https://doc.rust-lang.org/nightly/rustc/platform-support.html).
+
+### DragonFlyBSD ❌
+
+DragonFlyBSD also lacks an official Rust target. Native builds are not currently possible with standard Rust.
 
 ## Verification
 
