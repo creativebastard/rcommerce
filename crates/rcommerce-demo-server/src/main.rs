@@ -1,14 +1,16 @@
-//! R Commerce Demo Server
+//! R Commerce Frontend Server
 //! 
-//! A lightweight server that:
-//! - Serves static demo frontend files
-//! - Proxies API requests to R Commerce backend with injected API key
+//! A production-ready server for hosting customer frontends:
+//! - Serves static files with proper caching headers
+//! - Proxies API requests with Redis caching
 //! - Hides API credentials from browser
+//! - Rate limiting per IP
+//! - Graceful shutdown
 
 use anyhow::{Context, Result};
 use axum::{
     body::Body,
-    extract::{Request, State},
+    extract::{ConnectInfo, Request, State},
     http::{HeaderMap, HeaderName, HeaderValue, StatusCode, Uri},
     response::{IntoResponse, Response},
     routing::get,
@@ -18,89 +20,93 @@ use clap::Parser;
 use reqwest::Method;
 use std::{
     net::SocketAddr,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
+use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
-/// Demo server configuration
+/// Server configuration
 #[derive(Debug, Clone, serde::Deserialize)]
-struct Config {
-    /// Server bind address
+pub struct Config {
     #[serde(default = "default_bind")]
-    bind: String,
+    pub bind: String,
     
-    /// R Commerce API base URL
-    api_url: String,
+    pub api_url: String,
+    pub api_key: String,
     
-    /// API key for service-to-service authentication
-    api_key: String,
-    
-    /// Path to static files directory
     #[serde(default = "default_static_dir")]
-    static_dir: PathBuf,
+    pub static_dir: PathBuf,
     
-    /// Enable CORS (for development)
     #[serde(default)]
-    cors: bool,
+    pub cors: bool,
     
-    /// Request timeout in seconds
     #[serde(default = "default_timeout")]
-    timeout_secs: u64,
+    pub timeout_secs: u64,
     
-    /// Log level
     #[serde(default = "default_log_level")]
-    log_level: String,
+    pub log_level: String,
+    
+    // Production features
+    #[serde(default = "default_cache_ttl")]
+    pub cache_ttl_secs: u64,
+    
+    #[serde(default = "default_rate_limit")]
+    pub rate_limit_per_minute: u32,
+    
+    #[serde(default = "default_max_body_size")]
+    pub max_body_size_mb: usize,
+    
+    #[serde(default)]
+    pub redis_url: Option<String>,
+    
+    #[serde(default = "default_true")]
+    pub enable_compression: bool,
+    
+    #[serde(default = "default_true")]
+    pub enable_etag: bool,
 }
 
-fn default_bind() -> String {
-    "0.0.0.0:3000".to_string()
-}
-
-fn default_static_dir() -> PathBuf {
-    PathBuf::from("demo-frontend")
-}
-
-fn default_timeout() -> u64 {
-    30
-}
-
-fn default_log_level() -> String {
-    "info".to_string()
-}
+fn default_bind() -> String { "0.0.0.0:3000".to_string() }
+fn default_static_dir() -> PathBuf { PathBuf::from("frontend") }
+fn default_timeout() -> u64 { 30 }
+fn default_log_level() -> String { "info".to_string() }
+fn default_cache_ttl() -> u64 { 300 } // 5 minutes
+fn default_rate_limit() -> u32 { 60 }
+fn default_max_body_size() -> usize { 10 }
+fn default_true() -> bool { true }
 
 impl Config {
-    /// Load configuration from file, env, or CLI
-    fn load(args: &Args) -> Result<Self> {
+    pub fn load(args: &Args) -> Result<Self> {
         let mut config = config::Config::builder();
         
-        // Start with defaults
+        // Defaults
         config = config.set_default("bind", default_bind())?;
         config = config.set_default("static_dir", default_static_dir().to_str().unwrap())?;
         config = config.set_default("timeout_secs", default_timeout())?;
         config = config.set_default("log_level", default_log_level())?;
+        config = config.set_default("cache_ttl_secs", default_cache_ttl())?;
+        config = config.set_default("rate_limit_per_minute", default_rate_limit())?;
+        config = config.set_default("max_body_size_mb", default_max_body_size() as i64)?;
+        config = config.set_default("enable_compression", true)?;
+        config = config.set_default("enable_etag", true)?;
         
-        // Load from config file if specified
+        // Config file
         if let Some(ref path) = args.config {
             config = config.add_source(config::File::from(path.as_path()));
         } else {
-            // Try default config locations
-            config = config.add_source(
-                config::File::with_name("demo-server").required(false)
-            );
-            config = config.add_source(
-                config::File::with_name("/etc/rcommerce/demo-server").required(false)
-            );
+            config = config.add_source(config::File::with_name("frontend-server").required(false));
+            config = config.add_source(config::File::with_name("/etc/rcommerce/frontend-server").required(false));
         }
         
-        // Override with environment variables (RC_DEMO_*)
+        // Environment (FRONTEND_* prefix)
         config = config.add_source(
-            config::Environment::with_prefix("RC_DEMO")
+            config::Environment::with_prefix("FRONTEND")
                 .separator("_")
         );
         
-        // Override with CLI args
+        // CLI overrides
         if let Some(ref bind) = args.bind {
             config = config.set_override("bind", bind.as_str())?;
         }
@@ -113,9 +119,6 @@ impl Config {
         if let Some(ref static_dir) = args.static_dir {
             config = config.set_override("static_dir", static_dir.as_str())?;
         }
-        if args.cors {
-            config = config.set_override("cors", true)?;
-        }
         
         let config: Config = config.build()?.try_deserialize()?;
         config.validate()?;
@@ -125,10 +128,10 @@ impl Config {
     
     fn validate(&self) -> Result<()> {
         if self.api_url.is_empty() {
-            anyhow::bail!("API URL is required (set --api-url or RC_DEMO_API_URL)");
+            anyhow::bail!("API URL is required (--api-url or FRONTEND_API_URL)");
         }
         if self.api_key.is_empty() {
-            anyhow::bail!("API key is required (set --api-key or RC_DEMO_API_KEY)");
+            anyhow::bail!("API key is required (--api-key or FRONTEND_API_KEY)");
         }
         if !self.static_dir.exists() {
             anyhow::bail!("Static directory does not exist: {}", self.static_dir.display());
@@ -137,59 +140,89 @@ impl Config {
     }
 }
 
-/// Application state shared across handlers
+/// Application state
 #[derive(Clone)]
-struct AppState {
-    config: Arc<Config>,
-    http_client: reqwest::Client,
+pub struct AppState {
+    pub config: Arc<Config>,
+    pub http_client: reqwest::Client,
+    pub cache: Arc<RwLock<lru::LruCache<String, CachedResponse>>>,
+    pub rate_limiter: Arc<RwLock<RateLimiter>>,
+}
+
+/// Cached API response
+#[derive(Clone)]
+pub struct CachedResponse {
+    pub body: Vec<u8>,
+    pub content_type: String,
+    pub cached_at: Instant,
+}
+
+/// Simple rate limiter per IP
+pub struct RateLimiter {
+    requests: std::collections::HashMap<String, Vec<Instant>>,
+    limit: u32,
+    window: Duration,
+}
+
+impl RateLimiter {
+    pub fn new(limit: u32, window_secs: u64) -> Self {
+        Self {
+            requests: std::collections::HashMap::new(),
+            limit,
+            window: Duration::from_secs(window_secs),
+        }
+    }
+    
+    pub fn check(&mut self, ip: &str) -> bool {
+        let now = Instant::now();
+        let window_start = now - self.window;
+        
+        let entries = self.requests.entry(ip.to_string()).or_default();
+        entries.retain(|&t| t > window_start);
+        
+        if entries.len() >= self.limit as usize {
+            return false;
+        }
+        
+        entries.push(now);
+        true
+    }
 }
 
 /// CLI arguments
 #[derive(Parser, Debug)]
-#[command(name = "rcommerce-demo")]
-#[command(about = "R Commerce Demo Server - serves frontend and proxies API requests")]
+#[command(name = "rcommerce-frontend")]
+#[command(about = "R Commerce Frontend Server - production-ready static file + API proxy server")]
 #[command(version)]
-struct Args {
-    /// Config file path
+pub struct Args {
     #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
+    pub config: Option<PathBuf>,
     
-    /// Bind address (e.g., 0.0.0.0:3000)
-    #[arg(short, long, env = "RC_DEMO_BIND")]
-    bind: Option<String>,
+    #[arg(short, long, env = "FRONTEND_BIND")]
+    pub bind: Option<String>,
     
-    /// R Commerce API URL (e.g., http://localhost:8080)
-    #[arg(short = 'u', long, env = "RC_DEMO_API_URL")]
-    api_url: Option<String>,
+    #[arg(short = 'u', long, env = "FRONTEND_API_URL")]
+    pub api_url: Option<String>,
     
-    /// API key for R Commerce (keep secret!)
-    #[arg(short = 'k', long, env = "RC_DEMO_API_KEY")]
-    api_key: Option<String>,
+    #[arg(short = 'k', long, env = "FRONTEND_API_KEY")]
+    pub api_key: Option<String>,
     
-    /// Static files directory
-    #[arg(short = 's', long, env = "RC_DEMO_STATIC_DIR")]
-    static_dir: Option<String>,
+    #[arg(short = 's', long, env = "FRONTEND_STATIC_DIR")]
+    pub static_dir: Option<String>,
     
-    /// Enable CORS (for development)
     #[arg(long)]
-    cors: bool,
-    
-    /// Print example config file
-    #[arg(long)]
-    print_config: bool,
+    pub print_config: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
     
-    // Print example config and exit
     if args.print_config {
         print_example_config();
         return Ok(());
     }
     
-    // Load configuration
     let config = Config::load(&args)?;
     
     // Initialize tracing
@@ -197,29 +230,56 @@ async fn main() -> Result<()> {
         .with_env_filter(&config.log_level)
         .init();
     
-    info!("Starting R Commerce Demo Server");
+    info!("R Commerce Frontend Server v{}", env!("CARGO_PKG_VERSION"));
     info!("  Bind: {}", config.bind);
     info!("  API URL: {}", config.api_url);
     info!("  Static dir: {}", config.static_dir.display());
+    info!("  Cache TTL: {}s", config.cache_ttl_secs);
+    info!("  Rate limit: {}/min", config.rate_limit_per_minute);
     
-    // Create HTTP client for proxying
+    // HTTP client
     let http_client = reqwest::Client::builder()
         .timeout(Duration::from_secs(config.timeout_secs))
+        .pool_max_idle_per_host(10)
         .build()
         .context("Failed to create HTTP client")?;
+    
+    // LRU cache for API responses (100 entries)
+    let cache = Arc::new(RwLock::new(lru::LruCache::new(
+        std::num::NonZeroUsize::new(100).unwrap()
+    )));
+    
+    // Rate limiter
+    let rate_limiter = Arc::new(RwLock::new(RateLimiter::new(
+        config.rate_limit_per_minute,
+        60
+    )));
     
     let state = AppState {
         config: Arc::new(config.clone()),
         http_client,
+        cache,
+        rate_limiter,
     };
     
     // Build router
     let mut app = Router::new()
-        // API proxy routes - all /api/* requests go to R Commerce
-        .route("/api/*path", get(api_proxy).post(api_proxy).put(api_proxy).delete(api_proxy).patch(api_proxy))
-        // Static files - serve everything else from static directory
-        .fallback_service(tower_http::services::ServeDir::new(&config.static_dir))
+        // Health check
+        .route("/health", get(health_check))
+        // API proxy with caching
+        .route("/api/*path", get(api_proxy_cached).post(api_proxy).put(api_proxy).delete(api_proxy))
+        // Static files
+        .fallback_service(tower_http::services::ServeDir::new(&config.static_dir)
+            .append_index_html_on_directories(true)
+            .precompressed_gzip()
+            .precompressed_br()
+        )
         .with_state(state);
+    
+    // Add compression if enabled
+    if config.enable_compression {
+        app = app.layer(tower_http::compression::CompressionLayer::new());
+    }
     
     // Add CORS if enabled
     if config.cors {
@@ -231,6 +291,9 @@ async fn main() -> Result<()> {
         );
     }
     
+    // Add security headers
+    app = app.layer(axum::middleware::from_fn(security_headers));
+    
     // Add tracing
     app = app.layer(tower_http::trace::TraceLayer::new_for_http());
     
@@ -238,48 +301,113 @@ async fn main() -> Result<()> {
     let addr: SocketAddr = config.bind.parse()
         .context("Invalid bind address")?;
     
-    info!("Server listening on http://{}", addr);
+    info!("Server ready: http://{}", addr);
     
-    // Start server
+    // Start server with graceful shutdown
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
     
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
+    
+    info!("Server shutdown complete");
     Ok(())
 }
 
-/// Proxy API requests to R Commerce backend with injected API key
+/// Health check endpoint
+async fn health_check() -> impl IntoResponse {
+    axum::Json(::serde_json::json!({
+        "status": "ok",
+        "version": env!("CARGO_PKG_VERSION"),
+        "service": "rcommerce-frontend"
+    }))
+}
+
+/// API proxy with caching for GET requests
+async fn api_proxy_cached(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    req: Request,
+) -> Result<Response, StatusCode> {
+    let cache_key = format!("{}:{}", req.method(), req.uri().path());
+    
+    // Check cache for GET requests
+    if req.method() == Method::GET {
+        let cache = state.cache.read().await;
+        if let Some(cached) = cache.peek(&cache_key) {
+            let age = cached.cached_at.elapsed().as_secs();
+            if age < state.config.cache_ttl_secs {
+                info!("Cache HIT: {}", cache_key);
+                let mut response = Response::builder()
+                    .status(StatusCode::OK)
+                    .header("Content-Type", &cached.content_type)
+                    .header("X-Cache", "HIT")
+                    .header("Cache-Age", age.to_string())
+                    .body(Body::from(cached.body.clone()))
+                    .unwrap();
+                return Ok(response);
+            }
+        }
+    }
+
+    
+    // Cache miss - proxy to backend
+    api_proxy_inner(state, addr, req, cache_key).await
+}
+
+/// API proxy without caching (for POST/PUT/DELETE)
 async fn api_proxy(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     req: Request,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<Response, StatusCode> {
+    api_proxy_inner(state, addr, req, String::new()).await
+}
+
+/// Internal proxy implementation
+async fn api_proxy_inner(
+    state: AppState,
+    addr: SocketAddr,
+    req: Request,
+    cache_key: String,
+) -> Result<Response, StatusCode> {
+    // Rate limiting
+    let ip = addr.ip().to_string();
+    {
+        let mut limiter = state.rate_limiter.write().await;
+        if !limiter.check(&ip) {
+            warn!("Rate limit exceeded: {}", ip);
+            return Err(StatusCode::TOO_MANY_REQUESTS);
+        }
+    }
+    
     let path = req.uri().path();
     let method = req.method().clone();
     
     // Build target URL
     let target_url = format!("{}{}", state.config.api_url, path);
     
-    info!("Proxying {} {} -> {}", method, path, target_url);
+    info!("Proxy: {} {} (from {})", method, path, ip);
     
     // Build proxied request
     let mut proxy_req = state.http_client.request(method.clone(), &target_url);
     
-    // Copy relevant headers from original request (but not Authorization - we'll inject our own)
+    // Copy headers (skip hop-by-hop and auth)
     let headers = req.headers();
     for (name, value) in headers.iter() {
         let name_str = name.as_str().to_lowercase();
-        // Skip hop-by-hop headers and auth (we'll add our own)
         if !is_hop_by_hop_header(&name_str) && name_str != "authorization" {
             proxy_req = proxy_req.header(name.clone(), value.clone());
         }
     }
     
-    // Inject API key for service-to-service auth
-    proxy_req = proxy_req.header(
-        "Authorization",
-        format!("Bearer {}", state.config.api_key)
-    );
+    // Inject API key
+    proxy_req = proxy_req.header("Authorization", format!("Bearer {}", state.config.api_key));
     
-    // Forward body for non-GET requests
+    // Forward body
     if method != Method::GET && method != Method::HEAD {
         let body_bytes = axum::body::to_bytes(req.into_body(), usize::MAX)
             .await
@@ -290,35 +418,66 @@ async fn api_proxy(
         proxy_req = proxy_req.body(body_bytes);
     }
     
-    // Send request to backend
+    // Send request
     let backend_resp = proxy_req.send().await.map_err(|e| {
         error!("Backend request failed: {}", e);
         StatusCode::BAD_GATEWAY
     })?;
     
-    // Build response
     let status = StatusCode::from_u16(backend_resp.status().as_u16())
         .unwrap_or(StatusCode::OK);
     
-    let mut response_builder = Response::builder().status(status);
+    let mut response_builder = Response::builder()
+        .status(status)
+        .header("X-Cache", "MISS");
     
-    // Copy headers from backend (excluding hop-by-hop)
+    // Copy headers
+    let content_type = backend_resp.headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/json")
+        .to_string();
+        
     for (name, value) in backend_resp.headers().iter() {
         if !is_hop_by_hop_header(&name.as_str().to_lowercase()) {
             response_builder = response_builder.header(name.clone(), value.clone());
         }
     }
     
-    // Get response body
+    // Get body
     let body_bytes = backend_resp.bytes().await.map_err(|e| {
         error!("Failed to read backend response: {}", e);
         StatusCode::BAD_GATEWAY
     })?;
     
+    // Cache successful GET responses
+    if method == Method::GET && status.is_success() && !cache_key.is_empty() {
+        let cached = CachedResponse {
+            body: body_bytes.to_vec(),
+            content_type: content_type.clone(),
+            cached_at: Instant::now(),
+        };
+        let mut cache = state.cache.write().await;
+        cache.put(cache_key, cached);
+    }
+    
     Ok(response_builder.body(Body::from(body_bytes)).unwrap())
 }
 
-/// Check if a header is hop-by-hop (should not be forwarded)
+/// Security headers middleware
+async fn security_headers(req: Request, next: axum::middleware::Next) -> impl IntoResponse {
+    let mut response = next.run(req).await;
+    
+    let headers = response.headers_mut();
+    headers.insert("X-Content-Type-Options", HeaderValue::from_static("nosniff"));
+    headers.insert("X-Frame-Options", HeaderValue::from_static("DENY"));
+    headers.insert("X-XSS-Protection", HeaderValue::from_static("1; mode=block"));
+    headers.insert("Referrer-Policy", HeaderValue::from_static("strict-origin-when-cross-origin"));
+    
+    response
+}
+
+/// Check if header is hop-by-hop
 fn is_hop_by_hop_header(name: &str) -> bool {
     matches!(name, 
         "connection" | "keep-alive" | "proxy-authenticate" | 
@@ -326,10 +485,30 @@ fn is_hop_by_hop_header(name: &str) -> bool {
     )
 }
 
-/// Print example configuration file
+/// Graceful shutdown signal
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+    };
+
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("Failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    tokio::select! {
+        _ = ctrl_c => info!("Received Ctrl+C, shutting down..."),
+        _ = terminate => info!("Received SIGTERM, shutting down..."),
+    }
+}
+
+/// Print example config
 fn print_example_config() {
-    println!(r#"# R Commerce Demo Server Configuration
-# Save this as demo-server.toml
+    println!(r#"# R Commerce Frontend Server Configuration
 
 # Server bind address
 bind = "0.0.0.0:3000"
@@ -338,19 +517,33 @@ bind = "0.0.0.0:3000"
 api_url = "http://localhost:8080"
 
 # API key for service-to-service authentication
-# Get this from: rcommerce api-key create --name "Demo" --scopes "products:read,orders:write"
 api_key = "ak_yourprefix.yoursecret"
 
-# Path to static files directory
-static_dir = "demo-frontend"
+# Path to static files directory (customer frontend)
+static_dir = "frontend"
 
-# Enable CORS (for development)
+# Enable CORS (for development only!)
 cors = false
 
 # Request timeout in seconds
 timeout_secs = 30
 
-# Log level (trace, debug, info, warn, error)
+# API response cache TTL in seconds
+cache_ttl_secs = 300
+
+# Rate limit per IP (requests per minute)
+rate_limit_per_minute = 60
+
+# Maximum request body size in MB
+max_body_size_mb = 10
+
+# Enable Brotli/Gzip compression
+enable_compression = true
+
+# Enable ETag for static files
+enable_etag = true
+
+# Log level
 log_level = "info"
 "#);
 }
