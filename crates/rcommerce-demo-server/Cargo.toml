@@ -1,0 +1,47 @@
+[package]
+name = "rcommerce-demo-server"
+version = "0.1.1"
+edition = "2021"
+description = "Lightweight demo server for R Commerce - serves static files and proxies API requests"
+license = "AGPL-3.0"
+authors = ["R Commerce Team"]
+
+[[bin]]
+name = "rcommerce-demo"
+path = "src/main.rs"
+
+[dependencies]
+# Axum web framework
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1.35", features = ["full"] }
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+
+# HTTP client for proxying
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# Configuration
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+config = "0.14"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+anyhow = "1.0"
+
+# MIME types
+mime_guess = "2.0"
+
+# Common types
+headers = "0.4"
+http = "1.0"
+
+[dev-dependencies]
+tokio-test = "0.4"
+reqwest = { version = "0.12", features = ["rustls-tls"] }

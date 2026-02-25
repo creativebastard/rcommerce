@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/rcommerce-core", "crates/rcommerce-api", "crates/rcommerce-cli", "crates/rcommerce-demo"]
+members = ["crates/rcommerce-core", "crates/rcommerce-api", "crates/rcommerce-cli", "crates/rcommerce-demo", "crates/rcommerce-demo-server"]
 resolver = "2"
 
 [workspace.package]

@@ -2,52 +2,67 @@
 
 A lightweight, vanilla HTML/JavaScript frontend for demonstrating R Commerce functionality.
 
-## Features
+## Two Ways to Run
 
-- Product listing with 3 demo products
-- Product detail pages
-- Shopping cart functionality
-- Checkout flow
-- Responsive design
-- Works with or without backend API
+### Option 1: Demo Server (Recommended) 🔒
 
-## Quick Start
-
-1. Open `index.html` in a browser
-2. Or serve with a simple HTTP server:
+The **demo server** is a Rust binary that serves the frontend and proxies API requests. This keeps your API key secure (never exposed to the browser).
 
 ```bash
-# Python 3
+# 1. Build the demo server
+cargo build --release -p rcommerce-demo-server
+
+# 2. Create an API key
+rcommerce api-key create --name "Demo" --scopes "products:read,orders:write,carts:write"
+
+# 3. Run the demo server
+./target/release/rcommerce-demo \
+  --api-url http://localhost:8080 \
+  --api-key ak_yourprefix.yoursecret
+
+# 4. Open http://localhost:3000
+```
+
+**Benefits:**
+- ✅ API key hidden from browser
+- ✅ No CORS issues
+- ✅ Single binary deployment
+- ✅ Works behind Caddy/Nginx
+
+See [Demo Server README](../crates/rcommerce-demo-server/README.md) for full documentation.
+
+---
+
+### Option 2: Static Files (Development Only) ⚠️
+
+Serve the HTML/JS files directly with any static file server. **Warning: API key will be exposed in browser!**
+
+```bash
+# Using Python
 python -m http.server 3000
 
-# Node.js
-npx serve .
-
-# PHP
+# Using PHP
 php -S localhost:3000
+
+# Using Node.js
+npx serve .
 ```
 
-Then open http://localhost:3000
-
-## Configuration
-
-Edit `api.js` to configure the API endpoint and API key:
-
+**Configure API key:** Edit `api.js` and set your API key:
 ```javascript
-const API_BASE_URL = 'http://localhost:8080/api/v1';
-const API_KEY = 'ak_yourprefix.yoursecret';  // Get from R Commerce CLI
+const API_KEY = 'ak_yourprefix.yoursecret';  // ⚠️ Exposed to browser!
 ```
 
-### Getting an API Key
+---
 
-1. Start your R Commerce server
-2. Create an API key using the CLI:
-   ```bash
-   rcommerce api-key create --name "Demo Frontend" --scopes "products:read,orders:write,carts:write"
-   ```
-3. Copy the generated key to `api.js`
+## Features
 
-**Note:** API keys are for service-to-service authentication. Customer authentication (login/register) uses JWT tokens.
+- Product listing with demo products
+- Product detail pages
+- Shopping cart (localStorage for guests, API for logged-in users)
+- Checkout flow
+- Customer authentication (login/register)
+- Responsive design
 
 ## Demo Products
 
@@ -55,9 +70,44 @@ const API_KEY = 'ak_yourprefix.yoursecret';  // Get from R Commerce CLI
 2. **Smart Watch Pro** - $399.99
 3. **Portable Bluetooth Speaker** - $149.99
 
-## Cart Persistence
+## Architecture
 
-Cart data is stored in browser localStorage and persists across sessions.
+### With Demo Server (Secure)
+```
+Browser ──▶ Demo Server ──▶ R Commerce API
+            │                    │
+            │ API key injected   │
+            │ (server-side only) │
+```
+
+Uses `api-proxy.js` - makes relative requests to `/api/*`
+
+### Static Files (Insecure)
+```
+Browser ──────────────▶ R Commerce API
+   │                          │
+   │ API key in JS            │
+   │ (visible to users)       │
+```
+
+Uses `api.js` - makes direct requests to API with exposed key
+
+## File Structure
+
+```
+demo-frontend/
+├── index.html          # Product listing
+├── product.html        # Product detail
+├── cart.html           # Shopping cart
+├── checkout.html       # Checkout flow
+├── confirmation.html   # Order confirmation
+├── styles.css          # Styles
+├── api.js              # Direct API client (static files mode)
+├── api-proxy.js        # Proxy API client (demo server mode)
+├── app.js              # Main application logic
+├── auth.js             # Authentication handling
+└── checkout.js         # Checkout logic
+```
 
 ## Browser Compatibility
 
@@ -65,10 +115,10 @@ Cart data is stored in browser localStorage and persists across sessions.
 - Firefox (latest)
 - Safari (latest)
 
-## Integration with R Commerce
+## Security Warning
 
-When the R Commerce backend is running, the frontend will:
-- Fetch products from `/api/v1/products`
-- Create orders via `/api/v1/orders`
+**Never use the static files mode (`api.js`) in production!** The API key will be visible to anyone who views the page source. Always use the demo server or implement your own backend proxy.
 
-If the backend is unavailable, it falls back to demo data.
+## License
+
+AGPL-3.0
