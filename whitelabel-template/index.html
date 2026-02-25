@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{STORE_NAME}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: {{PRIMARY_COLOR}};
+            --secondary: {{SECONDARY_COLOR}};
+        }
+        .brand-primary { color: var(--primary); }
+        .bg-brand-primary { background-color: var(--primary); }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold brand-primary">{{STORE_NAME}}</h1>
+            <nav class="flex gap-4">
+                <a href="/" class="text-gray-600 hover:text-gray-900">Home</a>
+                <a href="/products" class="text-gray-600 hover:text-gray-900">Products</a>
+                <a href="/cart" class="text-gray-600 hover:text-gray-900">Cart</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="bg-brand-primary text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-4xl font-bold mb-4">{{HERO_TITLE}}</h2>
+            <p class="text-xl opacity-90">{{HERO_SUBTITLE}}</p>
+        </div>
+    </section>
+
+    <!-- Products -->
+    <main class="max-w-7xl mx-auto px-4 py-12">
+        <h3 class="text-2xl font-bold mb-8">Featured Products</h3>
+        <div id="products" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <p class="text-gray-500">Loading products...</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>&copy; {{CURRENT_YEAR}} {{STORE_NAME}}. Powered by R Commerce.</p>
+        </div>
+    </footer>
+
+    <script src="api.js"></script>
+    <script>
+        // Load products from API
+        async function loadProducts() {
+            try {
+                const products = await api.getProducts();
+                const container = document.getElementById('products');
+                container.innerHTML = products.map(p => `
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h4 class="font-bold text-lg mb-2">${p.name}</h4>
+                        <p class="text-gray-600 mb-4">$${p.price}</p>
+                        <button onclick="api.addToCart('${p.id}')" 
+                                class="bg-brand-primary text-white px-4 py-2 rounded hover:opacity-90">
+                            Add to Cart
+                        </button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load products:', err);
+            }
+        }
+        loadProducts();
+    </script>
+</body>
+</html>
