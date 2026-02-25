@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2 capitalize">{{ category }}</h1>
+    <p class="text-gray-500 mb-8">Showing products in {{ category }}</p>
+    
+    {% if products %}
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for product in products %}
+        <article class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+            <a href="/products/{{ product.id }}">
+                <div class="aspect-square bg-gray-200 rounded-t-lg"></div>
+                <div class="p-4">
+                    <h3 class="font-semibold">{{ product.name }}</h3>
+                    <p class="text-indigo-600 font-bold mt-2">${{ product.price }}</p>
+                </div>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No products found in this category.</p>
+    {% endif %}
+</div>
+{% endblock %}

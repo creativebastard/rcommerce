@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-gray-500 mb-6">
+        <a href="/" class="hover:text-gray-900">Home</a>
+        <span class="mx-2">/</span>
+        {% if product.category %}
+        <a href="/categories/{{ product.category.slug }}" class="hover:text-gray-900">{{ product.category.name }}</a>
+        <span class="mx-2">/</span>
+        {% endif %}
+        <span class="text-gray-900">{{ product.name }}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <!-- Product Images -->
+        <div class="space-y-4">
+            <div class="aspect-square bg-gray-200 rounded-lg overflow-hidden">
+                {% if product.images and product.images[0] %}
+                <img id="main-image" src="{{ product.images[0].url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+                {% endif %}
+            </div>
+            {% if product.images and product.images | length > 1 %}
+            <div class="grid grid-cols-4 gap-2">
+                {% for image in product.images %}
+                <button onclick="document.getElementById('main-image').src='{{ image.url }}'" 
+                        class="aspect-square bg-gray-200 rounded overflow-hidden hover:opacity-75">
+                    <img src="{{ image.url }}" alt="" class="w-full h-full object-cover">
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Info -->
+        <div class="space-y-6">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">{{ product.name }}</h1>
+                {% if product.sku %}
+                <p class="text-gray-500 text-sm">SKU: {{ product.sku }}</p>
+                {% endif %}
+            </div>
+
+            <div class="text-4xl font-bold text-indigo-600">
+                ${{ product.price }}
+                {% if product.compare_at_price %}
+                <span class="text-lg text-gray-400 line-through ml-2">${{ product.compare_at_price }}</span>
+                {% endif %}
+            </div>
+
+            {% if product.description %}
+            <div class="prose max-w-none">
+                <p>{{ product.description }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Variants -->
+            {% if product.variants and product.variants | length > 0 %}
+            <div>
+                <label class="block text-sm font-medium mb-2">Options</label>
+                <select id="variant-select" class="w-full border rounded-lg px-4 py-2">
+                    {% for variant in product.variants %}
+                    <option value="{{ variant.id }}" data-price="{{ variant.price }}">
+                        {{ variant.title }} - ${{ variant.price }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <!-- Quantity -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Quantity</label>
+                <div class="flex items-center gap-2">
+                    <button onclick="adjustQty(-1)" class="w-10 h-10 border rounded-lg hover:bg-gray-100">-</button>
+                    <input type="number" id="qty" value="1" min="1" class="w-20 text-center border rounded-lg py-2">
+                    <button onclick="adjustQty(1)" class="w-10 h-10 border rounded-lg hover:bg-gray-100">+</button>
+                </div>
+            </div>
+
+            <!-- Add to Cart -->
+            <div class="flex gap-4">
+                <button onclick="addToCart()" class="flex-1 bg-indigo-600 text-white py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                    Add to Cart
+                </button>
+                <button onclick="buyNow()" class="flex-1 bg-gray-900 text-white py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                    Buy Now
+                </button>
+            </div>
+
+            <!-- Stock Status -->
+            {% if product.inventory %}
+            <p class="text-sm {% if product.inventory.quantity > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                {% if product.inventory.quantity > 0 %}
+                ✓ In Stock ({{ product.inventory.quantity }} available)
+                {% else %}
+                ✗ Out of Stock
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function adjustQty(delta) {
+    const input = document.getElementById('qty');
+    const newVal = parseInt(input.value) + delta;
+    if (newVal >= 1) input.value = newVal;
+}
+
+function addToCart() {
+    const qty = parseInt(document.getElementById('qty').value);
+    const variantSelect = document.getElementById('variant-select');
+    const productId = variantSelect ? variantSelect.value : '{{ product.id }}';
+    
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(item => item.product_id === productId);
+    
+    if (existing) {
+        existing.quantity += qty;
+    } else {
+        cart.push({ product_id: productId, quantity: qty });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    alert(`Added ${qty} item(s) to cart!`);
+}
+
+function buyNow() {
+    addToCart();
+    window.location.href = '/cart';
+}
+
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cart-count').textContent = count;
+}
+
+updateCartCount();
+</script>
+{% endblock %}

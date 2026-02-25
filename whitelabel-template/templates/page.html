@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold mb-8 capitalize">{{ slug | replace(from="-", to=" ") }}</h1>
+    <div class="prose max-w-none">
+        <p>This is the {{ slug }} page. Customize this content in your template.</p>
+    </div>
+</div>
+{% endblock %}

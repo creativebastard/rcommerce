@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-indigo-600 text-white py-20">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+        <h1 class="text-5xl font-bold mb-6">Welcome to Our Store</h1>
+        <p class="text-xl opacity-90 mb-8">Discover amazing products at great prices</p>
+        <a href="/categories/all" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100">
+            Shop Now
+        </a>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="max-w-7xl mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold mb-8">Featured Products</h2>
+    
+    {% if products %}
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for product in products %}
+        <article class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+            <a href="/products/{{ product.id }}" class="block">
+                <div class="aspect-square bg-gray-200 rounded-t-lg overflow-hidden">
+                    {% if product.images and product.images[0] %}
+                    <img src="{{ product.images[0].url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
+                    {% endif %}
+                </div>
+                <div class="p-4">
+                    <h3 class="font-semibold text-lg mb-2">{{ product.name }}</h3>
+                    <p class="text-gray-600 text-sm mb-2 line-clamp-2">{{ product.description | default(value="") | truncate(length=100) }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xl font-bold text-indigo-600">${{ product.price }}</span>
+                        <button class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700" 
+                                onclick="event.preventDefault(); addToCart('{{ product.id }}')">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500">No products available.</p>
+    {% endif %}
+</section>
+
+<!-- Categories -->
+<section class="bg-white py-16">
+    <div class="max-w-7xl mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8">Shop by Category</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for category in ["electronics", "clothing", "home", "sports"] %}
+            <a href="/categories/{{ category }}" class="block bg-gray-100 rounded-lg p-6 text-center hover:bg-gray-200 transition-colors">
+                <div class="text-2xl mb-2">{{ category | capitalize }}</div>
+                <span class="text-indigo-600">Shop &rarr;</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addToCart(productId) {
+    // Get existing cart
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(item => item.product_id === productId);
+    
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        cart.push({ product_id: productId, quantity: 1 });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartCount();
+    
+    // Show feedback
+    alert('Added to cart!');
+}
+
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cart-count').textContent = count;
+}
+
+// Update on page load
+updateCartCount();
+</script>
+{% endblock %}

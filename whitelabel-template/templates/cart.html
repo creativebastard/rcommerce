@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+    
+    <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Cart Items -->
+        <div class="lg:col-span-2">
+            <div id="cart-items" class="space-y-4">
+                <p class="text-gray-500">Loading cart...</p>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="bg-gray-50 rounded-lg p-6 h-fit">
+            <h2 class="text-xl font-bold mb-4">Order Summary</h2>
+            <div class="space-y-2 mb-4">
+                <div class="flex justify-between">
+                    <span>Subtotal</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Shipping</span>
+                    <span>Calculated at checkout</span>
+                </div>
+            </div>
+            <div class="border-t pt-4 mb-6">
+                <div class="flex justify-between text-xl font-bold">
+                    <span>Total</span>
+                    <span id="total">$0.00</span>
+                </div>
+            </div>
+            <button onclick="checkout()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700">
+                Proceed to Checkout
+            </button>
+            <a href="/" class="block text-center mt-4 text-indigo-600 hover:underline">
+                Continue Shopping
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API_URL = '{{ api_url }}';
+
+async function loadCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const container = document.getElementById('cart-items');
+    
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <p class="text-gray-500 mb-4">Your cart is empty</p>
+                <a href="/" class="text-indigo-600 hover:underline">Start Shopping</a>
+            </div>
+        `;
+        document.getElementById('subtotal').textContent = '$0.00';
+        document.getElementById('total').textContent = '$0.00';
+        return;
+    }
+    
+    // Fetch product details
+    let html = '';
+    let subtotal = 0;
+    
+    for (const item of cart) {
+        // For demo, show placeholder
+        html += `
+            <div class="flex gap-4 bg-white p-4 rounded-lg shadow-sm">
+                <div class="w-24 h-24 bg-gray-200 rounded flex-shrink-0"></div>
+                <div class="flex-1">
+                    <h3 class="font-semibold">Product ${item.product_id}</h3>
+                    <p class="text-gray-500 text-sm">SKU: ${item.product_id}</p>
+                    <div class="flex items-center gap-4 mt-2">
+                        <div class="flex items-center border rounded">
+                            <button onclick="updateQty('${item.product_id}', -1)" class="px-3 py-1 hover:bg-gray-100">-</button>
+                            <span class="px-3 py-1">${item.quantity}</span>
+                            <button onclick="updateQty('${item.product_id}', 1)" class="px-3 py-1 hover:bg-gray-100">+</button>
+                        </div>
+                        <button onclick="removeItem('${item.product_id}')" class="text-red-600 text-sm hover:underline">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold">$--.--</p>
+                </div>
+            </div>
+        `;
+        subtotal += 29.99 * item.quantity; // Demo price
+    }
+    
+    container.innerHTML = html;
+    document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('total').textContent = `$${subtotal.toFixed(2)}`;
+}
+
+function updateQty(productId, delta) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const item = cart.find(i => i.product_id === productId);
+    
+    if (item) {
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+            cart = cart.filter(i => i.product_id !== productId);
+        }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        loadCart();
+        updateCartCount();
+    }
+}
+
+function removeItem(productId) {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart = cart.filter(i => i.product_id !== productId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    loadCart();
+    updateCartCount();
+}
+
+function checkout() {
+    alert('Checkout would redirect to payment processor');
+}
+
+function updateCartCount() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cart-count').textContent = count;
+}
+
+// Load on page load
+loadCart();
+updateCartCount();
+</script>
+{% endblock %}
